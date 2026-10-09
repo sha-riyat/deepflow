@@ -103,9 +103,11 @@ export class Chart {
     if (!this.W) return; // pas encore mesuré
     const s = this.scale;
     const panes = this.settings.panes.length;
+    // Les panneaux partagent au plus 42 % de la hauteur : le tracé principal reste lisible.
+    this.paneH = panes ? Math.max(48, Math.min(this.settings.paneH, Math.floor((this.H - TIME_H) * 0.42 / panes))) : 0;
     s.w = Math.max(50, this.W - AXIS_W);
-    s.h = Math.max(80, this.H - TIME_H - panes * this.settings.paneH);
-    this.timeTop = s.h + panes * this.settings.paneH;
+    s.h = Math.max(80, this.H - TIME_H - panes * this.paneH);
+    this.timeTop = s.h + panes * this.paneH;
     const dpr = window.devicePixelRatio || 1;
     Object.assign(this.heatCanvas.style, { width: `${s.w}px`, height: `${s.h}px` });
     this.heatCanvas.width = Math.round(s.w * dpr);
@@ -240,7 +242,7 @@ export class Chart {
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
     st.panes.forEach((kind, k) => {
-      drawPane(ctx, kind, { y: s.h + k * st.paneH, h: st.paneH }, items, geo, s, { oi: this.data.oi, axisW: AXIS_W });
+      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, axisW: AXIS_W });
     });
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
   }
@@ -291,7 +293,7 @@ export class Chart {
 
   // Position des panneaux (pour leurs légendes HTML).
   paneRects() {
-    return this.settings.panes.map((kind, k) => ({ kind, y: this.scale.h + k * this.settings.paneH, h: this.settings.paneH }));
+    return this.settings.panes.map((kind, k) => ({ kind, y: this.scale.h + k * this.paneH, h: this.paneH }));
   }
 
   itemAt(items, x) {
