@@ -64,7 +64,7 @@ export class Alerts extends EventEmitter {
     const prev = this.prevMid.get(symbol) ?? mid;
     this.prevMid.set(symbol, mid);
     for (const a of this.items) {
-      if (!a.enabled || a.symbol !== symbol || f.t - a.lastFired < COOLDOWN_MS) continue;
+      if (!a.enabled || a.symbol !== symbol || (a.lastFired && f.t - a.lastFired < COOLDOWN_MS)) continue;
       const text = this.#check(a, { ...ctx, mid, prev });
       if (!text) continue;
       a.lastFired = f.t;
