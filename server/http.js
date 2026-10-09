@@ -1,0 +1,129 @@
+// Serveur HTTP local du collecteur : flux SSE et API (état, historique, heatmap,
+// réglages de risque, symbole, alertes). N'écoute que sur 127.0.0.1.
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import * as Q from './queries.js';
+
+
+// Réglages de risque modifiables depuis l'interface, avec leurs bornes.
+const SETTINGS = { equity: [1, 1e9], riskPct: [0.01, 5], maxLeverage: [1, 125] };
+
+export function loadSettings(file, risk) {
+  if (!fs.existsSync(file)) return;
+  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+  for (const key of Object.keys(SETTINGS)) if (typeof saved[key] === 'number') risk[key] = saved[key];
+}
+
+function json(res, status, body) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+}
+
+// Corps JSON limité ; exiger application/json force un preflight CORS jamais accordé,
+// donc un site tiers ne peut pas écrire ici.
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    if (!String(req.headers['content-type']).startsWith('application/json')) return reject(new Error('application/json attendu'));
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 10_000) req.destroy();
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch {
+        reject(new Error('JSON invalide'));
+      }
+    });
+  });
+}
+
+function updateSettings(input, { cfg, settingsFile }) {
+  for (const [key, [min, max]] of Object.entries(SETTINGS)) {
+    if (input[key] === undefined) continue;
+    const v = Number(input[key]);
+    if (!Number.isFinite(v) || v < min || v > max) throw new Error(`${key} hors bornes [${min}, ${max}]`);
+    cfg.risk[key] = v;
+  }
+  const saved = Object.fromEntries(Object.keys(SETTINGS).map((k) => [k, cfg.risk[k]]));
+  fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+  fs.writeFileSync(settingsFile, JSON.stringify(saved, null, 2));
+  return saved;
+}
+
+async function route(req, res, ctx) {
+  const { cfg, hub, session, alerts, rest } = ctx;
+  const url = new URL(req.url, 'http://localhost');
+  const q = Object.fromEntries(url.searchParams);
+  const key = `${req.method} ${url.pathname}`;
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/tickers' && !session.engine) {
+    return json(res, 503, { error: 'session en cours de démarrage' });
+  }
+  switch (key) {
+    case 'GET /stream':
+      return hub.attach(req, res);
+    case 'GET /api/state':
+      return json(res, 200, { ...session.engine.state(), meta: session.meta(), history: session.store.status() });
+    case 'GET /api/bars':
+      return json(res, 200, await Q.bars(session, q));
+    case 'GET /api/bubbles':
+      return json(res, 200, await Q.bubbles(session, q));
+    case 'GET /api/profile':
+      return json(res, 200, await Q.profiles(session, q));
+    case 'GET /api/oi':
+      return json(res, 200, await Q.openInterest(session, q));
+    case 'GET /api/tickers':
+      return json(res, 200, await Q.tickers(rest));
+    case 'GET /api/heatmap': {
+      const r = Q.heatmap(session, q);
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'X-Heat': JSON.stringify({ cols: r.cols, rows: r.rows, step: r.step, scale: r.scale, start: session.heat.start }),
+      });
+      return res.end(r.buf);
+    }
+    case 'POST /api/settings': {
+      const saved = updateSettings(await readJson(req), { cfg, settingsFile: ctx.settingsFile });
+      hub.setMeta(session.meta());
+      return json(res, 200, saved);
+    }
+    case 'POST /api/symbol': {
+      if (session.mode !== 'live') throw new Error('changement de symbole indisponible en replay');
+      const { symbol } = await readJson(req);
+      const s = String(symbol ?? '').toUpperCase();
+      if (!/^[A-Z0-9]{2,20}$/.test(s)) throw new Error('symbole invalide');
+      await session.start(s);
+      return json(res, 200, session.meta());
+    }
+    case 'GET /api/alerts':
+      return json(res, 200, alerts.list());
+    case 'POST /api/alerts': {
+      const item = alerts.add(await readJson(req));
+      hub.state('alerts', alerts.list());
+      return json(res, 200, item);
+    }
+    case 'DELETE /api/alerts':
+      alerts.remove(String(q.id));
+      hub.state('alerts', alerts.list());
+      return json(res, 200, { ok: true });
+    default:
+      // L'interface est servie par Next.js (dossier web/).
+      return json(res, 404, { error: 'not found' });
+  }
+}
+
+export function createServer(ctx) {
+  // Accès local direct, ou relayé par l'interface Next.js (port WEB_PORT, 3000 par défaut).
+  const ports = [ctx.cfg.port, Number(process.env.WEB_PORT ?? 3000)];
+  const allowedHosts = new Set(ports.flatMap((p) => [`127.0.0.1:${p}`, `localhost:${p}`]));
+  return http.createServer((req, res) => {
+    // Protège contre le DNS rebinding : seul l'accès local direct est servi.
+    if (!allowedHosts.has(req.headers.host)) return json(res, 403, { error: 'host refusé' });
+    route(req, res, ctx).catch((err) => {
+      if (!res.headersSent) json(res, 400, { error: err.message });
+      else res.end();
+    });
+  });
+}
