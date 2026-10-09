@@ -61,12 +61,15 @@ export class TradeStore extends EventEmitter {
     let partial = false;
     if (from < this.memStart) {
       if (this.offline) partial = true;
-      else {
+      else if (to > this.backFrom && this.memStart > this.backFrom) {
+        // Trou du jour encore en rattrapage : on ne renvoie pas les jours antérieurs, sinon le
+        // client les placerait avant ce trou et ne pourrait plus le combler.
+        partial = true;
+      } else {
         for (let d = Math.floor(from / DAY) * DAY; d < Math.min(to, this.backFrom); d += DAY) {
           const day = await this.day(d);
           parts.push(day.slice(Math.max(from, d), Math.min(to, d + DAY)));
         }
-        if (to > this.backFrom && this.memStart > this.backFrom) partial = true;
       }
     }
     parts.push(this.#memory(Math.max(from, this.memStart), to));
