@@ -4,6 +4,7 @@ import { BarBuilder, BAR_TYPES, klineToWire } from '../shared/bars.js';
 import { SessionProfiler } from '../shared/profile.js';
 
 const HOUR = 3_600_000;
+const DAY = 86_400_000;
 export const KLINE = {
   1000: '1s', 60_000: '1m', 180_000: '3m', 300_000: '5m', 900_000: '15m', 1_800_000: '30m',
   3_600_000: '1h', 7_200_000: '2h', 14_400_000: '4h', 21_600_000: '6h', 43_200_000: '12h',
@@ -93,15 +94,45 @@ export async function bubbles(s, q) {
   return { slot, rows, big, threshold: Number.isFinite(threshold) ? threshold : null };
 }
 
+// Profils des journées terminées, mis en cache par magasin de trades et par taille de tranche :
+// seule la session du jour est recalculée à chaque requête.
+const profileCache = new WeakMap();
+
 export async function profiles(s, q) {
   const now = nowOf(s);
   const to = Math.min(num(q.to, now), now);
-  const from = num(q.from, to - 86_400_000);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
-  const { trades: t, partial } = await s.store.getRange(from, to, { maxDays: 7 });
-  const prof = new SessionProfiler(bucket);
-  for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
-  return { bucket, partial, sessions: prof.list() };
+  const from = Math.floor(Math.max(num(q.from, to - DAY), to - 14 * DAY) / DAY) * DAY;
+  if (!profileCache.has(s.store)) profileCache.set(s.store, new Map());
+  const cache = profileCache.get(s.store);
+  const sessions = [];
+  let partial = false;
+  for (let d = from; d < to; d += DAY) {
+    const key = `${bucket}:${d}`;
+    const done = d + DAY <= now;
+    if (done && cache.has(key)) {
+      sessions.push(cache.get(key));
+      continue;
+    }
+    // Jour d'archive pas encore téléchargé : chargement lancé en tâche de fond, les sessions
+    // disponibles sont renvoyées tout de suite (le client redemande toutes les 15 s).
+    const store = s.store;
+    if (store.backFrom !== null && d < store.backFrom && !store.hasDay(d)) {
+      partial = true;
+      if (!store.offline) store.day(d).catch(() => {});
+      continue;
+    }
+    const r = await s.store.getRange(d, Math.min(to, d + DAY), { maxDays: 1 });
+    partial ||= r.partial;
+    const prof = new SessionProfiler(bucket);
+    const t = r.trades;
+    for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
+    const [session] = prof.list();
+    if (!session) continue;
+    if (done && !r.partial) cache.set(key, session);
+    sessions.push(session);
+  }
+  return { bucket, partial, sessions };
 }
 
 export function heatmap(s, q) {

@@ -82,6 +82,11 @@ export class TradeStore extends EventEmitter {
     return Trades.concat([...hours.map((h) => this.back.get(h).slice(from, to)), this.live.slice(from, to)]);
   }
 
+  // Jour déjà disponible sans téléchargement (mémoire ou cache disque).
+  hasDay(d) {
+    return this.days.has(d) || fs.existsSync(path.join(this.dir, `${dayKey(d)}.bin`));
+  }
+
   // Un jour complet (antérieur au démarrage), dédupliqué si plusieurs requêtes l'attendent.
   day(d) {
     if (this.days.has(d)) {
