@@ -28,6 +28,7 @@ const PANE_SUB: Record<string, string> = {
   cvd: 'Delta cumulé depuis la première bougie chargée',
   oi: 'Open interest Binance (futures, pas de 5 min)',
   liq: 'Montant liquidé par bougie (futures)',
+  stats: 'Tableau par bougie : delta, volume, delta %, achats, ventes, trades',
 };
 type LayerDef = { label: string; sub: string; group: string };
 const STYLE_ICON: Record<string, IconSvgElement> = {
