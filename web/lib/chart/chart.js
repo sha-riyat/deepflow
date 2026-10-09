@@ -57,9 +57,15 @@ export class Chart {
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(root);
     attachInteractions(this);
+    // Une erreur de dessin ne doit pas arrêter la boucle : elle est signalée, l'image suivante réessaie.
     const loop = () => {
-      this.#frame();
       this.raf = requestAnimationFrame(loop);
+      try {
+        this.#frame();
+      } catch (err) {
+        if (!this.lastError || this.lastError.message !== err.message) console.error(err);
+        this.lastError = err;
+      }
     };
     this.raf = requestAnimationFrame(loop);
   }
