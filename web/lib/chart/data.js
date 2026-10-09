@@ -38,6 +38,7 @@ export class DataManager {
     this.heatBusy = false;
     this.heatNext = null;
     this.oi = [];
+    this.vwapAnchor = null; // sommes du jour avant la première bougie chargée (voir loadVwapAnchor)
   }
 
   // Charge la série la plus récente pour un type de bougie donné.
@@ -169,6 +170,18 @@ export class DataManager {
       this.onChange('profiles');
     } catch (err) {
       this.status = `Profils : ${err.message}`;
+    }
+  }
+
+  // Ancrage du VWAP : volume du jour antérieur à la première bougie chargée (klines Binance).
+  async loadVwapAnchor(t) {
+    try {
+      const r = await getJSON(`/api/vwap?t=${Math.floor(t)}`);
+      if (this.bars[0]?.t0 !== t) return; // historique prolongé entre-temps : réponse périmée
+      this.vwapAnchor = { ...r, first: t };
+      this.onChange('vwap');
+    } catch {
+      this.vwapAnchor = null;
     }
   }
 

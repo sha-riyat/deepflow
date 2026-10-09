@@ -1,6 +1,7 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
+const DAY = 86_400_000;
 const SLOTS = [100, 200, 500, 1e3, 2e3, 5e3, 1e4, 15e3, 3e4, 6e4, 12e4, 3e5, 6e5, 9e5, 18e5, 36e5];
 
 // Créneau des bulles : environ `px` pixels, et en bougies temps un diviseur ou un multiple de
@@ -49,6 +50,11 @@ export function requestData(chart, items) {
       chart.requests.profiles = key;
       chart.data.loadProfiles(from, tR, meta.fpBucket);
     }
+  }
+  const first = chart.data.bars[0];
+  if (layers.vwap && first && first.t0 % DAY !== 0 && chart.requests.vwap !== first.t0) {
+    chart.requests.vwap = first.t0; // VWAP du jour : ancrage avant la première bougie chargée
+    chart.data.loadVwapAnchor(first.t0);
   }
   if (items.length && chart.scale.xAt(items[0].t0, items) > -50 && !DERIVED.includes(chart.settings.style)) chart.data.loadOlder();
 }

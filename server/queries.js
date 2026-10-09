@@ -137,6 +137,28 @@ export async function profiles(s, q) {
   return { bucket, partial, sessions };
 }
 
+// Ancrage du VWAP journalier : sommes Σ p·q, Σ p²·q et Σ q de 00:00 UTC jusqu'à `t` (début de la
+// première bougie chargée), tirées des klines 1 min (volume en cotation / volume = VWAP exact de la
+// minute). Sans lui, le VWAP du jour ne partirait que de la première bougie chargée.
+export async function vwapAnchor(s, q) {
+  const t = Math.floor(num(q.t, nowOf(s)) / 60_000) * 60_000;
+  const day = Math.floor(t / DAY) * DAY;
+  if (t <= day) return { day, t: day, pv: 0, p2v: 0, v: 0 };
+  const rows = await s.rest.klines(s.cfg.symbol, '1m', { startTime: day, endTime: t - 1, limit: 1500 });
+  let pv = 0;
+  let p2v = 0;
+  let v = 0;
+  for (const k of rows) {
+    const vol = Number(k[5]);
+    if (!(vol > 0)) continue;
+    const quote = Number(k[7]);
+    pv += quote;
+    p2v += (quote * quote) / vol; // VWAP de la minute² × volume (variance intra-minute ignorée)
+    v += vol;
+  }
+  return { day, t, pv, p2v, v };
+}
+
 export function heatmap(s, q) {
   const now = nowOf(s);
   const to = num(q.to, now);

@@ -234,7 +234,7 @@ export class Chart {
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (st.style !== 'tpo' && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
-    if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s);
+    if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s, this.data.vwapAnchor);
     if (L.big) drawBigPrints(ctx, s, items, this.data.bigPrints());
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     if (L.signals) drawSignals(ctx, s, items, this.signals);

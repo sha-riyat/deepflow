@@ -56,8 +56,13 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, { naked = true }
   }
 }
 
-// VWAP cumulé par jour UTC, avec bandes à 1 et 2 écarts-types.
-export function drawVwap(ctx, items, geo, scale) {
+// VWAP cumulé par jour UTC, avec bandes à 1 et 2 écarts-types. `anchor` porte les sommes du jour
+// antérieures à la première bougie chargée (sinon le VWAP partirait de cette bougie).
+export function vwapStart(anchor, b) {
+  return anchor && anchor.first === b.t0 && anchor.day === Math.floor(b.t0 / DAY) * DAY ? [anchor.pv, anchor.p2v, anchor.v] : [0, 0, 0];
+}
+
+export function drawVwap(ctx, items, geo, scale, anchor = null) {
   const [i0, i1] = geo.range;
   if (i1 < i0) return;
   let day = null;
@@ -71,7 +76,7 @@ export function drawVwap(ctx, items, geo, scale) {
     const d = Math.floor(b.t0 / DAY);
     if (d !== day) {
       day = d;
-      pv = p2v = v = 0;
+      [pv, p2v, v] = vwapStart(anchor, b);
       if (i >= i0) breakAll();
     }
     pv += b.pv;
