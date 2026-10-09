@@ -1,5 +1,5 @@
-// Profils de session : volume par prix, POC, value area, TPO par sous-période de 30 min,
-// initial balance (première heure) et POC / value area « en développement » (état à la
+// Profils de session : volume par prix, POC, value area, TPO par sous-période (30 min par
+// défaut), initial balance (première heure) et POC / value area « en développement » (état à la
 // fin de chaque sous-période). Session = jour UTC, ou une plage libre (profil de plage visible).
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -10,9 +10,9 @@ const r3 = (v) => Math.round(v * 1000) / 1000;
 
 export class SessionProfiler {
   // range : [début, fin] pour un profil unique sur une plage libre (sinon un profil par jour UTC).
-  constructor(bucket, { range = null } = {}) {
+  constructor(bucket, { tpoMs = TPO_MS, range = null } = {}) {
     this.bucket = bucket;
-    this.tpoMs = TPO_MS;
+    this.tpoMs = tpoMs;
     this.range = range;
     this.sessions = new Map(); // début de session -> état
   }

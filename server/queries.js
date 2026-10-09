@@ -103,18 +103,22 @@ export async function bubbles(s, q) {
 // seule la session du jour est recalculée à chaque requête.
 const profileCache = new WeakMap();
 
+// Sous-périodes TPO acceptées (minutes).
+const TPO_MINUTES = [15, 30, 60];
+
 export async function profiles(s, q) {
   const now = nowOf(s);
   const to = Math.min(num(q.to, now), now);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
-  if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket });
+  const tpoMs = (TPO_MINUTES.includes(num(q.tpo, 30)) ? num(q.tpo, 30) : 30) * 60_000;
+  if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket, tpoMs });
   const from = Math.floor(Math.max(num(q.from, to - DAY), to - 14 * DAY) / DAY) * DAY;
   if (!profileCache.has(s.store)) profileCache.set(s.store, new Map());
   const cache = profileCache.get(s.store);
   const sessions = [];
   let partial = false;
   for (let d = from; d < to; d += DAY) {
-    const key = `${bucket}:${d}`;
+    const key = `${bucket}:${tpoMs}:${d}`;
     const done = d + DAY <= now;
     if (done && cache.has(key)) {
       sessions.push(cache.get(key));
@@ -130,7 +134,7 @@ export async function profiles(s, q) {
     }
     const r = await s.store.getRange(d, Math.min(to, d + DAY), { maxDays: 1 });
     partial ||= r.partial;
-    const prof = new SessionProfiler(bucket);
+    const prof = new SessionProfiler(bucket, { tpoMs });
     const t = r.trades;
     for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
     const [session] = prof.list();
@@ -142,9 +146,9 @@ export async function profiles(s, q) {
 }
 
 // Profil unique de la plage visible (3 jours au plus), comme le « visible range » de TradingView.
-async function rangeProfile(s, { from, to, bucket }) {
+async function rangeProfile(s, { from, to, bucket, tpoMs }) {
   const r = await s.store.getRange(from, to, { maxDays: 3 });
-  const prof = new SessionProfiler(bucket, { range: [from, to] });
+  const prof = new SessionProfiler(bucket, { tpoMs, range: [from, to] });
   const t = r.trades;
   for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
   return { bucket, partial: r.partial, sessions: prof.list() };

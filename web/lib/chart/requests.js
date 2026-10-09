@@ -54,7 +54,7 @@ export function requestData(chart, items) {
     if (!tpo && P.range === 'week') from = Math.floor((from - 4 * DAY) / (7 * DAY)) * 7 * DAY + 4 * DAY;
     if (visible) from = Math.max(tL, tR - 3 * DAY);
     const to = tpo ? now : tR;
-    const params = visible ? { mode: 'range' } : {};
+    const params = { tpo: tpo ? T.period : 30, ...(visible ? { mode: 'range' } : {}) };
     // Plage visible : rechargée quand la vue bouge d'un dixième de sa largeur.
     const step = visible ? Math.max(60_000, (tR - tL) / 10) : DAY;
     const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(now / 15_000)}:${JSON.stringify(params)}`;

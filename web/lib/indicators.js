@@ -52,7 +52,10 @@ export const OPTIONS = {
 
 // Réglages de la vue TPO (Market Profile), proposés dans le menu Indicateurs.
 export const TPO_OPTIONS = {
-  display: { label: 'Affichage', choices: [['letters', 'Lettres'], ['blocks', 'Blocs']] },
+  display: { label: 'Affichage', choices: [['letters', 'Lettres'], ['blocks', 'Blocs'], ['split', 'Éclaté (par période)']] },
+  color: { label: 'Couleurs', choices: [['va', 'Value area'], ['period', 'Par période']] },
+  period: { label: 'Sous-période', choices: [[30, '30 min'], [15, '15 min'], [60, '1 h']] },
+  singles: { label: 'Simples impressions', choices: [[1, 'Prolongées jusqu’au retest'], [0, 'Marquées seulement']] },
   volume: { label: 'Profil de volume', choices: [[1, 'À droite des lettres'], [0, 'Masqué']] },
   days: { label: 'Sessions', choices: [[5, '5 jours'], [3, '3 jours'], [7, '7 jours'], [14, '14 jours']] },
 };

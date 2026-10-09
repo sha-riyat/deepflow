@@ -6,6 +6,7 @@ import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
 const MULTS = [1, 2, 4, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000];
+const DAY = 86_400_000;
 const WEEKDAYS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const pad = (n) => String(n).padStart(2, '0');
 const cache = new WeakMap(); // session -> Map(mult -> profil TPO)
@@ -36,11 +37,28 @@ function rowMult(scale, bucket, minPx) {
   return MULTS.find((m) => px * m >= minPx) ?? MULTS[MULTS.length - 1];
 }
 
-export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volume = 1, naked = true } = {}) {
+// Couleur hexadécimale (compatible avec alpha()) d'une teinte HSL, saturation 70 %, luminosité 66 %.
+function hue(h) {
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const v = 0.66 - 0.7 * Math.min(0.66, 0.34) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// Couleur d'une période : du bleu (début de session) à l'orange (fin), comme les palettes par
+// période d'ATAS ou de TradingView.
+const periodColor = (k, n) => hue(210 - 190 * (n > 1 ? k / (n - 1) : 0));
+
+export function drawTpoView(ctx, items, geo, scale, opts = {}) {
+  const { display = 'letters', volume = 1, naked = true, color: colorMode = 'va', singles: extendSingles = 1 } = opts;
   const [i0, i1] = geo.range;
   if (i1 < i0 || !items.length) return;
   const bucket = items[0].session.bucket;
-  const letters = display === 'letters';
+  const letters = display !== 'blocks';
+  const split = display === 'split';
+  const zones = []; // simples impressions à prolonger
   const mult = rowMult(scale, bucket, letters ? 12 : 4);
   const y = (p) => scale.yOfPrice(p);
   const pocs = [];
@@ -54,8 +72,11 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
     const colL = cx - geo.slot / 2 + 10;
     const colR = cx + geo.slot / 2 - 6;
     const area = (colR - colL) * (volume ? 0.66 : 1);
+    const s = it.session;
+    const nPeriods = Math.max(1, Math.round(DAY / (s.tpoMs ?? 1_800_000)));
     let maxN = 1;
-    for (const ks of tp.letters.values()) maxN = Math.max(maxN, ks.length);
+    if (split) for (const ks of tp.letters.values()) maxN = Math.max(maxN, ks[ks.length - 1] + 1);
+    else for (const ks of tp.letters.values()) maxN = Math.max(maxN, ks.length);
     const cw = Math.max(1.5, Math.min(11, area / maxN));
     const rowH = Math.abs(y(0) - y(step));
     const yRow = (r) => y((r + 0.5) * step);
@@ -73,8 +94,9 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
     for (const [r, ks] of tp.letters) {
       const inVa = r >= tp.val && r <= tp.vah;
       ks.forEach((k, n) => {
-        const color = k < 2 ? C.ember : r === tp.poc ? C.white : inVa ? C.pale : C.graphite;
-        const xc = colL + (n + 0.5) * cw;
+        const ib = k < (s.ibN ?? 2);
+        const color = colorMode === 'period' ? periodColor(k, nPeriods) : ib ? C.ember : r === tp.poc ? C.white : inVa ? C.pale : C.graphite;
+        const xc = colL + ((split ? k : n) + 0.5) * cw; // éclaté : chaque période dans sa colonne
         if (useLetters) {
           ctx.fillStyle = color;
           ctx.fillText(TPO_LETTERS[k % TPO_LETTERS.length], xc, yRow(r) + 0.5);
@@ -84,9 +106,21 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
         }
       });
     }
-    // Simples impressions : trait bleu à gauche ; initial balance : barre ember.
+    // Simples impressions : trait bleu à gauche (et zone prolongée) ; initial balance : barre ember.
     ctx.fillStyle = alpha('#479ffa', 0.85);
     for (const r of tp.singles) ctx.fillRect(colL - 5, y((r + 1) * step) + 0.5, 2, Math.max(1, rowH - 1));
+    for (const [a, b] of runs(tp.singles)) zones.push({ i, x: colR, lo: a * step, hi: (b + 1) * step });
+    // Poor high / poor low : au moins deux TPO à l'extrême, enchère sans excès (souvent revisitée).
+    for (const [row, label] of [[tp.hi, 'Poor high'], [tp.lo, 'Poor low']]) {
+      if ((tp.letters.get(row)?.length ?? 0) < 2) continue;
+      const yy = label === 'Poor high' ? y((row + 1) * step) : y(row * step);
+      line(ctx, colL, colR, yy, alpha(C.ember, 0.7), [2, 3]);
+      ctx.font = font(9, 600);
+      ctx.fillStyle = C.ember;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = label === 'Poor high' ? 'bottom' : 'top';
+      ctx.fillText(label, colR, yy + (label === 'Poor high' ? -1 : 1));
+    }
     if (tp.ibLo !== null) {
       ctx.fillStyle = C.ember;
       ctx.fillRect(colL - 8, y((tp.ibHi + 1) * step), 2, y(tp.ibLo * step) - y((tp.ibHi + 1) * step));
@@ -102,7 +136,8 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
       ctx.fill();
     };
     marker(colL - 1, yRow(tp.openRow), 1, C.mist);
-    marker(colL + (tp.letters.get(tp.closeRow)?.length ?? 1) * cw + 7, yRow(tp.closeRow), -1, C.white);
+    const closeN = split ? (s.periods[s.periods.length - 1]?.[0] ?? 0) + 1 : tp.letters.get(tp.closeRow)?.length ?? 1;
+    marker(colL + closeN * cw + 7, yRow(tp.closeRow), -1, C.white);
 
     if (volume) drawSideVolume(ctx, it.session, mult, { x0: colL + area + 6, x1: colR, y, step });
 
@@ -119,6 +154,17 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
     ctx.fillStyle = C.graphite;
     ctx.fillText(`POC ${fmt((tp.poc + 0.5) * step)} · VA ${fmt(tp.val * step)}–${fmt((tp.vah + 1) * step)}`, colL - 8, scale.h - 8);
     pocs.push({ i, price: (tp.poc + 0.5) * step, x: colR, tp, step });
+  }
+
+  // Simples impressions des sessions passées, prolongées jusqu'à ce qu'une session les retraverse.
+  if (extendSingles) {
+    for (const z of zones) {
+      const k = items.findIndex((it, j) => j > z.i && it.l < z.hi && it.h > z.lo);
+      const x1 = k < 0 ? scale.w : geo.x(items[k], k) - geo.slot / 2;
+      if (z.i === items.length - 1 || x1 <= z.x) continue;
+      ctx.fillStyle = alpha('#479ffa', 0.09);
+      ctx.fillRect(z.x, y(z.hi), x1 - z.x, y(z.lo) - y(z.hi));
+    }
   }
 
   // Session en cours : POC, VAH et VAL prolongés jusqu'au bord ; sessions passées : POC non testés.
@@ -138,6 +184,17 @@ export function drawTpoView(ctx, items, geo, scale, { display = 'letters', volum
     line(ctx, p.x, scale.w, y(p.price), alpha(C.ember, 0.55), [6, 4]);
     pill(ctx, scale.w - 6, y(p.price), `nPOC ${fmt(p.price)}`, { bg: C.obsidian, fg: C.ember, size: 10, align: 'right' });
   }
+}
+
+// Suites de lignes consécutives : [[début, fin], ...].
+function runs(rows) {
+  const out = [];
+  for (const r of rows) {
+    const last = out[out.length - 1];
+    if (last && r === last[1] + 1) last[1] = r;
+    else out.push([r, r]);
+  }
+  return out;
 }
 
 function line(ctx, x0, x1, yy, color, dash) {
