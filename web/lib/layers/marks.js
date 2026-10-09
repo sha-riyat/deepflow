@@ -3,21 +3,51 @@
 import { fmt, qty } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
-export function drawBubbles(ctx, scale, items, rows, slot) {
-  let max = 0;
+// Bulles à la Bookmap : une par créneau, centrée sur son milieu et sur son VWAP. L'aire suit le
+// volume rapporté à la moyenne des créneaux visibles (taille stable d'une vue à l'autre) ; le
+// camembert donne la part acheteuse (vert) et vendeuse (rouge). Les plus grosses sont dessinées
+// d'abord pour que les petites restent visibles par-dessus.
+export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 1 } = {}) {
   const vis = [];
-  for (const r of rows) {
-    const x = scale.xAt(r[0] + slot / 2, items);
-    if (x < -30 || x > scale.w + 30) continue;
-    vis.push([x, r]);
-    max = Math.max(max, r[2]);
+  let sum = 0;
+  for (const [t0, p, buy, sell] of rows) {
+    const x = scale.xAt(t0 + slot / 2, items);
+    if (!(x >= -30 && x <= scale.w + 30)) continue;
+    const y = scale.yOfPrice(p);
+    if (y < -30 || y > scale.h + 30) continue;
+    vis.push([x, y, buy, sell]);
+    sum += buy + sell;
   }
-  for (const [x, [, p, q, side]] of vis) {
+  if (!vis.length) return;
+  const avg = sum / vis.length;
+  const shown = vis.filter((v) => v[2] + v[3] >= filter * avg).sort((a, b) => b[2] + b[3] - (a[2] + a[3]));
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const [x, y, buy, sell] of shown) {
+    const total = buy + sell;
+    const r = Math.min(30, 2 + 6 * size * Math.sqrt(total / avg));
+    const start = -Math.PI / 2;
+    const cut = start + 2 * Math.PI * (buy / total);
+    for (const [a0, a1, color] of [[start, cut, C.growth], [cut, start + 2 * Math.PI, C.loss]]) {
+      if (a1 - a0 < 1e-3) continue;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, r, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle = alpha(color, 0.5);
+      ctx.fill();
+    }
     ctx.beginPath();
-    ctx.arc(x, scale.yOfPrice(p), 1.5 + 20 * Math.sqrt(q / max), 0, Math.PI * 2);
-    ctx.fillStyle = alpha(side > 0 ? C.growth : C.loss, 0.32);
-    ctx.fill();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = alpha(buy >= sell ? C.growth : C.loss, 0.9);
+    ctx.stroke();
+    if (r < 15) continue;
+    ctx.font = font(10, 600);
+    ctx.fillStyle = C.white;
+    ctx.fillText(qty(total), x, y + 0.5);
   }
+  ctx.textAlign = 'left';
 }
 
 export function drawBigPrints(ctx, scale, items, all, limit = 25) {

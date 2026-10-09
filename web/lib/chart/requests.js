@@ -1,6 +1,16 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
+const SLOTS = [100, 200, 500, 1e3, 2e3, 5e3, 1e4, 15e3, 3e4, 6e4, 12e4, 3e5, 6e5, 9e5, 18e5, 36e5];
+
+// Créneau des bulles : environ `px` pixels, et en bougies temps un diviseur ou un multiple de
+// l'intervalle, pour que chaque bulle tombe dans une seule bougie.
+export function bubbleSlot(msPerPx, px, tf = null) {
+  const target = msPerPx * px;
+  if (tf && target >= tf) return tf * Math.max(1, Math.round(target / tf));
+  const fits = SLOTS.filter((v) => !tf || tf % v === 0);
+  return fits.find((v) => v >= target) ?? fits[fits.length - 1] ?? SLOTS[0];
+}
 
 export function requestData(chart, items) {
   const now = Date.now();
@@ -24,7 +34,7 @@ export function requestData(chart, items) {
   }
   if (layers.bubbles || layers.big) {
     const span = Math.max(1000, tR - tL);
-    const slot = Math.max(100, Math.round(span / (s.w / 6) / 100) * 100);
+    const slot = bubbleSlot(span / s.w, 8, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
     const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}`;
     if (key !== chart.requests.bubbles && span <= 86_400_000) {
       chart.requests.bubbles = key;

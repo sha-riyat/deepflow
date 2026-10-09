@@ -61,7 +61,8 @@ export async function bars(s, q) {
   };
 }
 
-// Volume agrégé par créneau et par côté (bulles), plus les gros prints de la plage.
+// Bulles à la Bookmap : une par créneau de temps, au VWAP du créneau, avec le volume acheteur et
+// vendeur (camembert) ; plus les gros prints (ordres agresseurs regroupés) de la plage.
 export async function bubbles(s, q) {
   const now = nowOf(s);
   const to = Math.min(num(q.to, now), now);
@@ -72,10 +73,10 @@ export async function bubbles(s, q) {
   const prints = new Map();
   for (let i = 0; i < t.n; i++) {
     const side = t.s[i];
-    const k = Math.floor(t.t[i] / slot) * 2 + (side > 0 ? 1 : 0);
-    const g = slots.get(k) ?? [0, 0];
+    const k = Math.floor(t.t[i] / slot);
+    const g = slots.get(k) ?? [0, 0, 0];
     g[0] += t.p[i] * t.q[i];
-    g[1] += t.q[i];
+    g[side > 0 ? 1 : 2] += t.q[i];
     slots.set(k, g);
     const pk = t.t[i] * 2 + (side > 0 ? 1 : 0);
     const pr = prints.get(pk) ?? [0, 0];
@@ -83,13 +84,14 @@ export async function bubbles(s, q) {
     pr[1] += t.q[i];
     prints.set(pk, pr);
   }
-  const rows = [...slots].map(([k, [pq, qty]]) => [Math.floor(k / 2) * slot, pq / qty, Math.round(qty * 1000) / 1000, k % 2 ? 1 : -1]);
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  const rows = [...slots].map(([k, [pq, buy, sell]]) => [k * slot, pq / (buy + sell), r3(buy), r3(sell)]);
   const live = s.engine.flow.bigThreshold;
   const sizes = [...prints.values()].map((p) => p[1]).sort((a, b) => a - b);
   const threshold = Number.isFinite(live) ? live : sizes[Math.floor(sizes.length * 0.995)] ?? Infinity;
   const big = [...prints]
     .filter(([, [, qty]]) => qty >= threshold)
-    .map(([k, [pq, qty]]) => [Math.floor(k / 2), pq / qty, Math.round(qty * 1000) / 1000, k % 2 ? 1 : -1])
+    .map(([k, [pq, qty]]) => [Math.floor(k / 2), pq / qty, r3(qty), k % 2 ? 1 : -1])
     .slice(-3000);
   return { slot, rows, big, threshold: Number.isFinite(threshold) ? threshold : null };
 }

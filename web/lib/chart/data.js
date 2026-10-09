@@ -109,11 +109,11 @@ export class DataManager {
     if (this.ticks.length > 3000) this.ticks.shift();
     const slot = this.bubbles.slot;
     for (const [p, q, side, T] of tick.tr) {
-      const key = Math.floor(T / slot) * 2 + (side > 0 ? 1 : 0);
-      const g = this.liveSlots.get(key) ?? [Math.floor(T / slot) * slot, 0, 0, side > 0 ? 1 : -1];
+      const t0 = Math.floor(T / slot) * slot;
+      const g = this.liveSlots.get(t0) ?? [t0, 0, 0, 0]; // [début, prix × qté, achats, ventes]
       g[1] += p * q;
-      g[2] += q;
-      this.liveSlots.set(key, g);
+      g[side > 0 ? 2 : 3] += q;
+      this.liveSlots.set(t0, g);
     }
     for (const [p, q, side] of tick.an?.big ?? []) this.liveBig.push([tick.t, p, q, side]);
     if (this.liveBig.length > 2000) this.liveBig.splice(0, this.liveBig.length - 2000);
@@ -137,9 +137,9 @@ export class DataManager {
     else if (!last || bar.t0 >= last.t0) bars.push(bar);
   }
 
-  // Bulles historiques + agrégation du direct depuis la fin de la plage chargée.
+  // Bulles [début, VWAP, achats, ventes] : plage chargée + agrégation du direct au-delà.
   bubbleRows() {
-    const live = [...this.liveSlots.values()].filter((g) => g[0] >= this.bubbles.to).map((g) => [g[0], g[1] / g[2], g[2], g[3]]);
+    const live = [...this.liveSlots.values()].filter((g) => g[0] >= this.bubbles.to).map((g) => [g[0], g[1] / (g[2] + g[3]), g[2], g[3]]);
     return this.bubbles.rows.concat(live);
   }
 
@@ -151,7 +151,11 @@ export class DataManager {
     try {
       const r = await getJSON(`/api/bubbles?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), slot: Math.round(slot) })}`);
       if (r.slot !== this.bubbles.slot) this.liveSlots.clear();
-      this.bubbles = { ...r, to: Math.floor(to) };
+      // Le créneau en cours à la date de fin reste agrégé en direct : pas de bulle coupée en deux.
+      const end = Math.floor(to / r.slot) * r.slot;
+      r.rows = r.rows.filter((row) => row[0] < end);
+      for (const t0 of this.liveSlots.keys()) if (t0 < end) this.liveSlots.delete(t0);
+      this.bubbles = { ...r, to: end };
       this.onChange('bubbles');
     } catch {
       // nouvelle tentative au prochain déplacement
