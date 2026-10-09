@@ -202,9 +202,10 @@ export class DataManager {
     }
   }
 
-  async loadOI(period) {
+  // Open interest Binance (futures) : 500 points au plus, se terminant à `to`.
+  async loadOI(period, to) {
     try {
-      this.oi = (await getJSON(`/api/oi?period=${period}`)).rows;
+      this.oi = (await getJSON(`/api/oi?${new URLSearchParams({ period, to: Math.floor(to) })}`)).rows;
       this.onChange('oi');
     } catch {
       this.oi = [];
