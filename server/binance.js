@@ -42,8 +42,11 @@ export class BinanceFeed extends EventEmitter {
     const ws = new WebSocket(url);
     this.sockets.add(ws);
     ws.onopen = () => {
-      this.emit('status', `${name} connected`);
-      if (name === 'depth') this.#resync();
+      // L'état affiché suit le carnet : « synced » seulement quand il est à jour.
+      if (name === 'depth') {
+        this.emit('status', 'depth connected');
+        this.#resync();
+      } else if (this.synced) this.emit('status', 'synced');
     };
     ws.onmessage = (ev) => this.#onMessage(JSON.parse(ev.data).data);
     ws.onerror = () => {}; // `close` suit toujours une erreur
