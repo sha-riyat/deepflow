@@ -8,6 +8,7 @@ import { Recorder } from './recorder.js';
 import { Engine } from './engine/engine.js';
 import { TradeStore, DAY } from './history/store.js';
 import { HeatStore } from './heatstore.js';
+import { LiquidationStore } from './liquidations.js';
 import { formatSignal, formatRejection } from './format.js';
 
 // Plus petit pas « rond » (1, 2, 2,5, 5 × 10^k) supérieur ou égal à x, et au moins un tick.
@@ -40,6 +41,8 @@ export class Session extends EventEmitter {
     const suffix = this.mode === 'replay' ? '-replay' : '';
     this.store = new TradeStore({ market: cfg.market, symbol, dir: cfg.dataDir, rest: this.rest, offline: this.mode === 'replay' });
     this.heat = new HeatStore({ bucket: cfg.bucket, hours: cfg.heatHours });
+    this.liqs = new LiquidationStore(cfg.dataDir, cfg.market, symbol);
+    this.mark = null;
     this.engine = new Engine(cfg, this.info, { signalsFile: path.join(cfg.dataDir, `signals-${symbol}-${cfg.market}${suffix}.ndjson`) });
     this.domVol = new Map(); // prix -> [achats, ventes] de la session UTC en cours
     this.domDay = null;
@@ -114,9 +117,15 @@ export class Session extends EventEmitter {
       newSignal = null;
       const an = engine.onFrame(f);
       this.alerts.evaluate({ symbol: cfg.symbol, f, flow: engine.flow, base: this.info.base, newSignal });
-      hub.tick({ t: f.t, bid: f.bid, ask: f.ask, tr: f.tr, an: { cvd: an.cvd, delta: an.delta, imb: an.imb, big: an.big } });
+      hub.tick({ t: f.t, bid: f.bid, ask: f.ask, tr: f.tr, liq: f.liq ?? [], an: { cvd: an.cvd, delta: an.delta, imb: an.imb, big: an.big } });
     });
     store.on('progress', (st) => hub.state('history', st));
+    source.on('liquidation', (l) => this.liqs.add(l));
+    source.on('mark', (m) => {
+      this.mark = m;
+      engine.mark = m;
+      hub.state('mark', m);
+    });
 
     engine.on('signal', (s) => {
       hub.signal(s);

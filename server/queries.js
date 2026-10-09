@@ -130,3 +130,11 @@ export async function tickers(rest) {
   tickerCache = { t: Date.now(), data };
   return data;
 }
+
+// Liquidations enregistrées sur la plage (direct uniquement : pas d'historique public Binance).
+export function liquidations(s, q) {
+  const now = nowOf(s);
+  const to = Math.min(num(q.to, now), now);
+  const from = num(q.from, to - 86_400_000);
+  return { rows: s.liqs.range(from, to), since: s.liqs.rows[0]?.[0] ?? null };
+}

@@ -33,7 +33,9 @@ export class BinanceFeed extends EventEmitter {
   start() {
     const s = this.symbol.toLowerCase();
     this.#connect(`${this.ep.depthWs}?streams=${s}@depth@100ms`, 'depth');
-    this.#connect(`${this.ep.tradeWs}?streams=${s}@aggTrade`, 'trades');
+    // Futures : liquidations et prix de marque (financement) sur la même route que les trades.
+    const extra = this.market === 'futures' ? `/${s}@forceOrder/${s}@markPrice@1s` : '';
+    this.#connect(`${this.ep.tradeWs}?streams=${s}@aggTrade${extra}`, 'trades');
   }
 
   // Une connexion par flux ; reconnexion automatique, resynchro du carnet si c'est la profondeur.
@@ -69,6 +71,15 @@ export class BinanceFeed extends EventEmitter {
     } else if (data.e === 'depthUpdate') {
       if (this.synced) this.#applyDiff(data);
       else this.buffer.push(data);
+    } else if (data.e === 'forceOrder') {
+      // Liquidation : ordre SELL = position longue liquidée. Binance ne pousse que la dernière
+      // liquidation de chaque seconde par symbole : c'est un échantillon, pas un relevé complet.
+      const o = data.o;
+      const q = Number(o.z) || Number(o.q);
+      const p = Number(o.ap) || Number(o.p);
+      this.emit('liquidation', { t: o.T, side: o.S === 'SELL' ? -1 : 1, p, q });
+    } else if (data.e === 'markPriceUpdate') {
+      this.emit('mark', { t: data.E, mark: Number(data.p), index: Number(data.i), funding: Number(data.r), nextFunding: data.T });
     }
   }
 

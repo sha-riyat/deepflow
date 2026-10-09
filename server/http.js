@@ -65,13 +65,15 @@ async function route(req, res, ctx) {
     case 'GET /stream':
       return hub.attach(req, res);
     case 'GET /api/state':
-      return json(res, 200, { ...session.engine.state(), meta: session.meta(), history: session.store.status() });
+      return json(res, 200, { ...session.engine.state(), meta: session.meta(), history: session.store.status(), mark: session.mark });
     case 'GET /api/bars':
       return json(res, 200, await Q.bars(session, q));
     case 'GET /api/bubbles':
       return json(res, 200, await Q.bubbles(session, q));
     case 'GET /api/profile':
       return json(res, 200, await Q.profiles(session, q));
+    case 'GET /api/liquidations':
+      return json(res, 200, Q.liquidations(session, q));
     case 'GET /api/oi':
       return json(res, 200, await Q.openInterest(session, q));
     case 'GET /api/tickers':
