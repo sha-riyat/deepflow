@@ -59,7 +59,14 @@ export class Flow {
     }
     const big = this.#prints(f.tr).filter((pr) => pr.q >= this.bigThreshold);
     this.cvd += buy - sell;
-    this.frames.push({ t: f.t, bid: f.bid, ask: f.ask, mid: (f.bid + f.ask) / 2, buy, sell, rows, big });
+    // Liquidations de la frame : montant par côté (-1 = longues liquidées, 1 = courtes).
+    let liqLong = 0;
+    let liqShort = 0;
+    for (const [p, q, side] of f.liq ?? []) {
+      if (side < 0) liqLong += p * q;
+      else liqShort += p * q;
+    }
+    this.frames.push({ t: f.t, bid: f.bid, ask: f.ask, mid: (f.bid + f.ask) / 2, buy, sell, rows, big, liqLong, liqShort });
     while (this.frames[0].t < f.t - this.cfg.lookbackMs) this.frames.shift();
 
     this.#imbalance(f);
@@ -215,6 +222,13 @@ export class Flow {
       n++;
     }
     return { high, low, n };
+  }
+
+  // Montant liquidé sur la durée : side -1 = positions longues, 1 = positions courtes.
+  liquidated(ms, side) {
+    let n = 0;
+    for (const fr of this.#recent(ms)) n += side < 0 ? fr.liqLong : fr.liqShort;
+    return n;
   }
 
   bigPrints(ms, side) {

@@ -25,6 +25,7 @@ export class Engine extends EventEmitter {
     this.lastRejection = null;
     this.frame = null;
     this.analytics = null;
+    this.mark = null; // prix de marque et financement (futures), fournis par la session
   }
 
   onFrame(f) {
@@ -62,7 +63,7 @@ export class Engine extends EventEmitter {
       for (const dir of [1, -1]) {
         const cand = fn({ ...ctx, cfg: setupCfg }, dir);
         if (!cand) continue;
-        const res = buildPlan(cand, { f, risk: cfg.risk, info: this.info, atr: this.bars.atr(), walls: flow.walls });
+        const res = buildPlan(cand, { f, risk: cfg.risk, info: this.info, atr: this.bars.atr(), walls: flow.walls, mark: this.mark });
         if (res.rejected) {
           this.#reject(f.t, cand, res.rejected);
           continue;

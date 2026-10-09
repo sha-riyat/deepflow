@@ -4,6 +4,16 @@
 const fmt = (v, d = 2) => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: d });
 const sgn = (v, d = 2) => (v >= 0 ? '+' : '') + fmt(v, d);
 
+// Contexte crypto : liquidations récentes. À l'absorption, celles du camp qui capitule (longues
+// liquidées sur un mur acheteur) ; à la cassure, celles du camp piégé (courtes liquidées à la
+// hausse), qui alimentent le mouvement. Information seulement, ne conditionne pas le signal.
+function liquidationContext(flow, ms, side) {
+  const n = flow.liquidated(ms, side);
+  if (n <= 0) return [];
+  const who = side < 0 ? 'longues' : 'courtes';
+  return [`${fmt(n, 0)} de positions ${who} liquidées en ${ms / 1000} s`];
+}
+
 // Absorption : un mur encaisse une agression anormale sans céder, puis le delta se retourne.
 export function absorption({ f, flow, cfg, bucket, base }, dir) {
   const best = dir > 0 ? f.bid : f.ask;
@@ -43,6 +53,7 @@ export function absorption({ f, flow, cfg, bucket, base }, dir) {
       `Le mur n'a pas cédé : extrême touché ${fmt(extreme)}, mur encore à ${Math.round((wall.q / wall.peak) * 100)} % de sa taille max`,
       `Delta ${cfg.confirmMs / 1000} s retourné dans le sens du trade (${sgn(confirm, 3)} ${base})`,
       `Déséquilibre du carnet ${sgn(flow.imb)}`,
+      ...liquidationContext(flow, cfg.windowMs, -dir),
     ],
   };
 }
@@ -72,6 +83,7 @@ export function breakout({ f, flow, cfg, bucket, base }, dir) {
     `Carnet déséquilibré dans le sens du trade (${sgn(flow.imb)})`,
   ];
   if (vwap !== null) why.push(`Prix ${dir > 0 ? 'au-dessus' : 'en dessous'} du VWAP du jour (${fmt(vwap)})`);
+  why.push(...liquidationContext(flow, cfg.windowMs, dir)); // cassure haussière : courtes liquidées (achats forcés)
   return {
     dir,
     setup: 'breakout',

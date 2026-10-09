@@ -91,7 +91,9 @@ test('moteur : absorption sur un mur acheteur → signal LONG complet', () => {
     ];
     if (t >= 45_000 && t < 58_000) tr.push([996.5, 2, -1, ++T]); // vendeurs agressifs sur le mur
     if (t >= 58_000) tr.push([996.6, 1, 1, ++T]); // retournement du delta
-    engine.onFrame(frame(t, 996.5, 996.6, tr, 995));
+    const f = frame(t, 996.5, 996.6, tr, 995);
+    if (t === 50_000) f.liq = [[996.4, 30, -1, t]]; // positions longues liquidées sur le mur
+    engine.onFrame(f);
     if (signals.length) break;
   }
 
@@ -102,6 +104,7 @@ test('moteur : absorption sur un mur acheteur → signal LONG complet', () => {
   assert.equal(s.entry, 996.6);
   assert.ok(s.stop < 995, 'stop sous le mur');
   assert.ok(s.why.length >= 4);
+  assert.ok(s.why.some((w) => /positions longues liquidées/.test(w)), s.why.join(' | '));
   assert.ok(s.qty > 0 && s.riskUsd <= 5);
   assert.equal(s.status, 'open');
 });

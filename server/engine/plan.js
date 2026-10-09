@@ -10,7 +10,7 @@ function roundTo(value, step, mode) {
   return Number((k * step).toFixed(d));
 }
 
-export function buildPlan(cand, { f, risk, info, atr, walls }) {
+export function buildPlan(cand, { f, risk, info, atr, walls, mark = null }) {
   const { dir } = cand;
   const tick = info.tickSize;
   const entry = dir > 0 ? f.ask : f.bid; // entrée au marché
@@ -52,6 +52,11 @@ export function buildPlan(cand, { f, risk, info, atr, walls }) {
   }
 
   const riskUsd = qty * dist;
+  // Financement (futures) : coût si le trade le paie et qu'une échéance tombe avant la sortie forcée.
+  if (mark && mark.funding * dir > 0 && mark.nextFunding - f.t < risk.maxHoldMs) {
+    const cost = notional * Math.abs(mark.funding);
+    notes.push(`Financement ${fmt(mark.funding * 100, 4)} % à payer dans ${Math.round((mark.nextFunding - f.t) / 60_000)} min : ${fmt(cost)} ${info.quote} (${fmt(cost / riskUsd, 2)}R)`);
+  }
   const feesUsd = notional * risk.takerFee * 2; // aller-retour au marché, hypothèse prudente
   const feeR = feesUsd / riskUsd;
   if (feeR > risk.maxFeeR) {
