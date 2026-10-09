@@ -36,7 +36,8 @@ Ouvrir http://localhost:3000. Le moteur observe le marché 5 minutes avant d'ém
 | `npm run collector` | Collecteur seul |
 | `npm run signal` | Signal actif et état du moteur dans le terminal |
 | `npm run backtest -- <fichier>` | Rejoue un enregistrement à vitesse max, puis statistiques |
-| `npm test` | Tests du moteur sur données synthétiques |
+| `npm test` | Tests unitaires (moteur, bougies, profils, TPO, bulles, alertes, historique) |
+| `npm run verify [-- SYMBOL]` | Compare nos calculs aux données officielles Binance de la veille (réseau requis) |
 
 ## Interface
 
@@ -45,9 +46,45 @@ Ouvrir http://localhost:3000. Le moteur observe le marché 5 minutes avant d'ém
   renko), style (bougies, creuses, barres, Heikin Ashi, volume, ligne, aire, baseline, escalier,
   colonnes, haut-bas, Line break, Kagi, Point & Figure, TPO), footprint (6 modes), Indicateurs,
   Alerte, réglages, plein écran.
-- **Graphique** : historique défilable à l'infini, zoom à la molette, heatmap de liquidité,
-  bulles de trades, gros prints, profils de session, POC non testés, VWAP et bandes, signaux,
-  lignes d'alerte, compte à rebours de clôture ; panneaux volume, delta, CVD, open interest.
+- **Indicateurs** (menu sur deux colonnes) : flux d'ordres (heatmap, bulles de trades, gros prints,
+  liquidations, bid/ask), trading (signaux, alertes), vue Market Profile (TPO), profils et niveaux
+  (profil de session, POC non testés, VWAP), panneaux (volume, delta, CVD, open interest,
+  liquidations).
+- **Légende** : une ligne par indicateur actif avec sa valeur courante (VWAP, POC et value area,
+  liquidations longues / courtes en vue, seuil des gros prints, signal en cours…) ; au survol,
+  réglages et retrait. Les réglages sont mémorisés dans le navigateur.
+- **Panneaux** : au survol, valeurs de la bougie sous le curseur (volume, achats, ventes ; delta et
+  % du volume ; CVD ; open interest en contrats et en dollars avec sa variation ; liquidations
+  longues et courtes) et ligne horizontale avec la valeur du panneau à cette hauteur.
+- **Graphique** : historique défilable à l'infini, zoom à la molette ou par les commandes du bas
+  (visibles quand la souris s'en approche), compte à rebours de clôture.
+- **Bulles de trades** (cercles, à la Bookmap / DeepCharts) : une bulle par créneau de temps
+  (environ 8 px, choisi pour tomber dans une seule bougie), placée au VWAP du créneau ; taille
+  rapportée à la moyenne des créneaux visibles (échelle racine, linéaire ou logarithmique) ; couleur
+  achats / ventes (camembert), delta ou volume seul ; filtre par rapport à la moyenne.
+- **Gros prints** (carrés, à la ATAS / DeepCharts) : fills d'un même ordre agresseur regroupés
+  (même heure, même côté), au prix moyen de l'ordre ; seuil automatique (0,5 % des ordres les plus
+  gros) ou en montant (100 k $, 500 k $, 1 M $) ; nombre affiché et étiquettes réglables.
+- **Liquidations** (losanges, à la Exocharts / Kiyotaka) : au prix moyen d'exécution, regroupées par
+  bougie et par côté (cascades) ou une par liquidation ; montant minimum en dollars.
+- **Footprint** (menu Footprint, modes d'ATAS / LuxAlgo / Exocharts) : bid × ask, échelle bid × ask,
+  delta, volume, trades, volume + delta, profil bid / ask, profil delta. Cases en déséquilibre
+  diagonal encadrées (ratio 150 à 400 %), déséquilibres empilés (2 à 5 niveaux) en zones prolongées
+  jusqu'au retest, enchères inachevées (acheteurs et vendeurs sur l'extrême) prolongées jusqu'au
+  retour du prix, bougie à gauche ou au centre entre bid et ask, delta sous chaque bougie, lignes
+  regroupées automatiquement au dézoom.
+- **Profil de volume** : par jour UTC, par semaine (depuis lundi) ou sur la plage visible (épinglé à
+  droite, comme le « visible range » de TradingView) ; type volume, achats / ventes ou delta ; value
+  area en zone et lignes ; POC et value area en développement (en escalier).
+- **Vue TPO** : une colonne par session UTC, une lettre par sous-période (30 min, 15 min ou 1 h ;
+  A à X puis a à x), lettres, blocs ou vue éclatée (chaque période dans sa colonne), couleurs selon
+  la value area ou par période ; lignes regroupées selon le zoom. POC et value area (70 %) au
+  nombre de TPO, POC le plus proche du centre en cas d'égalité ; initial balance (première heure)
+  en barre orange, simples impressions en trait bleu prolongées jusqu'au retest, poor high / poor
+  low (au moins deux TPO à l'extrême), ouverture et clôture en triangles, profil de volume à
+  droite, POC / VAH / VAL de la session en cours et POC non testés prolongés.
+- **Panneau Statistiques** : tableau par bougie (delta, volume, delta %, achats, ventes, trades),
+  fond d'intensité relative à la vue, valeurs dès que la colonne est assez large.
 - **Rail à droite** : Signal, DOM, Trades, Marchés, Alertes, Compte (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
 
@@ -59,6 +96,26 @@ Les choix d'interface sont décrits dans `docs/ux-ui.md`.
 - Footprint, bougies d'activité, profils, bulles : trades agrégés des archives quotidiennes
   Binance Vision (cache dans `data/cache`) et, pour le jour en cours, rattrapage REST.
 - Heatmap : mémoire du collecteur (4 h par défaut) ; au-delà, seul `RECORD=1` conserve le carnet.
+- Profils et TPO : sessions des jours terminés mises en cache ; un jour d'archive absent est
+  téléchargé en arrière-plan et apparaît au rafraîchissement suivant (15 s).
+- Liquidations (futures) : flux `forceOrder` enregistré par le collecteur depuis son premier
+  lancement (`data/liquidations-*.ndjson`) ; pas d'historique antérieur côté Binance.
+
+## Spécificités crypto (futures USD-M)
+
+- Session = jour UTC (00:00 → 24:00), comme la bougie journalière de Binance ; marché ouvert en
+  continu, donc 48 périodes TPO par session et initial balance de 00:00 à 01:00 UTC.
+- Prix de marque et financement (`markPrice@1s`) dans la barre d'état ; le plan de trade signale
+  le coût du financement si une échéance tombe avant la sortie forcée.
+- Liquidations dans les raisons d'un signal (capitulation sur une absorption, positions piégées
+  sur une cassure), en information seulement.
+- VWAP du jour ancré à 00:00 UTC : les sommes antérieures à la première bougie chargée viennent des
+  klines 1 min (volume en cotation / volume = VWAP exact), quelle que soit la profondeur chargée.
+- Open interest : historique Binance (`openInterestHist`), 30 derniers jours, période adaptée à
+  l'intervalle des bougies (5 min au minimum).
+- `npm run verify` contrôle sur la veille : bougies 1 min, volume et volume acheteur, trades REST
+  vs archive, volume du profil, TPO, bulles (VWAP et volume acheteur), VWAP ancré, carnet local vs
+  instantané.
 
 ## Signaux
 
@@ -87,5 +144,11 @@ par le levier. Refus si frais > 0,35R, mur opposé avant la cible 1 ou taille so
   0,3 % du prix pour que les frais restent sous 0,35R.
 - Binance ne publie pas de flux ordre par ordre : pas de détection d'icebergs fiable.
 - Le suivi papier suppose une exécution au bid/ask observé, sans glissement supplémentaire.
+- Un aggTrade porte l'heure de son premier fill : environ 0,01 % du volume tombe dans la minute
+  voisine par rapport aux klines Binance (écart visible sur quelques bougies et bulles).
+- Binance n'envoie qu'une liquidation par seconde et par symbole (la plus récente) : les
+  liquidations affichées sont un échantillon, pas le total.
+- Nombre de trades : les klines comptent les trades individuels, nos bougies construites depuis les
+  trades comptent les aggTrades (un ordre agresseur regroupé) ; les deux ne sont pas comparables.
 
 Icônes : Hugeicons (jeu gratuit, licence MIT).
