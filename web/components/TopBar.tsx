@@ -7,13 +7,13 @@ import {
   ChartLineData01Icon, FullScreenIcon, FunctionSquareIcon, GridTableIcon, LayoutListIcon, Search01Icon, Settings02Icon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
-import { Icon, MenuButton, MenuItem, Switch } from './ui';
+import { Icon, MenuButton, MenuItem, OptionRows, Switch, type OptDefs } from './ui';
 import { STYLES } from '@/lib/layers/candles.js';
 import { FP_MODES } from '@/lib/layers/footprint.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { niceStep } from '@/lib/chart/axes.js';
 import { fmt } from '@/lib/fmt.js';
-import { GROUPS, LAYERS } from '@/lib/indicators.js';
+import { FP_OPTIONS, GROUPS, LAYERS } from '@/lib/indicators.js';
 import { useLive, type UiPrefs } from '@/lib/store';
 
 export const TYPES: Record<string, string> = { tick: 'Ticks', volume: 'Volume', range: 'Range', delta: 'Delta', renko: 'Renko' };
@@ -116,15 +116,22 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
           ))
         }
       </MenuButton>
-      <MenuButton icon={GridTableIcon} label="Footprint" active={prefs.fpMode !== 'off'} title="Footprint dans les bougies">
-        {(close) => (
-          <>
-            <div className="pop-title">Footprint dans les bougies</div>
-            {Object.entries(FP_MODES as Record<string, string>).map(([k, label]) => (
-              <MenuItem key={k} label={label} on={prefs.fpMode === k}
-                onClick={() => (update({ fpMode: k }, (prefs.fpMode === 'off') !== (k === 'off') ? 'series' : 'view'), close())} />
-            ))}
-          </>
+      <MenuButton icon={GridTableIcon} label="Footprint" active={prefs.fpMode !== 'off'} title="Footprint dans les bougies" wide>
+        {() => (
+          <div className="pop-cols">
+            <div>
+              <div className="pop-title">Affichage dans les bougies</div>
+              {Object.entries(FP_MODES as Record<string, string>).map(([k, label]) => (
+                <MenuItem key={k} label={label} on={prefs.fpMode === k}
+                  onClick={() => update({ fpMode: k }, (prefs.fpMode === 'off') !== (k === 'off') ? 'series' : 'view')} />
+              ))}
+            </div>
+            <div className="pop-opts">
+              <div className="pop-title">Réglages</div>
+              <OptionRows defs={FP_OPTIONS as OptDefs} values={prefs.opts.fp}
+                onChange={(key, v) => update({ opts: { ...prefs.opts, fp: { ...prefs.opts.fp, [key]: v } } }, 'view')} />
+            </div>
+          </div>
         )}
       </MenuButton>
       <MenuButton icon={FunctionSquareIcon} label="Indicateurs" caret={false} wide className="ind-btn">

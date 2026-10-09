@@ -272,3 +272,7 @@
 .pane-lg em { color: var(--text-2); font-style: normal; font-weight: 500; }
 .pane-lg em.pos { color: var(--buy); }
 .pane-lg em.neg { color: var(--sell); }
+
+/* Réglages dans un menu (Footprint) */
+.pop-opts { display: grid; align-content: start; gap: 8px; padding-bottom: 6px; }
+.pop-opts .lg-opt { padding: 0 10px; }

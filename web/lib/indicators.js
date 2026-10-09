@@ -54,9 +54,19 @@ export const TPO_OPTIONS = {
   days: { label: 'Sessions', choices: [[5, '5 jours'], [3, '3 jours'], [7, '7 jours'], [14, '14 jours']] },
 };
 
+// Réglages du footprint (menu Footprint).
+export const FP_OPTIONS = {
+  ratio: { label: 'Déséquilibre (diagonal)', choices: [[3, '300 %'], [1.5, '150 %'], [2, '200 %'], [4, '400 %']] },
+  stack: { label: 'Déséquilibres empilés', choices: [[3, '3 niveaux'], [2, '2'], [4, '4'], [5, '5']] },
+  outline: { label: 'Cases en déséquilibre', choices: [[1, 'Encadrées'], [0, 'Texte coloré seul']] },
+  candle: { label: 'Bougie', choices: [['left', 'À gauche'], ['center', 'Au centre (bid | ask)']] },
+  auctions: { label: 'Enchères inachevées', choices: [[1, 'Marquées'], [0, 'Masquées']] },
+  rows: { label: 'Lignes', choices: [['auto', 'Regroupées au dézoom'], ['fixed', 'Taille fixe']] },
+};
+
 export function defaultOptions() {
   const out = {};
-  for (const [layer, opts] of Object.entries({ ...OPTIONS, tpo: TPO_OPTIONS })) {
+  for (const [layer, opts] of Object.entries({ ...OPTIONS, tpo: TPO_OPTIONS, fp: FP_OPTIONS })) {
     out[layer] = Object.fromEntries(Object.entries(opts).map(([k, o]) => [k, o.choices[0][0]]));
   }
   return out;
@@ -64,7 +74,7 @@ export function defaultOptions() {
 
 // Libellé court du réglage principal (affiché dans la légende).
 export function optionSummary(layer, opts) {
-  const defs = layer === 'tpo' ? TPO_OPTIONS : OPTIONS[layer];
+  const defs = layer === 'tpo' ? TPO_OPTIONS : layer === 'fp' ? FP_OPTIONS : OPTIONS[layer];
   if (!defs || !opts) return '';
   const [key, def] = Object.entries(defs)[0];
   return def.choices.find(([v]) => v === opts[key])?.[1] ?? '';

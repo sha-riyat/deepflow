@@ -253,7 +253,7 @@ export class Chart {
     else if (st.style === 'kagi') drawKagi(ctx, items, geo, s);
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
-    if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
+    if (fpOn) drawFootprint(ctx, items, geo, s, { ...O.fp, mode: st.fpMode, bucket: this.meta.fpBucket });
     if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
     if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
