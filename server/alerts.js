@@ -1,5 +1,5 @@
 // Alertes : franchissement de prix, gros print, mur proche, delta anormal, déséquilibre
-// du carnet, nouveau signal. Évaluées à chaque frame ; stockées dans data/alerts.json.
+// du carnet, liquidation, nouveau signal. Évaluées à chaque frame ; stockées dans data/alerts.json.
 import fs from 'node:fs';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
@@ -14,6 +14,7 @@ export const ALERT_TYPES = {
   wall: { params: { qty: [0, 1e12], distPct: [0.01, 20] }, label: 'Mur proche' },
   deltaz: { params: { z: [0.5, 20] }, label: 'Delta anormal' },
   imbalance: { params: { value: [0.05, 1] }, label: 'Déséquilibre carnet' },
+  liquidation: { params: { notional: [0, 1e12] }, label: 'Liquidation' },
   signal: { params: {}, label: 'Nouveau signal' },
 };
 
@@ -99,6 +100,12 @@ export class Alerts extends EventEmitter {
       }
       case 'imbalance':
         return Math.abs(flow.imb) >= p.value ? `Carnet déséquilibré à ${fmt(flow.imb)}` : null;
+      case 'liquidation': {
+        const big = (f.liq ?? []).map(([p, q, side]) => ({ p, q, side, n: p * q })).sort((a, b) => b.n - a.n)[0];
+        return big && big.n >= p.notional
+          ? `Liquidation ${big.side < 0 ? 'longue' : 'courte'} de ${fmt(big.n, 0)} à ${fmt(big.p)} (${fmt(big.q, 3)} ${base})`
+          : null;
+      }
       case 'signal':
         return newSignal ? `${newSignal.side} ${newSignal.label} à ${fmt(newSignal.entry)}` : null;
       default:

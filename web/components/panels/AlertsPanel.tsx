@@ -14,6 +14,7 @@ export const ALERT_FIELDS: Record<string, { label: string; fields: [string, stri
   wall: { label: 'Mur proche', fields: [['qty', 'Taille min.'], ['distPct', 'Distance max. (%)']] },
   deltaz: { label: 'Delta anormal', fields: [['z', 'Z-score min.']] },
   imbalance: { label: 'Déséquilibre carnet', fields: [['value', 'Seuil (0 à 1)']] },
+  liquidation: { label: 'Liquidation', fields: [['notional', 'Montant min. (USDT)']] },
   signal: { label: 'Nouveau signal', fields: [] },
 };
 
@@ -24,6 +25,7 @@ function describe(a: AlertItem): string {
   if (a.type === 'wall') return `Mur ≥ ${fmt(p.qty, 3)} à ${fmt(p.distPct)} %`;
   if (a.type === 'deltaz') return `|z| ≥ ${fmt(p.z, 1)}`;
   if (a.type === 'imbalance') return `|déséquilibre| ≥ ${fmt(p.value)}`;
+  if (a.type === 'liquidation') return `Liquidation ≥ ${fmt(p.notional, 0)} USDT`;
   return 'Nouveau signal';
 }
 
