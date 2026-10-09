@@ -1,8 +1,8 @@
 // Graphique unifié : un seul système de coordonnées pour la heatmap, les bougies, le footprint,
 // les profils, les marques et les panneaux. Dessine à la demande et pilote le chargement des données.
 import { Scale } from './scale.js';
-import { drawPriceAxis, drawTimeAxis, drawCrosshair } from './axes.js';
-import { drawPane } from './panes.js';
+import { drawPriceAxis, drawTimeAxis, drawCrosshair, drawPaneCrosshair } from './axes.js';
+import { drawPane, paneValues } from './panes.js';
 import { attachInteractions } from './interact.js';
 import { requestData } from './requests.js';
 import { indicatorValues } from './values.js';
@@ -54,6 +54,8 @@ export class Chart {
     this.mouse = null;
     this.dirty = true;
     this.onHover = null; // (bougie survolée ou dernière) -> légende HTML
+    this.onPaneValues = null; // (valeurs des panneaux pour cette bougie) -> légendes des panneaux
+    this.paneScales = [];
     this.onFollow = null; // (suivi du direct actif ?) -> bouton « Direct »
     this.onLayout = null; // (positions des panneaux, hauteur du tracé) -> commandes HTML
     this.onValues = null; // (valeurs courantes des indicateurs) -> légende HTML
@@ -259,9 +261,8 @@ export class Chart {
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
-    st.panes.forEach((kind, k) => {
-      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, axisW: AXIS_W });
-    });
+    this.paneScales = st.panes.map((kind, k) =>
+      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, axisW: AXIS_W }));
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
 
     const values = indicatorValues(this, items);
@@ -287,7 +288,24 @@ export class Chart {
       this.lastFollow = s.follow;
       this.onFollow?.(s.follow);
     }
-    if (m && m.x < s.w && m.y < this.timeTop) drawCrosshair(ctx, s, { x: m.x, y: m.y, totalH: this.H, timeTop: this.timeTop, axisW: AXIS_W, item });
+    if (m && m.x < s.w && m.y < this.timeTop) {
+      drawCrosshair(ctx, s, { x: m.x, y: m.y, totalH: this.H, timeTop: this.timeTop, axisW: AXIS_W, item });
+      const pane = this.paneScales.find((p) => m.y > p.top && m.y < p.top + p.h);
+      if (pane?.valueAt) drawPaneCrosshair(ctx, s, m.y, pane.format(pane.valueAt(m.y)));
+    }
+    this.#reportPanes(items, item);
+  }
+
+  // Valeurs des panneaux pour la bougie survolée (ou la dernière), transmises si elles changent.
+  #reportPanes(items, item) {
+    if (!this.onPaneValues) return;
+    const i = item ? items.indexOf(item) : -1;
+    const ctx = { oi: this.data.oi, liqs: this.data.liqs };
+    const values = Object.fromEntries(this.settings.panes.map((kind) => [kind, i < 0 ? [] : paneValues(kind, items, i, ctx)]));
+    const key = JSON.stringify(values);
+    if (key === this.lastPaneValues) return;
+    this.lastPaneValues = key;
+    this.onPaneValues(values);
   }
 
   // Commandes de navigation : zoom, défilement, retour à la vue standard.

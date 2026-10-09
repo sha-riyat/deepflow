@@ -119,3 +119,16 @@ export function drawLegend(ctx, { title, item, status }) {
     ctx.fillText(status, 12, 28);
   }
 }
+
+// Réticule dans un panneau : ligne horizontale et valeur du panneau à cette hauteur.
+export function drawPaneCrosshair(ctx, scale, y, text) {
+  ctx.strokeStyle = alpha(C.mist, 0.35);
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, Math.round(y) + 0.5);
+  ctx.lineTo(scale.w, Math.round(y) + 0.5);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  pill(ctx, scale.w + 4, y, text, { bg: C.pale, fg: C.ink, size: 11, weight: 600 });
+}

@@ -36,6 +36,7 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
   const [bar, setBar] = useState<Bar | null>(null);
   const [panes, setPanes] = useState<{ kind: string; y: number }[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [paneVals, setPaneVals] = useState<Record<string, [string, string, string][]>>({});
   const [plotH, setPlotH] = useState(0);
   const [nearNav, setNearNav] = useState(false);
   const following = useLive((s) => s.following);
@@ -46,6 +47,7 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
     chart.onHover = (b: Bar | null) => setBar(b);
     chart.onFollow = (f: boolean) => setLive({ following: f });
     chart.onValues = (v: Record<string, string>) => setValues(v);
+    chart.onPaneValues = (v: Record<string, [string, string, string][]>) => setPaneVals(v);
     chart.onLayout = (rects: { kind: string; y: number }[], h: number) => {
       setPanes(rects);
       setPlotH(h);
@@ -74,6 +76,14 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
       <div id="chart" ref={host} />
       <Legend prefs={prefs} update={update} bar={bar} values={values} />
       <div id="pane-legends">
+        {panes.map((p) => (
+          <div key={`lg-${p.kind}`} className="pane-lg" style={{ top: p.y + 5 }}>
+            <b>{(PANES as Record<string, string>)[p.kind]}</b>
+            {(paneVals[p.kind] ?? []).map(([label, text, tone], k) => text && (
+              <span key={k}>{label && <i>{label}</i>}<em className={tone}>{text}</em></span>
+            ))}
+          </div>
+        ))}
         {panes.map((p) => (
           <div key={p.kind} className="lg-row pane-ctl" style={{ top: p.y + 4 }}>
             <span className="acts">

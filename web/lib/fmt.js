@@ -10,6 +10,12 @@ export const qty = (v) => {
   return fmt(v, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3);
 };
 
+// Montant abrégé : 1,25 M, 830,4 k, 950.
+export const compact = (n) => {
+  const a = Math.abs(n);
+  return a >= 1e9 ? `${fmt(n / 1e9, 2)} Md` : a >= 1e6 ? `${fmt(n / 1e6, 2)} M` : a >= 1e3 ? `${fmt(n / 1e3, 1)} k` : fmt(n, 0);
+};
+
 export const time = (t) => new Date(t).toLocaleTimeString('fr-FR');
 
 export const esc = (s) =>
