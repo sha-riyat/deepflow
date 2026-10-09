@@ -9,7 +9,7 @@ export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD', oi: 'Open i
 
 
 // Index de la bougie qui contient l'instant t (recherche dichotomique sur t0).
-function barIndex(items, t) {
+export function barIndex(items, t) {
   let lo = 0;
   let hi = items.length - 1;
   if (hi < 0 || t < items[0].t0) return -1;

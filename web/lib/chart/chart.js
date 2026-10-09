@@ -11,7 +11,8 @@ import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVolumeProfiles, drawVwap } from '../layers/profile.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
-import { drawBubbles, drawBigPrints, drawQuotes, drawSignals, drawAlertLines, drawLiquidations } from '../layers/marks.js';
+import { drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
+import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
@@ -254,8 +255,8 @@ export class Chart {
     else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
     if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
-    if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big.limit);
-    if (L.liq && !tpo) drawLiquidations(ctx, s, items, this.data.liqs, O.liq);
+    if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
+    if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     if (L.signals) drawSignals(ctx, s, items, this.signals);
     ctx.restore();

@@ -26,12 +26,17 @@ export const OPTIONS = {
     filter: { label: 'Afficher', choices: [[1, '≥ moyenne'], [0, 'Toutes'], [2, '≥ 2× moyenne'], [4, '≥ 4× moyenne']] },
     size: { label: 'Taille', choices: [[1, 'Normale'], [0.7, 'Petite'], [1.4, 'Grande']] },
     density: { label: 'Créneau', choices: [[8, 'Normal (8 px)'], [4, 'Fin (4 px)'], [16, 'Large (16 px)']] },
+    color: { label: 'Couleur', choices: [['split', 'Achats / ventes'], ['delta', 'Delta'], ['volume', 'Volume seul']] },
+    scale: { label: 'Échelle des tailles', choices: [['sqrt', 'Racine'], ['linear', 'Linéaire'], ['log', 'Logarithmique']] },
   },
   big: {
-    limit: { label: 'Nombre affiché', choices: [[25, '25 plus gros'], [10, '10 plus gros'], [50, '50 plus gros']] },
+    min: { label: 'Seuil', choices: [[0, 'Auto (0,5 % les plus gros)'], [100_000, '≥ 100 k $'], [500_000, '≥ 500 k $'], [1_000_000, '≥ 1 M $']] },
+    limit: { label: 'Nombre affiché', choices: [[25, '25 plus gros'], [10, '10 plus gros'], [50, '50 plus gros'], [200, '200']] },
+    labels: { label: 'Étiquettes', choices: [['big', 'Les plus gros'], ['all', 'Toutes'], ['none', 'Aucune']] },
   },
   liq: {
     min: { label: 'Montant minimum', choices: [[0, 'Toutes'], [10_000, '≥ 10 k $'], [100_000, '≥ 100 k $'], [1_000_000, '≥ 1 M $']] },
+    group: { label: 'Regroupement', choices: [['bar', 'Par bougie et par côté'], ['none', 'Une par liquidation']] },
   },
   profile: {
     width: { label: 'Largeur', choices: [[0.3, '30 % de la session'], [0.15, '15 %'], [0.5, '50 %']] },

@@ -62,7 +62,9 @@ export async function bars(s, q) {
 }
 
 // Bulles à la Bookmap : une par créneau de temps, au VWAP du créneau, avec le volume acheteur et
-// vendeur (camembert) ; plus les gros prints (ordres agresseurs regroupés) de la plage.
+// vendeur (camembert) ; plus les gros prints (ordres agresseurs regroupés) de la plage : au-delà
+// du seuil automatique (0,5 % des ordres les plus gros, celui du moteur en direct) ou, si `min`
+// est fourni, au-delà de ce montant en devise de cotation.
 export async function bubbles(s, q) {
   const now = nowOf(s);
   const to = Math.min(num(q.to, now), now);
@@ -89,11 +91,12 @@ export async function bubbles(s, q) {
   const live = s.engine.flow.bigThreshold;
   const sizes = [...prints.values()].map((p) => p[1]).sort((a, b) => a - b);
   const threshold = Number.isFinite(live) ? live : sizes[Math.floor(sizes.length * 0.995)] ?? Infinity;
+  const min = Math.max(0, num(q.min, 0));
   const big = [...prints]
-    .filter(([, [, qty]]) => qty >= threshold)
+    .filter(([, [pq, qty]]) => (min > 0 ? pq >= min : qty >= threshold))
     .map(([k, [pq, qty]]) => [Math.floor(k / 2), pq / qty, r3(qty), k % 2 ? 1 : -1])
     .slice(-3000);
-  return { slot, rows, big, threshold: Number.isFinite(threshold) ? threshold : null };
+  return { slot, rows, big, min, threshold: Number.isFinite(threshold) ? threshold : null };
 }
 
 // Profils des journées terminées, mis en cache par magasin de trades et par taille de tranche :

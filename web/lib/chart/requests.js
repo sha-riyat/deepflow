@@ -38,10 +38,11 @@ export function requestData(chart, items) {
   if ((layers.bubbles || layers.big) && !tpo) {
     const span = Math.max(1000, tR - tL);
     const slot = bubbleSlot(span / s.w, chart.settings.opts.bubbles.density, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
-    const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}`;
+    const min = chart.settings.opts.big.min;
+    const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}:${min}`;
     if (key !== chart.requests.bubbles && span <= 86_400_000) {
       chart.requests.bubbles = key;
-      chart.data.loadBubbles(Math.max(tL, tR - 86_400_000), tR, slot);
+      chart.data.loadBubbles(Math.max(tL, tR - 86_400_000), tR, slot, min);
     }
   }
   if (layers.profile || tpo) {

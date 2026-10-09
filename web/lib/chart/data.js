@@ -118,7 +118,7 @@ export class DataManager {
       g[side > 0 ? 2 : 3] += q;
       this.liveSlots.set(t0, g);
     }
-    for (const [p, q, side] of tick.an?.big ?? []) this.liveBig.push([tick.t, p, q, side]);
+    this.#liveBigPrints(tick);
     for (const [p, q, side, T] of tick.liq ?? []) if (T >= this.liqTo) this.liqs.push([T, p, q, side]);
     if (this.liveBig.length > 2000) this.liveBig.splice(0, this.liveBig.length - 2000);
     if (this.ready) this.#apply(tick);
@@ -151,13 +151,37 @@ export class DataManager {
     return this.bubbles.big.concat(this.liveBig.filter((b) => b[0] >= this.bubbles.to));
   }
 
-  async loadBubbles(from, to, slot) {
+  // Gros prints du direct : fills d'un même ordre agresseur (même heure, même côté) regroupés,
+  // au même seuil que la plage chargée (montant choisi, sinon seuil automatique du serveur).
+  #liveBigPrints(tick) {
+    const min = this.bubbles.min ?? 0;
+    const threshold = this.bubbles.threshold;
+    if (!min && threshold === null) {
+      for (const [p, q, side] of tick.an?.big ?? []) this.liveBig.push([tick.t, p, q, side]);
+      return;
+    }
+    const orders = new Map();
+    for (const [p, q, side, T] of tick.tr) {
+      const key = T * 2 + (side > 0 ? 1 : 0);
+      const o = orders.get(key) ?? [T, 0, 0, side > 0 ? 1 : -1];
+      o[1] += p * q;
+      o[2] += q;
+      orders.set(key, o);
+    }
+    for (const [T, pq, q, side] of orders.values()) {
+      if (min ? pq >= min : q >= threshold) this.liveBig.push([T, pq / q, q, side]);
+    }
+  }
+
+  async loadBubbles(from, to, slot, min = 0) {
     try {
-      const r = await getJSON(`/api/bubbles?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), slot: Math.round(slot) })}`);
+      const r = await getJSON(`/api/bubbles?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), slot: Math.round(slot), min })}`);
       if (r.slot !== this.bubbles.slot) this.liveSlots.clear();
+      if (r.min !== this.bubbles.min) this.liveBig = []; // seuil changé : le direct repart du nouveau
       // Le créneau en cours à la date de fin reste agrégé en direct : pas de bulle coupée en deux.
       const end = Math.floor(to / r.slot) * r.slot;
       r.rows = r.rows.filter((row) => row[0] < end);
+      r.big = r.big.filter((b) => b[0] < end); // au-delà : gros prints du direct
       for (const t0 of this.liveSlots.keys()) if (t0 < end) this.liveSlots.delete(t0);
       this.bubbles = { ...r, to: end };
       this.onChange('bubbles');
