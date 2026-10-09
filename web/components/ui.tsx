@@ -85,3 +85,25 @@ export function MenuItem({
 }
 
 export const Switch = () => <span className="switch" />;
+
+// Réglages en boutons segmentés : une ligne par réglage, un bouton par choix.
+export type OptDefs = Record<string, { label: string; choices: (number | string)[][] }>;
+
+export function OptionRows({ defs, values, onChange }: { defs: OptDefs; values: Record<string, number | string>; onChange: (key: string, v: number | string) => void }) {
+  return (
+    <>
+      {Object.entries(defs).map(([key, def]) => (
+        <div key={key} className="lg-opt">
+          <span>{def.label}</span>
+          <div className="seg">
+            {def.choices.map(([v, text]) => (
+              <button key={String(v)} type="button" className={values[key] === v ? 'on' : ''} onClick={() => onChange(key, v)}>
+                {text}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}

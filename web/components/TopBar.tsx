@@ -13,6 +13,7 @@ import { FP_MODES } from '@/lib/layers/footprint.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { niceStep } from '@/lib/chart/axes.js';
 import { fmt } from '@/lib/fmt.js';
+import { GROUPS, LAYERS } from '@/lib/indicators.js';
 import { useLive, type UiPrefs } from '@/lib/store';
 
 export const TYPES: Record<string, string> = { tick: 'Ticks', volume: 'Volume', range: 'Range', delta: 'Delta', renko: 'Renko' };
@@ -21,18 +22,14 @@ export const INTERVALS: Record<number, string> = {
   1800000: '30m', 3600000: '1h', 7200000: '2h', 14400000: '4h', 21600000: '6h', 43200000: '12h', 86400000: '1J', 604800000: '1S',
 };
 const FAVORITES = [60000, 300000, 900000, 3600000, 14400000, 86400000];
-export const LAYERS: Record<string, [string, string]> = {
-  heat: ['Heatmap de liquidité', 'Carnet d’ordres dans le temps'],
-  bubbles: ['Bulles de trades', 'Volume agressif par créneau'],
-  big: ['Gros prints', 'Ordres agresseurs les plus gros'],
-  liq: ['Liquidations', 'Positions liquidées (futures, échantillon Binance)'],
-  quotes: ['Bid / ask', 'Meilleurs prix récents'],
-  profile: ['Profil de session', 'Volume par prix, POC et value area'],
-  naked: ['POC non testés', 'Prolongés jusqu’au retest'],
-  vwap: ['VWAP + bandes', 'Moyenne pondérée du jour, ±1σ et ±2σ'],
-  signals: ['Signaux', 'Entrées, stops et cibles'],
-  alerts: ['Alertes de prix', 'Niveaux surveillés'],
+const PANE_SUB: Record<string, string> = {
+  volume: 'Volume par bougie, couleur de la bougie',
+  delta: 'Achats moins ventes agressifs par bougie',
+  cvd: 'Delta cumulé depuis la première bougie chargée',
+  oi: 'Open interest Binance (futures, pas de 5 min)',
+  liq: 'Montant liquidé par bougie (futures)',
 };
+type LayerDef = { label: string; sub: string; group: string };
 const STYLE_ICON: Record<string, IconSvgElement> = {
   candles: ChartCandlestickIcon, hollow: ChartCandlestickIcon, heikin: ChartCandlestickIcon, volcandles: ChartCandlestickIcon,
   bars: ChartBarLineIcon, line: ChartLineData01Icon, step: ChartLineData01Icon, baseline: ChartLineData01Icon, area: ChartAverageIcon,
@@ -130,21 +127,35 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
           </>
         )}
       </MenuButton>
-      <MenuButton icon={FunctionSquareIcon} label="Indicateurs" caret={false} wide>
-        {() => (
-          <>
-            <div className="pop-title">Sur le graphique</div>
-            {Object.entries(LAYERS).map(([k, [label, sub]]) => (
-              <MenuItem key={k} label={label} sub={sub} on={prefs.layers[k]} hint={<Switch />} onClick={() => update({ layers: { ...prefs.layers, [k]: !prefs.layers[k] } }, 'view')} />
-            ))}
-            <div className="pop-sep" />
-            <div className="pop-title">Panneaux sous le graphique</div>
-            {Object.entries(PANES as Record<string, string>).map(([k, label]) => (
-              <MenuItem key={k} label={label} on={prefs.panes.includes(k)} hint={<Switch />}
-                onClick={() => update({ panes: prefs.panes.includes(k) ? prefs.panes.filter((p) => p !== k) : [...prefs.panes, k] }, 'layout')} />
-            ))}
-          </>
-        )}
+      <MenuButton icon={FunctionSquareIcon} label="Indicateurs" caret={false} wide className="ind-btn">
+        {() => {
+          const toggle = (k: string) => update({ layers: { ...prefs.layers, [k]: !prefs.layers[k] } }, 'view');
+          const group = (g: string) => (Object.entries(LAYERS) as [string, LayerDef][]).filter(([, d]) => d.group === g).map(([k, d]) => (
+            <MenuItem key={k} label={d.label} sub={d.sub} on={prefs.layers[k]} hint={<Switch />} onClick={() => toggle(k)} />
+          ));
+          const [flow, levels, trade] = GROUPS;
+          return (
+            <div className="pop-cols">
+              <div>
+                <div className="pop-title">{flow[1]}</div>
+                {group(flow[0])}
+                <div className="pop-sep" />
+                <div className="pop-title">{trade[1]}</div>
+                {group(trade[0])}
+              </div>
+              <div>
+                <div className="pop-title">{levels[1]}</div>
+                {group(levels[0])}
+                <div className="pop-sep" />
+                <div className="pop-title">Panneaux sous le graphique</div>
+                {Object.entries(PANES as Record<string, string>).map(([k, label]) => (
+                  <MenuItem key={k} label={label} sub={PANE_SUB[k]} on={prefs.panes.includes(k)} hint={<Switch />}
+                    onClick={() => update({ panes: prefs.panes.includes(k) ? prefs.panes.filter((p) => p !== k) : [...prefs.panes, k] }, 'layout')} />
+                ))}
+              </div>
+            </div>
+          );
+        }}
       </MenuButton>
       <button type="button" className="tb-btn" onClick={onAlert} title="Créer une alerte au prix courant">
         <Icon icon={AlarmClockPlusIcon} />

@@ -36,7 +36,7 @@ export function requestData(chart, items) {
   }
   if (layers.bubbles || layers.big) {
     const span = Math.max(1000, tR - tL);
-    const slot = bubbleSlot(span / s.w, 8, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
+    const slot = bubbleSlot(span / s.w, chart.settings.opts.bubbles.density, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
     const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}`;
     if (key !== chart.requests.bubbles && span <= 86_400_000) {
       chart.requests.bubbles = key;

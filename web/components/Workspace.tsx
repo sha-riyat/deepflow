@@ -42,7 +42,7 @@ export default function Workspace() {
   const applyChart = useCallback((p: UiPrefs) => {
     const chart = engine.chart;
     if (!chart) return;
-    Object.assign(chart.settings, { style: p.style, fpMode: p.fpMode, panes: p.panes, layers: p.layers, gamma: p.gamma });
+    Object.assign(chart.settings, { style: p.style, fpMode: p.fpMode, panes: p.panes, layers: p.layers, opts: p.opts, gamma: p.gamma });
     chart.title = `${getLive().meta?.symbol ?? ''} · ${seriesLabel(p)}`;
   }, []);
 

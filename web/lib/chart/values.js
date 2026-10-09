@@ -1,0 +1,64 @@
+// Valeurs courantes des indicateurs, affichées dans la légende à côté de leur nom.
+import { fmt, qty } from '../fmt.js';
+import { optionSummary } from '../indicators.js';
+import { vwapStart } from '../layers/profile.js';
+
+const DAY = 86_400_000;
+const money = (n) => (n >= 1e6 ? `${fmt(n / 1e6, 2)} M` : n >= 1e3 ? `${fmt(n / 1e3, 1)} k` : fmt(n, 0));
+
+export function indicatorValues(chart, items) {
+  const { layers: L, opts } = chart.settings;
+  const data = chart.data;
+  const out = {};
+  const last = data.bars[data.bars.length - 1];
+
+  if (L.vwap && last) {
+    // VWAP du jour UTC de la dernière bougie, cumulé comme sur le graphique.
+    const day = Math.floor(last.t0 / DAY);
+    let pv = 0;
+    let v = 0;
+    let i = data.bars.length - 1;
+    for (; i >= 0 && Math.floor(data.bars[i].t0 / DAY) === day; i--) {
+      pv += data.bars[i].pv ?? 0;
+      v += data.bars[i].v;
+    }
+    const [apv, , av] = vwapStart(data.vwapAnchor, data.bars[i + 1]);
+    pv += apv;
+    v += av;
+    if (v > 0) out.vwap = fmt(pv / v);
+  }
+  const s = data.profiles[data.profiles.length - 1];
+  if (L.profile && s && s.poc !== null) {
+    out.profile = `POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
+  }
+  if (L.bubbles) out.bubbles = optionSummary('bubbles', opts.bubbles);
+  if (L.big) out.big = data.bubbles.threshold ? `≥ ${qty(data.bubbles.threshold)}` : '';
+  if (L.liq) {
+    if (chart.meta?.market !== 'futures') out.liq = 'futures uniquement';
+    else {
+      const [t0, t1] = visibleTimes(chart, items);
+      let longs = 0;
+      let shorts = 0;
+      for (const [t, p, q, side] of data.liqs) {
+        if (t < t0 || t > t1) continue;
+        if (side < 0) longs += p * q;
+        else shorts += p * q;
+      }
+      out.liq = `L ${money(longs)} · S ${money(shorts)}`;
+    }
+  }
+  if (L.signals) {
+    const open = chart.signals.find((x) => x.status === 'open');
+    out.signals = open ? `${open.side} ouvert à ${fmt(open.entry)}` : 'aucun en cours';
+  }
+  if (L.alerts) out.alerts = chart.alerts.length ? `${chart.alerts.length} active${chart.alerts.length > 1 ? 's' : ''}` : 'aucune';
+  return out;
+}
+
+function visibleTimes(chart, items) {
+  const s = chart.scale;
+  if (s.mode === 'time') return [s.tLeft, s.tRight];
+  const a = items[Math.max(0, Math.floor(s.indexOfX(0)))];
+  const b = items[Math.min(items.length - 1, Math.ceil(s.indexOfX(s.w)))];
+  return [a?.t0 ?? 0, b?.t1 ?? Date.now()];
+}

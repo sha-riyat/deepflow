@@ -163,10 +163,11 @@ export function drawAlertLines(ctx, scale, alerts) {
 
 // Liquidations : losanges dont l'aire suit le montant ; rouge = position longue liquidée
 // (vente forcée), vert = position courte liquidée (achat forcé).
-export function drawLiquidations(ctx, scale, items, rows) {
+export function drawLiquidations(ctx, scale, items, rows, { min = 0 } = {}) {
   const vis = [];
   let max = 0;
   for (const [t, p, q, side] of rows) {
+    if (p * q < min) continue;
     const x = scale.xAt(t, items);
     if (x < -20 || x > scale.w + 20) continue;
     vis.push([x, p, p * q, side]);

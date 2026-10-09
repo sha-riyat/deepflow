@@ -17,26 +17,28 @@ function hline(ctx, x0, x1, y, color, dash = []) {
   ctx.setLineDash([]);
 }
 
-export function drawVolumeProfiles(ctx, sessions, scale, items, { naked = true } = {}) {
+export function drawVolumeProfiles(ctx, sessions, scale, items, { naked = true, width: share = 0.3, va = 1 } = {}) {
   const y = (p) => scale.yOfPrice(p);
   for (const [si, s] of sessions.entries()) {
     const x0 = scale.xAt(s.t0, items);
     const x1 = scale.xAt(Math.min(s.t1, items.length ? items[items.length - 1].t1 : s.t1), items);
     if (!(x1 > 0) || x0 > scale.w) continue;
-    const width = Math.min(220, Math.max(40, (x1 - x0) * 0.3));
+    const width = Math.min(scale.w * share, Math.max(40, (x1 - x0) * share));
     let max = 0;
     for (const [, bv, sv] of s.rows) max = Math.max(max, bv + sv);
     for (const [row, bv, sv] of s.rows) {
       const yt = y((row + 1) * s.bucket);
       const h = Math.max(1, y(row * s.bucket) - yt);
-      const inVa = row >= s.val && row <= s.vah;
+      const inVa = va && row >= s.val && row <= s.vah;
       ctx.fillStyle = row === s.poc ? alpha(C.ember, 0.75) : alpha(inVa ? C.mist : C.graphite, inVa ? 0.32 : 0.18);
       ctx.fillRect(Math.max(0, x0), yt + 0.5, (width * (bv + sv)) / max, Math.max(1, h - 1));
     }
     const pocP = (s.poc + 0.5) * s.bucket;
     hline(ctx, x0, x1, y(pocP), alpha(C.ember, 0.8));
-    hline(ctx, x0, x1, y((s.vah + 1) * s.bucket), alpha(C.mist, 0.45), [4, 4]);
-    hline(ctx, x0, x1, y(s.val * s.bucket), alpha(C.mist, 0.45), [4, 4]);
+    if (va) {
+      hline(ctx, x0, x1, y((s.vah + 1) * s.bucket), alpha(C.mist, 0.45), [4, 4]);
+      hline(ctx, x0, x1, y(s.val * s.bucket), alpha(C.mist, 0.45), [4, 4]);
+    }
     ctx.fillStyle = alpha(C.white, 0.08);
     ctx.fillRect(x0, 0, 1, scale.h); // séparation de session
 
@@ -62,7 +64,7 @@ export function vwapStart(anchor, b) {
   return anchor && anchor.first === b.t0 && anchor.day === Math.floor(b.t0 / DAY) * DAY ? [anchor.pv, anchor.p2v, anchor.v] : [0, 0, 0];
 }
 
-export function drawVwap(ctx, items, geo, scale, anchor = null) {
+export function drawVwap(ctx, items, geo, scale, { bands = 2 } = {}, anchor = null) {
   const [i0, i1] = geo.range;
   if (i1 < i0) return;
   let day = null;
@@ -90,6 +92,7 @@ export function drawVwap(ctx, items, geo, scale, anchor = null) {
   }
   const styles = [[C.pale, 1.5, []], [alpha(C.mist, 0.4), 1, [4, 4]], [alpha(C.mist, 0.4), 1, [4, 4]], [alpha(C.mist, 0.22), 1, [2, 5]], [alpha(C.mist, 0.22), 1, [2, 5]]];
   lines.forEach((pts, k) => {
+    if (k > bands * 2) return; // 0 : VWAP seul, 1 : ±1σ, 2 : ±1σ et ±2σ
     const [color, width, dash] = styles[k];
     ctx.strokeStyle = color;
     ctx.lineWidth = width;

@@ -5,12 +5,14 @@ import { drawPriceAxis, drawTimeAxis, drawCrosshair } from './axes.js';
 import { drawPane } from './panes.js';
 import { attachInteractions } from './interact.js';
 import { requestData } from './requests.js';
+import { indicatorValues } from './values.js';
 import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVolumeProfiles, drawVwap, drawTpo } from '../layers/profile.js';
 import { drawBubbles, drawBigPrints, drawQuotes, drawSignals, drawAlertLines, drawLiquidations } from '../layers/marks.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
+import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
 
 const AXIS_W = 84;
@@ -33,6 +35,7 @@ export class Chart {
       paneH: 90,
       panes: ['volume', 'delta'],
       layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+      opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
       const c = document.createElement('canvas');
@@ -51,6 +54,7 @@ export class Chart {
     this.onHover = null; // (bougie survolée ou dernière) -> légende HTML
     this.onFollow = null; // (suivi du direct actif ?) -> bouton « Direct »
     this.onLayout = null; // (positions des panneaux, hauteur du tracé) -> commandes HTML
+    this.onValues = null; // (valeurs courantes des indicateurs) -> légende HTML
     this.lastHover = undefined;
     this.lastFollow = undefined;
     this.requests = { heat: '', bubbles: '', profiles: '', t: 0 };
@@ -222,10 +226,11 @@ export class Chart {
     ctx.beginPath();
     ctx.rect(0, 0, s.w, s.h);
     ctx.clip();
+    const O = st.opts;
     const profiles = this.data.profiles;
     if (st.style === 'tpo') drawTpo(ctx, profiles, s, items);
-    else if (L.profile) drawVolumeProfiles(ctx, profiles, s, items, { naked: L.naked });
-    if (L.bubbles) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot);
+    else if (L.profile) drawVolumeProfiles(ctx, profiles, s, items, { ...O.profile, naked: L.naked });
+    if (L.bubbles) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
     if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, this.data.ticks);
 
     const fpOn = st.fpMode !== 'off' && this.spec.fp > 0 && !DERIVED.includes(st.style);
@@ -234,9 +239,9 @@ export class Chart {
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (st.style !== 'tpo' && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
-    if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s, this.data.vwapAnchor);
-    if (L.big) drawBigPrints(ctx, s, items, this.data.bigPrints());
-    if (L.liq) drawLiquidations(ctx, s, items, this.data.liqs);
+    if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
+    if (L.big) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big.limit);
+    if (L.liq) drawLiquidations(ctx, s, items, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     if (L.signals) drawSignals(ctx, s, items, this.signals);
     ctx.restore();
@@ -246,6 +251,13 @@ export class Chart {
       drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, axisW: AXIS_W });
     });
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
+
+    const values = indicatorValues(this, items);
+    const key = JSON.stringify(values);
+    if (key !== this.lastValues) {
+      this.lastValues = key;
+      this.onValues?.(values);
+    }
   }
 
   #renderCross(items) {

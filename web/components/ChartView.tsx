@@ -3,33 +3,16 @@
 // légende interactive, les commandes des panneaux et le bouton « Direct ».
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowDown01Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, Layers01Icon, MinusSignIcon,
-  PlusSignIcon, RefreshCwIcon, ViewIcon, ViewOffIcon,
+  ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, MinusSignIcon, PlusSignIcon, RefreshCwIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon } from './ui';
+import { Legend, type Bar } from './Legend';
 import { Chart } from '@/lib/chart/chart.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { setFontFamily } from '@/lib/theme.js';
-import { fmt, qty } from '@/lib/fmt.js';
 import { engine, getData } from '@/lib/engine';
 import { setLive, useLive, type UiPrefs } from '@/lib/store';
-import { LAYERS, seriesLabel } from './TopBar';
-
-interface Bar {
-  o: number;
-  h: number;
-  l: number;
-  c: number;
-  v: number;
-  b: number;
-  s: number;
-}
-
-const LAYER_COLOR: Record<string, string> = {
-  heat: '#b6d6ff', bubbles: '#4ebe96', big: '#ffa16c', quotes: '#cccccc', profile: '#868f97',
-  naked: '#ffa16c', vwap: '#e6e6e6', signals: '#4ebe96', alerts: '#ffa16c', liq: '#e0685f',
-};
 
 interface NavChart {
   zoom(f: number): void;
@@ -48,22 +31,21 @@ const NAV: [string, IconSvgElement, (c: NavChart) => void][] = [
   ['Réinitialiser la vue', RefreshCwIcon, (c) => c.resetView()],
 ];
 
-export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Partial<UiPrefs>, kind: 'view' | 'layout') => void }) {
+export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Partial<UiPrefs>, kind: 'view' | 'style' | 'layout') => void }) {
   const host = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState<Bar | null>(null);
   const [panes, setPanes] = useState<{ kind: string; y: number }[]>([]);
-  const [showLayers, setShowLayers] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({});
   const [plotH, setPlotH] = useState(0);
   const [nearNav, setNearNav] = useState(false);
-  const meta = useLive((s) => s.meta);
   const following = useLive((s) => s.following);
-  const dataStatus = useLive((s) => s.dataStatus);
 
   useEffect(() => {
     setFontFamily(getComputedStyle(document.body).fontFamily);
     const chart = new Chart(host.current, getData());
     chart.onHover = (b: Bar | null) => setBar(b);
     chart.onFollow = (f: boolean) => setLive({ following: f });
+    chart.onValues = (v: Record<string, string>) => setValues(v);
     chart.onLayout = (rects: { kind: string; y: number }[], h: number) => {
       setPanes(rects);
       setPlotH(h);
@@ -76,10 +58,6 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
     };
   }, []);
 
-
-  const active = Object.keys(LAYERS).filter((k) => prefs.layers[k]);
-  const up = bar ? bar.c >= bar.o : true;
-  const tone = up ? 'pos' : 'neg';
 
   return (
     <section
@@ -94,43 +72,7 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
       onMouseLeave={() => setNearNav(false)}
     >
       <div id="chart" ref={host} />
-      <div id="legend">
-        <div className="lg-title">
-          <b>{meta?.symbol ?? '—'}</b>
-          <span className="sub">{seriesLabel(prefs)} · Binance {meta?.market === 'futures' ? 'Perpétuel' : 'Spot'}</span>
-        </div>
-        {bar && (
-          <div className="lg-ohlc">
-            <span>O<b className={tone}>{fmt(bar.o)}</b></span>
-            <span>H<b className={tone}>{fmt(bar.h)}</b></span>
-            <span>B<b className={tone}>{fmt(bar.l)}</b></span>
-            <span>C<b className={tone}>{fmt(bar.c)}</b></span>
-            <span>Vol<b>{qty(bar.v)}</b></span>
-            <span>Δ<b className={bar.b >= bar.s ? 'pos' : 'neg'}>{qty(bar.b - bar.s)}</b></span>
-          </div>
-        )}
-        {dataStatus && <div className="lg-status">{dataStatus}</div>}
-        <div className="lg-rows">
-          {active.length > 0 && (
-            <button type="button" className="lg-row lg-toggle" onClick={() => setShowLayers(!showLayers)} title="Afficher les couches actives">
-              <Icon icon={Layers01Icon} size={14} />
-              <span>{active.length} couche{active.length > 1 ? 's' : ''}</span>
-              <Icon icon={ArrowDown01Icon} size={12} className={showLayers ? 'flip' : ''} />
-            </button>
-          )}
-          {showLayers && active.map((k) => (
-            <div key={k} className="lg-row">
-              <span className="dot" style={{ background: LAYER_COLOR[k] }} />
-              <span>{LAYERS[k][0]}</span>
-              <span className="acts">
-                <button type="button" title="Masquer" onClick={() => update({ layers: { ...prefs.layers, [k]: false } }, 'view')}>
-                  <Icon icon={prefs.layers[k] ? ViewIcon : ViewOffIcon} size={14} />
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Legend prefs={prefs} update={update} bar={bar} values={values} />
       <div id="pane-legends">
         {panes.map((p) => (
           <div key={p.kind} className="lg-row pane-ctl" style={{ top: p.y + 4 }}>

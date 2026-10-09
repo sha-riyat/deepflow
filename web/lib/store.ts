@@ -2,6 +2,7 @@
 // useSyncExternalStore. Les données à haute fréquence (ticks, bougies) restent hors de React.
 import { useSyncExternalStore } from 'react';
 import type { AlertFired, AlertItem, Dom, HistoryStatus, Mark, Meta, Signal } from './types';
+import { defaultOptions } from './indicators.js';
 
 export interface Live {
   meta: Meta | null;
@@ -59,10 +60,14 @@ export interface UiPrefs {
   fpMode: string;
   panes: string[];
   layers: Record<string, boolean>;
+  opts: IndicatorOptions;
+  legend: boolean; // liste des indicateurs dépliée dans la légende
   gamma: number;
   rail: { open: string[]; width: number; split: number };
   signalSound: boolean;
 }
+
+export type IndicatorOptions = Record<string, Record<string, number | string>>;
 
 const KEY = 'deepflow.ui.v2';
 export const DEFAULT_PREFS: UiPrefs = {
@@ -72,6 +77,8 @@ export const DEFAULT_PREFS: UiPrefs = {
   fpMode: 'off',
   panes: ['volume', 'delta'],
   layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+  opts: defaultOptions() as IndicatorOptions,
+  legend: true,
   gamma: 0.9,
   rail: { open: ['signal', 'dom'], width: 360, split: 0.55 },
   signalSound: false,
@@ -80,7 +87,8 @@ export const DEFAULT_PREFS: UiPrefs = {
 export function loadPrefs(): UiPrefs {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}');
-    return { ...DEFAULT_PREFS, ...saved, layers: { ...DEFAULT_PREFS.layers, ...saved.layers }, rail: { ...DEFAULT_PREFS.rail, ...saved.rail } };
+    const opts = Object.fromEntries(Object.entries(DEFAULT_PREFS.opts).map(([k, v]) => [k, { ...v, ...saved.opts?.[k] }]));
+    return { ...DEFAULT_PREFS, ...saved, layers: { ...DEFAULT_PREFS.layers, ...saved.layers }, opts, rail: { ...DEFAULT_PREFS.rail, ...saved.rail } };
   } catch {
     return DEFAULT_PREFS;
   }
