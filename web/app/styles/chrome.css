@@ -131,7 +131,8 @@
 /* ---------- Barre d'état ---------- */
 #statusbar { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 2px; padding: 0 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
 #statusbar .tb-btn { height: 22px; padding: 0 7px; font-size: 12px; }
-.sb-info { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; }
+.sb-info { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; white-space: nowrap; }
+.sb-info b { font-weight: 600; }
 .sb-right { display: flex; align-items: center; margin-left: auto; }
 
 /* ---------- Menus et fenêtres ---------- */
