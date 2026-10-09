@@ -184,9 +184,9 @@ export function footprintStats(fp, vaPct = 0.7) {
 
 // Bougie Binance (kline) -> format échangé, sans footprint.
 export function klineToWire(k, closed) {
-  const [t0, o, h, l, c, v, t1, , n, tb] = k;
+  const [t0, o, h, l, c, v, t1, qv, n, tb] = k;
   const vol = Number(v);
-  const tp = (Number(h) + Number(l) + Number(c)) / 3;
+  const quote = Number(qv); // volume en devise de cotation : quote / volume = VWAP exact de la bougie
   return {
     t0,
     t1,
@@ -198,8 +198,8 @@ export function klineToWire(k, closed) {
     b: r3(Number(tb)),
     s: r3(vol - Number(tb)),
     n,
-    pv: tp * vol,
-    p2v: tp * tp * vol,
+    pv: quote,
+    p2v: vol > 0 ? (quote * quote) / vol : 0, // variance interne à la bougie ignorée
     x: closed ? 1 : 0,
   };
 }
