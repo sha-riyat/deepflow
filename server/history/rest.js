@@ -1,8 +1,10 @@
-// Accès REST à Binance avec une file d'attente qui respecte les limites de poids :
+// Accès REST à Binance avec une file d'attente qui respecte les limites de poids (en lisant le
+// poids consommé renvoyé par Binance) :
 // bougies (klines), trades agrégés, open interest, tickers 24 h.
+// weightLimit : poids IP par minute autorisé par Binance (exchangeInfo, rateLimits).
 const BASE = {
-  futures: { api: 'https://fapi.binance.com/fapi/v1', data: 'https://fapi.binance.com/futures/data', minGapMs: 650 },
-  spot: { api: 'https://api.binance.com/api/v3', data: null, minGapMs: 150 },
+  futures: { api: 'https://fapi.binance.com/fapi/v1', data: 'https://fapi.binance.com/futures/data', minGapMs: 250, weightLimit: 2400 },
+  spot: { api: 'https://api.binance.com/api/v3', data: null, minGapMs: 100, weightLimit: 6000 },
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -14,6 +16,7 @@ export class BinanceRest {
     this.queue = Promise.resolve();
     this.lastCall = 0;
     this.pausedUntil = 0;
+    this.usedWeight = 0;
   }
 
   // Les appels sont sérialisés et espacés ; un 429/418 met la file en pause.
@@ -33,6 +36,10 @@ export class BinanceRest {
         throw new Error(`limite Binance atteinte, pause ${retry / 1000} s`);
       }
       if (!res.ok) throw new Error(`HTTP ${res.status} sur ${path}`);
+      // Poids déjà consommé sur la minute en cours : au-delà de 80 %, pause jusqu'à la minute suivante.
+      const used = Number(res.headers.get('x-mbx-used-weight-1m'));
+      this.usedWeight = used || this.usedWeight;
+      if (used > this.base.weightLimit * 0.8) this.pausedUntil = Math.ceil(Date.now() / 60_000) * 60_000 + 1000;
       return res.json();
     };
     const p = this.queue.then(run, run);
