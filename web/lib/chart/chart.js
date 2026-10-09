@@ -9,7 +9,8 @@ import { indicatorValues } from './values.js';
 import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
-import { drawVolumeProfiles, drawVwap, drawTpo } from '../layers/profile.js';
+import { drawVolumeProfiles, drawVwap } from '../layers/profile.js';
+import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawBubbles, drawBigPrints, drawQuotes, drawSignals, drawAlertLines, drawLiquidations } from '../layers/marks.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
@@ -18,6 +19,7 @@ import { C } from '../theme.js';
 const AXIS_W = 84;
 const TIME_H = 24;
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
+const INDEXED = [...DERIVED, 'tpo']; // vues sans échelle de temps continue
 
 export class Chart {
   constructor(root, data) {
@@ -123,10 +125,11 @@ export class Chart {
   resetView() {
     if (!this.W) this.resize(); // la vue dépend de la largeur réelle du graphique
     const s = this.scale;
-    s.mode = this.spec.type === 'time' && !DERIVED.includes(this.settings.style) ? 'time' : 'index';
+    s.mode = this.spec.type === 'time' && !INDEXED.includes(this.settings.style) ? 'time' : 'index';
     s.follow = true;
     s.autoScale = true;
     if (s.mode === 'time') s.msPerPx = (this.spec.param * 120) / s.w;
+    else if (this.settings.style === 'tpo') s.pxPerBar = Math.max(240, Math.min(560, s.w / 2.6)); // ~2 sessions et demie
     else s.pxPerBar = 8;
     this.#layout();
     this.invalidate();
@@ -137,6 +140,13 @@ export class Chart {
     const bars = this.data.bars;
     const { style } = this.settings;
     const box = this.meta?.fpBucket ?? 1;
+    if (style === 'tpo') {
+      if (this.tpoSource !== this.data.profiles) {
+        this.tpoSource = this.data.profiles;
+        this.tpoCache = tpoItems(this.data.profiles);
+      }
+      return this.tpoCache;
+    }
     if (style === 'heikin') return heikinAshi(bars);
     if (style === 'linebreak') return lineBreak(bars, 3);
     if (style === 'kagi') return kagi(bars, box * 4);
@@ -187,8 +197,9 @@ export class Chart {
       }
     }
     if (!Number.isFinite(lo)) return;
+    // Marge haute pour la légende ; en vue TPO, marge basse pour les dates des sessions.
     const pad = Math.max((hi - lo) * 0.08, (this.meta?.tickSize ?? 0.01) * 10);
-    s.setPriceRange(lo - pad, hi + pad);
+    s.setPriceRange(lo - pad * (this.settings.style === 'tpo' ? 2.5 : 1), hi + pad);
   }
 
   #frame() {
@@ -227,21 +238,22 @@ export class Chart {
     ctx.rect(0, 0, s.w, s.h);
     ctx.clip();
     const O = st.opts;
-    const profiles = this.data.profiles;
-    if (st.style === 'tpo') drawTpo(ctx, profiles, s, items);
-    else if (L.profile) drawVolumeProfiles(ctx, profiles, s, items, { ...O.profile, naked: L.naked });
-    if (L.bubbles) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
+    const tpo = st.style === 'tpo';
+    if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
+    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, { ...O.profile, naked: L.naked });
+    // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
+    if (L.bubbles && !tpo) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
     if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, this.data.ticks);
 
-    const fpOn = st.fpMode !== 'off' && this.spec.fp > 0 && !DERIVED.includes(st.style);
+    const fpOn = st.fpMode !== 'off' && this.spec.fp > 0 && !INDEXED.includes(st.style);
     if (st.style === 'linebreak') drawLineBreak(ctx, items, geo, s);
     else if (st.style === 'kagi') drawKagi(ctx, items, geo, s);
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
-    else if (st.style !== 'tpo' && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
+    else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
-    if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
-    if (L.big) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big.limit);
-    if (L.liq) drawLiquidations(ctx, s, items, this.data.liqs, O.liq);
+    if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
+    if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big.limit);
+    if (L.liq && !tpo) drawLiquidations(ctx, s, items, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     if (L.signals) drawSignals(ctx, s, items, this.signals);
     ctx.restore();

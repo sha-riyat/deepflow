@@ -1,5 +1,5 @@
 'use client';
-// Barre du haut : symbole, intervalles favoris + menu complet, style, footprint, Indicateurs,
+// Barre du haut : symbole, intervalles favoris + menu complet, style, footprint, Indicateurs (dont TPO),
 // Alerte, état de connexion, réglages d'affichage, plein écran.
 import { useState } from 'react';
 import {
@@ -144,6 +144,10 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
                 {group(trade[0])}
               </div>
               <div>
+                <div className="pop-title">Market Profile</div>
+                <MenuItem label="Vue TPO par session" sub="Lettres par 30 min, POC, value area, IB, simples impressions" on={prefs.style === 'tpo'}
+                  hint={<Switch />} onClick={() => update({ style: prefs.style === 'tpo' ? 'candles' : 'tpo' }, 'style')} />
+                <div className="pop-sep" />
                 <div className="pop-title">{levels[1]}</div>
                 {group(levels[0])}
                 <div className="pop-sep" />

@@ -7,7 +7,7 @@ const DAY = 86_400_000;
 const money = (n) => (n >= 1e6 ? `${fmt(n / 1e6, 2)} M` : n >= 1e3 ? `${fmt(n / 1e3, 1)} k` : fmt(n, 0));
 
 export function indicatorValues(chart, items) {
-  const { layers: L, opts } = chart.settings;
+  const { layers: L, opts, style } = chart.settings;
   const data = chart.data;
   const out = {};
   const last = data.bars[data.bars.length - 1];
@@ -31,7 +31,7 @@ export function indicatorValues(chart, items) {
   if (L.profile && s && s.poc !== null) {
     out.profile = `POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
   }
-  if (L.bubbles) out.bubbles = optionSummary('bubbles', opts.bubbles);
+  if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   if (L.big) out.big = data.bubbles.threshold ? `≥ ${qty(data.bubbles.threshold)}` : '';
   if (L.liq) {
     if (chart.meta?.market !== 'futures') out.liq = 'futures uniquement';

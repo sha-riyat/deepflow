@@ -82,3 +82,65 @@ function finalize(s, bucket) {
     ibHi: ib.length ? Math.max(...ib.map((p) => p[1][1])) : null,
   };
 }
+
+// Market Profile d'une session, lignes regroupées par `mult` tranches. Contrairement au profil de
+// volume, POC et value area portent sur le nombre de TPO (périodes ayant touché le prix) :
+// POC = prix le plus visité (égalité : le plus proche du centre de l'étendue), value area = 70 %
+// des TPO autour du POC, simples impressions = prix touchés par une seule période hors extrêmes.
+export function tpoProfile(s, mult = 1) {
+  const m = Math.max(1, Math.round(mult));
+  const letters = new Map(); // ligne -> indices des périodes
+  for (const [k, a, b] of s.periods) {
+    for (let r = Math.floor(a / m); r <= Math.floor(b / m); r++) {
+      const list = letters.get(r);
+      if (list) list.push(k);
+      else letters.set(r, [k]);
+    }
+  }
+  if (letters.size === 0) return null;
+  const keys = [...letters.keys()];
+  const lo = Math.min(...keys);
+  const hi = Math.max(...keys);
+  const count = (r) => letters.get(r)?.length ?? 0;
+  const mid = (lo + hi) / 2;
+  let poc = lo;
+  let best = -1;
+  let total = 0;
+  for (let r = lo; r <= hi; r++) {
+    const n = count(r);
+    total += n;
+    if (n > best || (n === best && Math.abs(r - mid) < Math.abs(poc - mid))) {
+      best = n;
+      poc = r;
+    }
+  }
+  let val = poc;
+  let vah = poc;
+  let acc = best;
+  while (acc < total * 0.7 && (val > lo || vah < hi)) {
+    const up = vah < hi ? count(vah + 1) : -1;
+    const down = val > lo ? count(val - 1) : -1;
+    if (up >= down) acc += count(++vah);
+    else acc += count(--val);
+  }
+  const singles = [];
+  for (let r = lo + 1; r < hi; r++) if (count(r) === 1) singles.push(r);
+  const ib = s.periods.filter(([k]) => k < (s.ibN ?? 2));
+  const rowOf = (p) => Math.floor(Math.floor(p / s.bucket + 1e-9) / m);
+  return {
+    mult: m,
+    bucket: s.bucket * m,
+    lo,
+    hi,
+    letters,
+    total,
+    poc,
+    val,
+    vah,
+    singles,
+    ibLo: ib.length ? Math.floor(Math.min(...ib.map((p) => p[1])) / m) : null,
+    ibHi: ib.length ? Math.floor(Math.max(...ib.map((p) => p[2])) / m) : null,
+    openRow: rowOf(s.open),
+    closeRow: rowOf(s.close),
+  };
+}

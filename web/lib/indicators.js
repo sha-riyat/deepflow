@@ -42,9 +42,16 @@ export const OPTIONS = {
   },
 };
 
+// Réglages de la vue TPO (Market Profile), proposés dans le menu Indicateurs.
+export const TPO_OPTIONS = {
+  display: { label: 'Affichage', choices: [['letters', 'Lettres'], ['blocks', 'Blocs']] },
+  volume: { label: 'Profil de volume', choices: [[1, 'À droite des lettres'], [0, 'Masqué']] },
+  days: { label: 'Sessions', choices: [[5, '5 jours'], [3, '3 jours'], [7, '7 jours'], [14, '14 jours']] },
+};
+
 export function defaultOptions() {
   const out = {};
-  for (const [layer, opts] of Object.entries(OPTIONS)) {
+  for (const [layer, opts] of Object.entries({ ...OPTIONS, tpo: TPO_OPTIONS })) {
     out[layer] = Object.fromEntries(Object.entries(opts).map(([k, o]) => [k, o.choices[0][0]]));
   }
   return out;
@@ -52,7 +59,7 @@ export function defaultOptions() {
 
 // Libellé court du réglage principal (affiché dans la légende).
 export function optionSummary(layer, opts) {
-  const defs = OPTIONS[layer];
+  const defs = layer === 'tpo' ? TPO_OPTIONS : OPTIONS[layer];
   if (!defs || !opts) return '';
   const [key, def] = Object.entries(defs)[0];
   return def.choices.find(([v]) => v === opts[key])?.[1] ?? '';

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown01Icon, Cancel01Icon, Layers01Icon, SlidersHorizontalIcon } from '@hugeicons/core-free-icons';
 import { Icon, OptionRows, type OptDefs } from './ui';
-import { LAYERS, OPTIONS } from '@/lib/indicators.js';
+import { LAYERS, OPTIONS, TPO_OPTIONS } from '@/lib/indicators.js';
 import { fmt, qty } from '@/lib/fmt.js';
 import { useLive, type UiPrefs } from '@/lib/store';
 import { seriesLabel } from './TopBar';
@@ -19,7 +19,7 @@ export interface Bar {
   s: number;
 }
 
-type Update = (p: Partial<UiPrefs>, kind: 'view' | 'layout') => void;
+type Update = (p: Partial<UiPrefs>, kind: 'view' | 'style' | 'layout') => void;
 
 interface RowProps {
   color: string;
@@ -70,8 +70,9 @@ export function Legend({ prefs, update, bar, values }: { prefs: UiPrefs; update:
   const collapsed = !prefs.legend;
   const meta = useLive((s) => s.meta);
   const dataStatus = useLive((s) => s.dataStatus);
+  const tpo = prefs.style === 'tpo';
   const active = Object.keys(LAYERS).filter((k) => prefs.layers[k]);
-  const count = active.length;
+  const count = active.length + (tpo ? 1 : 0);
   const tone = bar && bar.c < bar.o ? 'neg' : 'pos';
   const setOpt = (layer: string) => (key: string, v: number | string) =>
     update({ opts: { ...prefs.opts, [layer]: { ...prefs.opts[layer], [key]: v } } }, 'view');
@@ -80,7 +81,7 @@ export function Legend({ prefs, update, bar, values }: { prefs: UiPrefs; update:
     <div id="legend">
       <div className="lg-title">
         <b>{meta?.symbol ?? '—'}</b>
-        <span className="sub">{seriesLabel(prefs)} · Binance {meta?.market === 'futures' ? 'Perpétuel' : 'Spot'}</span>
+        <span className="sub">{tpo ? 'Sessions UTC · TPO 30 min' : seriesLabel(prefs)} · Binance {meta?.market === 'futures' ? 'Perpétuel' : 'Spot'}</span>
       </div>
       {bar && (
         <div className="lg-ohlc">
@@ -100,6 +101,10 @@ export function Legend({ prefs, update, bar, values }: { prefs: UiPrefs; update:
             <span>{count} indicateur{count > 1 ? 's' : ''}</span>
             <Icon icon={ArrowDown01Icon} size={12} className={collapsed ? '' : 'flip'} />
           </button>
+        )}
+        {!collapsed && tpo && (
+          <LegendRow color="#479ffa" label="Market Profile (TPO)" value="POC · VA au nombre de TPO" defs={TPO_OPTIONS as OptDefs}
+            opts={prefs.opts.tpo} setOpt={setOpt('tpo')} onRemove={() => update({ style: 'candles' }, 'style')} />
         )}
         {!collapsed && active.map((k) => {
           const d = (LAYERS as Record<string, { label: string; color: string }>)[k];

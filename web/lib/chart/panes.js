@@ -34,7 +34,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
   const [i0, i1] = geo.range;
   const pad = 6;
   const inner = h - 2 * pad;
-  const barW = Math.max(1, geo.slot * 0.7);
+  const barW = Math.max(1, Math.min(geo.slot * 0.7, 40)); // colonnes larges (TPO, footprint) : barre plafonnée
   let lastValue = null;
   let lo = 0;
   let hi = 1;

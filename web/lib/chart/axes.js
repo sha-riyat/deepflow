@@ -62,7 +62,8 @@ export function drawTimeAxis(ctx, scale, items, top, height, axisW) {
     const every = Math.max(1, Math.ceil(110 / scale.pxPerBar));
     const i0 = Math.max(0, Math.ceil(scale.indexOfX(0) / every) * every);
     for (let i = i0; i < items.length && scale.xOfIndex(i) <= scale.w; i += every) {
-      ctx.fillText(timeLabel(items[i].t0, 6e4), scale.xOfIndex(i), top + height / 2);
+      const daily = items[i].t1 - items[i].t0 >= 864e5; // sessions de la vue TPO
+      ctx.fillText(timeLabel(items[i].t0, daily ? 864e5 : 6e4), scale.xOfIndex(i), top + height / 2);
     }
   }
   ctx.textAlign = 'left';

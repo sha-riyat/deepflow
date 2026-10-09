@@ -1,6 +1,5 @@
-// Profils de session (volume par prix, POC, value area), POC non testés, VWAP avec bandes
-// d'écart-type, et TPO (Market Profile) en lettres par période de 30 min.
-import { TPO_LETTERS } from '@shared/profile.js';
+// Profils de session (volume par prix, POC, value area), POC non testés et VWAP avec bandes
+// d'écart-type. Le TPO (Market Profile) a sa propre vue : voir tpo.js.
 import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
@@ -111,55 +110,4 @@ export function drawVwap(ctx, items, geo, scale, { bands = 2 } = {}, anchor = nu
     ctx.stroke();
   });
   ctx.setLineDash([]);
-}
-
-// TPO : pour chaque prix, une lettre par période de 30 min qui l'a touché, alignées à gauche.
-export function drawTpo(ctx, sessions, scale, items) {
-  const y = (p) => scale.yOfPrice(p);
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  for (const s of sessions) {
-    const x0 = scale.xAt(s.t0, items);
-    const x1 = scale.xAt(s.t1, items);
-    if (!(x1 > 0) || x0 > scale.w) continue;
-    const count = new Map();
-    let maxN = 1;
-    for (const [, lo, hi] of s.periods) {
-      for (let r = lo; r <= hi; r++) {
-        const n = (count.get(r) ?? 0) + 1;
-        count.set(r, n);
-        maxN = Math.max(maxN, n);
-      }
-    }
-    const cw = Math.max(2, Math.min(11, (x1 - x0 - 8) / maxN));
-    const rowH = Math.abs(y(0) - y(s.bucket));
-    const letters = cw >= 7 && rowH >= 8;
-    const placed = new Map();
-    for (const [k, lo, hi] of s.periods) {
-      for (let r = lo; r <= hi; r++) {
-        const n = placed.get(r) ?? 0;
-        placed.set(r, n + 1);
-        const xc = x0 + 4 + (n + 0.5) * cw;
-        const yc = y((r + 0.5) * s.bucket);
-        const inVa = r >= s.val && r <= s.vah;
-        const color = k < 2 ? C.ember : inVa ? C.pale : C.graphite;
-        if (letters) {
-          ctx.font = font(Math.min(11, rowH - 1), 500);
-          ctx.fillStyle = color;
-          ctx.fillText(TPO_LETTERS[k % TPO_LETTERS.length], xc, yc);
-        } else {
-          ctx.fillStyle = alpha(color, 0.7);
-          ctx.fillRect(xc - cw / 2, yc - rowH / 2 + 0.5, Math.max(1, cw - 1), Math.max(1, rowH - 1));
-        }
-      }
-    }
-    hline(ctx, x0, x1, y((s.poc + 0.5) * s.bucket), alpha(C.ember, 0.8));
-    if (s.ibLo !== null) {
-      ctx.fillStyle = C.ember;
-      ctx.fillRect(x0 + 1, y((s.ibHi + 1) * s.bucket), 2, y(s.ibLo * s.bucket) - y((s.ibHi + 1) * s.bucket));
-    }
-    ctx.fillStyle = alpha(C.white, 0.08);
-    ctx.fillRect(x0, 0, 1, scale.h);
-  }
-  ctx.textAlign = 'left';
 }

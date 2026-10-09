@@ -1,6 +1,6 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
-const DERIVED = ['linebreak', 'kagi', 'pnf'];
+const INDEXED = ['linebreak', 'kagi', 'pnf', 'tpo'];
 const DAY = 86_400_000;
 const OI_PERIODS = [['5m', 3e5], ['15m', 9e5], ['30m', 18e5], ['1h', 36e5], ['2h', 72e5], ['4h', 144e5], ['6h', 216e5], ['12h', 432e5], ['1d', 864e5]];
 const SLOTS = [100, 200, 500, 1e3, 2e3, 5e3, 1e4, 15e3, 3e4, 6e4, 12e4, 3e5, 6e5, 9e5, 18e5, 36e5];
@@ -34,7 +34,8 @@ export function requestData(chart, items) {
       chart.data.loadHeat(p);
     }
   }
-  if (layers.bubbles || layers.big) {
+  const tpo = chart.settings.style === 'tpo';
+  if ((layers.bubbles || layers.big) && !tpo) {
     const span = Math.max(1000, tR - tL);
     const slot = bubbleSlot(span / s.w, chart.settings.opts.bubbles.density, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
     const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}`;
@@ -43,16 +44,18 @@ export function requestData(chart, items) {
       chart.data.loadBubbles(Math.max(tL, tR - 86_400_000), tR, slot);
     }
   }
-  if (layers.profile || chart.settings.style === 'tpo') {
-    const day = 86_400_000;
-    const from = Math.floor(Math.max(tL, tR - 7 * day) / day) * day;
-    const key = `${from}:${Math.floor(tR / day)}:${Math.floor(now / 15_000)}`;
+  if (layers.profile || tpo) {
+    // Vue TPO : les N dernières sessions ; profil sur bougies : les sessions visibles (7 au plus).
+    const days = chart.settings.opts.tpo.days;
+    const from = tpo ? Math.floor(now / DAY) * DAY - (days - 1) * DAY : Math.floor(Math.max(tL, tR - 7 * DAY) / DAY) * DAY;
+    const to = tpo ? now : tR;
+    const key = `${from}:${Math.floor(to / DAY)}:${Math.floor(now / 15_000)}`;
     if (key !== chart.requests.profiles) {
       chart.requests.profiles = key;
-      chart.data.loadProfiles(from, tR, meta.fpBucket);
+      chart.data.loadProfiles(from, to, meta.fpBucket);
     }
   }
-  if ((layers.liq || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
+  if (((layers.liq && !tpo) || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
     const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(now / 30_000)}`;
     if (key !== chart.requests.liqs) {
       chart.requests.liqs = key;
@@ -74,5 +77,5 @@ export function requestData(chart, items) {
     chart.requests.vwap = first.t0; // VWAP du jour : ancrage avant la première bougie chargée
     chart.data.loadVwapAnchor(first.t0);
   }
-  if (items.length && chart.scale.xAt(items[0].t0, items) > -50 && !DERIVED.includes(chart.settings.style)) chart.data.loadOlder();
+  if (items.length && chart.scale.xAt(items[0].t0, items) > -50 && !INDEXED.includes(chart.settings.style)) chart.data.loadOlder();
 }
