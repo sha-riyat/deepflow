@@ -51,8 +51,11 @@ export default function Workspace() {
     const m = getLive().meta;
     if (!chart || !m) return;
     applyChart(p);
+    // setSpec fixe la nouvelle série avant son premier await : la vue standard est ainsi calculée
+    // pour le nouvel intervalle (et non pour l'ancien).
+    const loading = getData().setSpec({ type: p.type, param: p.param, fp: p.fpMode !== 'off' ? m.fpBucket : 0 });
     chart.resetView();
-    await getData().setSpec({ type: p.type, param: p.param, fp: p.fpMode !== 'off' ? m.fpBucket : 0 });
+    await loading;
     if (pendingSpan.current) {
       chart.scale.follow = true;
       chart.scale.msPerPx = pendingSpan.current / chart.scale.w;
