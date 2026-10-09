@@ -33,6 +33,9 @@ export async function bars(s, q) {
   }
 
   let from = num(q.from, type === 'time' ? to - count * param : to - 6 * HOUR);
+  // Premier affichage : seulement les trades déjà en mémoire (réponse immédiate) ; l'historique
+  // plus ancien (archives à télécharger) est demandé ensuite, page par page.
+  if (q.recent === '1' && s.store.memStart !== null) from = Math.max(from, s.store.memStart);
   if (type === 'time') from = Math.floor(from / param) * param;
   const { trades: t, partial } = await s.store.getRange(from, to, { maxDays: 3 });
   const builder = new BarBuilder({ type, param, fpBucket: fp });

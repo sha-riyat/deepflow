@@ -47,7 +47,7 @@ export class DataManager {
     Object.assign(this, { bars: [], ready: false, atStart: false, retryAt: 0, status: 'Chargement…' });
     this.onChange('bars');
     const { type, param, fp } = this.spec;
-    const q = new URLSearchParams({ type, param, fp, count: 800 });
+    const q = new URLSearchParams({ type, param, fp, count: 800, recent: 1 });
     if (type !== 'time') q.set('from', Date.now() - 6 * HOUR);
     try {
       const r = await getJSON(`/api/bars?${q}`);
