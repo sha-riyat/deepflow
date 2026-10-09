@@ -14,6 +14,7 @@
     "web:build": "npm run build --prefix web",
     "signal": "node server/signal-cli.js",
     "backtest": "node server/backtest.js",
-    "test": "node --test"
+    "test": "node --test",
+    "verify": "node scripts/verify.js"
   }
 }
