@@ -107,6 +107,7 @@ export async function profiles(s, q) {
   const now = nowOf(s);
   const to = Math.min(num(q.to, now), now);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
+  if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket });
   const from = Math.floor(Math.max(num(q.from, to - DAY), to - 14 * DAY) / DAY) * DAY;
   if (!profileCache.has(s.store)) profileCache.set(s.store, new Map());
   const cache = profileCache.get(s.store);
@@ -138,6 +139,15 @@ export async function profiles(s, q) {
     sessions.push(session);
   }
   return { bucket, partial, sessions };
+}
+
+// Profil unique de la plage visible (3 jours au plus), comme le « visible range » de TradingView.
+async function rangeProfile(s, { from, to, bucket }) {
+  const r = await s.store.getRange(from, to, { maxDays: 3 });
+  const prof = new SessionProfiler(bucket, { range: [from, to] });
+  const t = r.trades;
+  for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
+  return { bucket, partial: r.partial, sessions: prof.list() };
 }
 
 // Ancrage du VWAP journalier : sommes Σ p·q, Σ p²·q et Σ q de 00:00 UTC jusqu'à `t` (début de la

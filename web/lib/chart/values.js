@@ -1,7 +1,8 @@
 // Valeurs courantes des indicateurs, affichées dans la légende à côté de leur nom.
 import { compact as money, fmt, qty } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
-import { vwapStart } from '../layers/profile.js';
+import { vwapStart } from '../layers/vwap.js';
+import { weeklySessions } from '../layers/volprofile.js';
 
 const DAY = 86_400_000;
 
@@ -26,9 +27,12 @@ export function indicatorValues(chart, items) {
     v += av;
     if (v > 0) out.vwap = fmt(pv / v);
   }
-  const s = data.profiles[data.profiles.length - 1];
-  if (L.profile && s && s.poc !== null) {
-    out.profile = `POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
+  const range = opts.profile.range;
+  const list = range === 'week' ? weeklySessions(data.profiles) : data.profiles;
+  const s = list[list.length - 1];
+  if (L.profile && style !== 'tpo' && s && s.poc !== null) {
+    const what = { day: 'Jour', week: 'Semaine', visible: 'Visible' }[range] ?? '';
+    out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   if (L.big) out.big = opts.big.min ? `≥ ${money(opts.big.min)} $` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';

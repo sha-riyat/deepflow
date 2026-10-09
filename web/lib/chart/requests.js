@@ -46,14 +46,21 @@ export function requestData(chart, items) {
     }
   }
   if (layers.profile || tpo) {
-    // Vue TPO : les N dernières sessions ; profil sur bougies : les sessions visibles (7 au plus).
-    const days = chart.settings.opts.tpo.days;
-    const from = tpo ? Math.floor(now / DAY) * DAY - (days - 1) * DAY : Math.floor(Math.max(tL, tR - 7 * DAY) / DAY) * DAY;
+    // Vue TPO : les N dernières sessions ; profil : sessions visibles (7 jours au plus), depuis le
+    // lundi pour la semaine, ou un profil unique de la plage visible (3 jours au plus).
+    const { tpo: T, profile: P } = chart.settings.opts;
+    const visible = !tpo && P.range === 'visible';
+    let from = tpo ? Math.floor(now / DAY) * DAY - (T.days - 1) * DAY : Math.floor(Math.max(tL, tR - 7 * DAY) / DAY) * DAY;
+    if (!tpo && P.range === 'week') from = Math.floor((from - 4 * DAY) / (7 * DAY)) * 7 * DAY + 4 * DAY;
+    if (visible) from = Math.max(tL, tR - 3 * DAY);
     const to = tpo ? now : tR;
-    const key = `${from}:${Math.floor(to / DAY)}:${Math.floor(now / 15_000)}`;
+    const params = visible ? { mode: 'range' } : {};
+    // Plage visible : rechargée quand la vue bouge d'un dixième de sa largeur.
+    const step = visible ? Math.max(60_000, (tR - tL) / 10) : DAY;
+    const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(now / 15_000)}:${JSON.stringify(params)}`;
     if (key !== chart.requests.profiles) {
       chart.requests.profiles = key;
-      chart.data.loadProfiles(from, to, meta.fpBucket);
+      chart.data.loadProfiles(from, to, meta.fpBucket, params);
     }
   }
   if (((layers.liq && !tpo) || chart.settings.panes.includes('liq')) && meta.market === 'futures') {

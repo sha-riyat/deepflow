@@ -190,9 +190,12 @@ export class DataManager {
     }
   }
 
-  async loadProfiles(from, to, bucket) {
+  // Profils : sessions journalières (tpo = sous-période en minutes) ou plage libre (mode 'range').
+  async loadProfiles(from, to, bucket, params = {}) {
+    const gen = (this.profileGen = (this.profileGen ?? 0) + 1);
     try {
-      const r = await getJSON(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket })}`);
+      const r = await getJSON(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket, ...params })}`);
+      if (gen !== this.profileGen) return; // une demande plus récente est partie entre-temps
       this.profiles = r.sessions;
       this.onChange('profiles');
     } catch (err) {

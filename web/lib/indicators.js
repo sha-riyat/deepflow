@@ -39,8 +39,11 @@ export const OPTIONS = {
     group: { label: 'Regroupement', choices: [['bar', 'Par bougie et par côté'], ['none', 'Une par liquidation']] },
   },
   profile: {
-    width: { label: 'Largeur', choices: [[0.3, '30 % de la session'], [0.15, '15 %'], [0.5, '50 %']] },
-    va: { label: 'Value area', choices: [[1, 'Affichée'], [0, 'Masquée']] },
+    range: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine'], ['visible', 'Plage visible']] },
+    kind: { label: 'Type', choices: [['volume', 'Volume'], ['bidask', 'Achats / ventes'], ['delta', 'Delta']] },
+    width: { label: 'Largeur', choices: [[0.3, '30 %'], [0.15, '15 %'], [0.5, '50 %']] },
+    va: { label: 'Value area', choices: [[1, 'Zone et lignes'], [2, 'Lignes'], [0, 'Masquée']] },
+    dev: { label: 'POC en développement', choices: [[0, 'Masqué'], [1, 'POC'], [2, 'POC et value area']] },
   },
   vwap: {
     bands: { label: 'Bandes', choices: [[2, '±1σ et ±2σ'], [1, '±1σ'], [0, 'Aucune']] },

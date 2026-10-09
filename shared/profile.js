@@ -1,29 +1,37 @@
-// Profils de session (UTC, un jour) : volume par prix, POC, value area, TPO par
-// période de 30 min et initial balance (deux premières périodes).
+// Profils de session : volume par prix, POC, value area, TPO par sous-période de 30 min,
+// initial balance (première heure) et POC / value area « en développement » (état à la
+// fin de chaque sous-période). Session = jour UTC, ou une plage libre (profil de plage visible).
 const DAY = 86_400_000;
+const HOUR = 3_600_000;
 export const TPO_MS = 30 * 60_000;
 export const TPO_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXabcdefghijklmnopqrstuvwx';
 
 const r3 = (v) => Math.round(v * 1000) / 1000;
 
 export class SessionProfiler {
-  constructor(bucket) {
+  // range : [début, fin] pour un profil unique sur une plage libre (sinon un profil par jour UTC).
+  constructor(bucket, { range = null } = {}) {
     this.bucket = bucket;
+    this.tpoMs = TPO_MS;
+    this.range = range;
     this.sessions = new Map(); // début de session -> état
   }
 
   push(t, p, q, side) {
-    const t0 = Math.floor(t / DAY) * DAY;
+    const t0 = this.range ? this.range[0] : Math.floor(t / DAY) * DAY;
     let s = this.sessions.get(t0);
     if (!s) {
-      s = { t0, rows: new Map(), periods: new Map(), open: p, close: p, hi: p, lo: p };
+      s = { t0, rows: new Map(), periods: new Map(), dev: [], lastK: null, open: p, close: p, hi: p, lo: p };
       this.sessions.set(t0, s);
     }
     const row = Math.floor(p / this.bucket + 1e-9);
+    const k = Math.floor((t - t0) / this.tpoMs);
+    // Nouvelle sous-période : on fige l'état « en développement » de la précédente.
+    if (s.lastK !== null && k !== s.lastK) s.dev.push([s.lastK, ...valueArea(s.rows)]);
+    s.lastK = k;
     const cell = s.rows.get(row) ?? [0, 0];
     cell[side > 0 ? 0 : 1] += q;
     s.rows.set(row, cell);
-    const k = Math.floor((t - t0) / TPO_MS);
     const per = s.periods.get(k);
     if (per) {
       per[0] = Math.min(per[0], row);
@@ -35,49 +43,60 @@ export class SessionProfiler {
   }
 
   list() {
-    return [...this.sessions.values()].sort((a, b) => a.t0 - b.t0).map((s) => finalize(s, this.bucket));
+    return [...this.sessions.values()].sort((a, b) => a.t0 - b.t0).map((s) => finalize(s, this));
   }
 }
 
-function finalize(s, bucket) {
-  const rows = [...s.rows].sort((a, b) => a[0] - b[0]);
+// POC (ligne la plus chargée) et value area à 70 % : on part du POC et on ajoute le côté le plus
+// chargé. Retourne [poc, val, vah] (numéros de ligne).
+export function valueArea(rowsMap, pct = 0.7) {
+  const rows = [...rowsMap].sort((a, b) => a[0] - b[0]);
+  if (!rows.length) return [null, null, null];
+  const vol = (i) => rows[i][1][0] + rows[i][1][1];
   let total = 0;
   let pocI = 0;
-  let max = -1;
-  rows.forEach(([, [bv, sv]], i) => {
-    total += bv + sv;
-    if (bv + sv > max) {
-      max = bv + sv;
-      pocI = i;
-    }
-  });
-  // Value area : on part du POC et on ajoute le côté le plus chargé jusqu'à 70 %.
+  for (let i = 0; i < rows.length; i++) {
+    total += vol(i);
+    if (vol(i) > vol(pocI)) pocI = i;
+  }
   let lo = pocI;
   let hi = pocI;
-  let acc = max;
-  const vol = (i) => rows[i][1][0] + rows[i][1][1];
-  while (acc < total * 0.7 && (lo > 0 || hi < rows.length - 1)) {
+  let acc = vol(pocI);
+  while (acc < total * pct && (lo > 0 || hi < rows.length - 1)) {
     const down = lo > 0 ? vol(lo - 1) : -1;
     const up = hi < rows.length - 1 ? vol(hi + 1) : -1;
     if (up >= down) acc += vol(++hi);
     else acc += vol(--lo);
   }
+  return [rows[pocI][0], rows[lo][0], rows[hi][0]];
+}
+
+function finalize(s, { bucket, tpoMs, range }) {
+  const rows = [...s.rows].sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  for (const [, [bv, sv]] of rows) total += bv + sv;
+  const [poc, val, vah] = valueArea(s.rows);
   const periods = [...s.periods].sort((a, b) => a[0] - b[0]);
-  const ib = periods.filter(([k]) => k < 2);
+  const ibN = Math.max(1, Math.round(HOUR / tpoMs)); // initial balance : première heure
+  const ib = periods.filter(([k]) => k < ibN);
+  const dev = s.lastK === null ? s.dev : [...s.dev, [s.lastK, poc, val, vah]];
   return {
     t0: s.t0,
-    t1: s.t0 + DAY,
+    t1: range ? range[1] : s.t0 + DAY,
     bucket,
+    tpoMs,
+    ibN,
     open: s.open,
     close: s.close,
     hi: s.hi,
     lo: s.lo,
     total: r3(total),
     rows: rows.map(([row, [bv, sv]]) => [row, r3(bv), r3(sv)]),
-    poc: rows[pocI]?.[0] ?? null,
-    val: rows[lo]?.[0] ?? null,
-    vah: rows[hi]?.[0] ?? null,
+    poc,
+    val,
+    vah,
     periods: periods.map(([k, [a, b]]) => [k, a, b]),
+    dev,
     ibLo: ib.length ? Math.min(...ib.map((p) => p[1][0])) : null,
     ibHi: ib.length ? Math.max(...ib.map((p) => p[1][1])) : null,
   };
