@@ -160,3 +160,39 @@ export function drawAlertLines(ctx, scale, alerts) {
     pill(ctx, 8, yy, `Alerte ${fmt(a.params.price)}`, { bg: C.obsidian, fg: C.ember, size: 10 });
   }
 }
+
+// Liquidations : losanges dont l'aire suit le montant ; rouge = position longue liquidée
+// (vente forcée), vert = position courte liquidée (achat forcé).
+export function drawLiquidations(ctx, scale, items, rows) {
+  const vis = [];
+  let max = 0;
+  for (const [t, p, q, side] of rows) {
+    const x = scale.xAt(t, items);
+    if (x < -20 || x > scale.w + 20) continue;
+    vis.push([x, p, p * q, side]);
+    max = Math.max(max, p * q);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  for (const [x, p, n, side] of vis) {
+    const y = scale.yOfPrice(p);
+    const r = 4 + 14 * Math.sqrt(n / max);
+    const color = side < 0 ? C.loss : C.growth;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + r, y);
+    ctx.lineTo(x, y + r);
+    ctx.lineTo(x - r, y);
+    ctx.closePath();
+    ctx.fillStyle = alpha(color, 0.35);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    if (r < 10) continue;
+    ctx.font = font(10, 600);
+    ctx.fillStyle = C.white;
+    ctx.fillText(n >= 1e6 ? `${fmt(n / 1e6, 1)} M` : `${fmt(n / 1e3, 0)} k`, x, y - r - 2);
+  }
+  ctx.textAlign = 'left';
+}

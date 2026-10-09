@@ -25,6 +25,7 @@ export const LAYERS: Record<string, [string, string]> = {
   heat: ['Heatmap de liquidité', 'Carnet d’ordres dans le temps'],
   bubbles: ['Bulles de trades', 'Volume agressif par créneau'],
   big: ['Gros prints', 'Ordres agresseurs les plus gros'],
+  liq: ['Liquidations', 'Positions liquidées (futures, échantillon Binance)'],
   quotes: ['Bid / ask', 'Meilleurs prix récents'],
   profile: ['Profil de session', 'Volume par prix, POC et value area'],
   naked: ['POC non testés', 'Prolongés jusqu’au retest'],

@@ -122,7 +122,16 @@ export interface Tick {
   bid: number;
   ask: number;
   tr: [number, number, number, number, number?][];
+  liq?: [number, number, number, number][];
   an: { cvd: number; delta: number; imb: number; big: [number, number, number][] };
+}
+
+export interface Mark {
+  t: number;
+  mark: number;
+  index: number;
+  funding: number;
+  nextFunding: number;
 }
 
 export interface Ticker {

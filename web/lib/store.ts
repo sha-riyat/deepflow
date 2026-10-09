@@ -1,7 +1,7 @@
 // État en direct partagé par les composants, sans bibliothèque : un store observable lu via
 // useSyncExternalStore. Les données à haute fréquence (ticks, bougies) restent hors de React.
 import { useSyncExternalStore } from 'react';
-import type { AlertFired, AlertItem, Dom, HistoryStatus, Meta, Signal } from './types';
+import type { AlertFired, AlertItem, Dom, HistoryStatus, Mark, Meta, Signal } from './types';
 
 export interface Live {
   meta: Meta | null;
@@ -14,6 +14,7 @@ export interface Live {
   signals: Signal[];
   dataStatus: string;
   following: boolean;
+  mark: Mark | null;
 }
 
 let state: Live = {
@@ -27,6 +28,7 @@ let state: Live = {
   signals: [],
   dataStatus: '',
   following: true,
+  mark: null,
 };
 const listeners = new Set<() => void>();
 
@@ -69,7 +71,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   style: 'candles',
   fpMode: 'off',
   panes: ['volume', 'delta'],
-  layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true },
+  layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
   gamma: 0.9,
   rail: { open: ['signal', 'dom'], width: 360, split: 0.55 },
   signalSound: false,

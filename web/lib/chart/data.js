@@ -38,6 +38,8 @@ export class DataManager {
     this.heatBusy = false;
     this.heatNext = null;
     this.oi = [];
+    this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
+    this.liqTo = 0;
     this.vwapAnchor = null; // sommes du jour avant la première bougie chargée (voir loadVwapAnchor)
   }
 
@@ -117,6 +119,7 @@ export class DataManager {
       this.liveSlots.set(t0, g);
     }
     for (const [p, q, side] of tick.an?.big ?? []) this.liveBig.push([tick.t, p, q, side]);
+    for (const [p, q, side, T] of tick.liq ?? []) if (T >= this.liqTo) this.liqs.push([T, p, q, side]);
     if (this.liveBig.length > 2000) this.liveBig.splice(0, this.liveBig.length - 2000);
     if (this.ready) this.#apply(tick);
     else this.queue.push(tick);
@@ -170,6 +173,20 @@ export class DataManager {
       this.onChange('profiles');
     } catch (err) {
       this.status = `Profils : ${err.message}`;
+    }
+  }
+
+  // Liquidations de la plage (enregistrées par le collecteur depuis son premier lancement).
+  async loadLiquidations(from, to) {
+    try {
+      const r = await getJSON(`/api/liquidations?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to) })}`);
+      const live = this.liqs.filter((l) => l[0] >= to);
+      this.liqs = r.rows.concat(live);
+      this.liqTo = Math.floor(to);
+      this.liqSince = r.since;
+      this.onChange('liqs');
+    } catch {
+      // nouvelle tentative au prochain cycle
     }
   }
 

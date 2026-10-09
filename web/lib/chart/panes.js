@@ -1,11 +1,25 @@
 // Panneaux d'indicateurs sous le graphique principal, alignés sur les mêmes colonnes :
-// volume, delta par bougie, CVD (delta cumulé depuis la première bougie chargée), open interest.
+// volume, delta par bougie, CVD (delta cumulé depuis la première bougie chargée), open interest,
+// liquidations.
 import { fmt, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
-export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD', oi: 'Open interest' };
+// Index de la bougie qui contient l'instant t (recherche dichotomique sur t0).
+function barIndex(items, t) {
+  let lo = 0;
+  let hi = items.length - 1;
+  if (hi < 0 || t < items[0].t0) return -1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (items[mid].t0 <= t) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
 
-export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], axisW }) {
+export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD', oi: 'Open interest', liq: 'Liquidations' };
+
+export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], axisW }) {
   const { y: top, h } = rect;
   const w = scale.w;
   ctx.save();
@@ -25,7 +39,31 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], axisW })
   let lo = 0;
   let hi = 1;
 
-  if (kind === 'volume' || kind === 'delta') {
+  if (kind === 'liq') {
+    // Montant liquidé par bougie : courtes liquidées vers le haut, longues vers le bas.
+    const sums = new Map();
+    for (const [t, p, q, side] of liqs) {
+      const i = barIndex(items, t);
+      if (i < i0 || i > i1) continue;
+      const cell = sums.get(i) ?? [0, 0];
+      cell[side < 0 ? 0 : 1] += p * q;
+      sums.set(i, cell);
+    }
+    let max = 0;
+    for (const [l, s] of sums.values()) max = Math.max(max, l, s);
+    const mid = top + h / 2;
+    for (const [i, [longs, shorts]] of sums) {
+      const x = geo.x(items[i], i) - barW / 2;
+      ctx.fillStyle = alpha(C.growth, 0.75);
+      ctx.fillRect(x, mid - (shorts / max) * (inner / 2), barW, (shorts / max) * (inner / 2));
+      ctx.fillStyle = alpha(C.loss, 0.75);
+      ctx.fillRect(x, mid, barW, (longs / max) * (inner / 2));
+    }
+    lo = -max;
+    hi = max;
+    const last = sums.get(i1);
+    lastValue = last ? last[0] + last[1] : 0;
+  } else if (kind === 'volume' || kind === 'delta') {
     let max = 0;
     for (let i = i0; i <= i1; i++) max = Math.max(max, kind === 'volume' ? items[i].v : Math.abs(items[i].b - items[i].s));
     const base = kind === 'volume' ? top + h - pad : top + h / 2;
@@ -78,7 +116,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], axisW })
   ctx.fillText(PANES[kind], 8, top + 6);
   if (lastValue !== null) {
     ctx.fillStyle = kind === 'cvd' ? C.ember : lastValue >= 0 ? C.mist : C.loss;
-    ctx.fillText(kind === 'oi' ? fmt(lastValue, 0) : qty(lastValue), 8 + ctx.measureText(PANES[kind]).width + 10, top + 6);
+    ctx.fillText(kind === 'oi' || kind === 'liq' ? fmt(lastValue, 0) : qty(lastValue), 8 + ctx.measureText(PANES[kind]).width + 10, top + 6);
   }
   ctx.fillStyle = alpha(C.ink, 0.9);
   ctx.fillRect(w, top + 1, axisW, h - 1);
@@ -87,7 +125,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], axisW })
   ctx.font = font(10);
   ctx.fillStyle = C.graphite;
   ctx.textBaseline = 'middle';
-  ctx.fillText(kind === 'oi' ? fmt(hi, 0) : qty(hi), w + 10, top + pad + 4);
-  ctx.fillText(kind === 'oi' ? fmt(lo, 0) : qty(lo), w + 10, top + h - pad - 4);
+  ctx.fillText(kind === 'oi' || kind === 'liq' ? fmt(hi, 0) : qty(hi), w + 10, top + pad + 4);
+  ctx.fillText(kind === 'oi' || kind === 'liq' ? fmt(lo, 0) : qty(lo), w + 10, top + h - pad - 4);
   ctx.restore();
 }

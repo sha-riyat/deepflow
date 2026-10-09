@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Clock01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
 import { useLive } from '@/lib/store';
+import { fmt, sgn } from '@/lib/fmt.js';
 
 // Plage visible -> intervalle de bougie adapté.
 export const RANGES: [string, number, number][] = [
@@ -14,13 +15,25 @@ export const RANGES: [string, number, number][] = [
   ['1A', 365 * 86_400_000, 86_400_000],
 ];
 
+function countdown(ms: number): string {
+  if (!(ms > 0)) return '—';
+  const s = Math.floor(ms / 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+}
+
 export function StatusBar({ onRange }: { onRange: (span: number, tf: number) => void }) {
   const history = useLive((s) => s.history);
   const meta = useLive((s) => s.meta);
+  const mark = useLive((s) => s.mark);
   const [now, setNow] = useState('');
+  const [clock, setClock] = useState(0);
 
   useEffect(() => {
-    const tick = () => setNow(new Date().toISOString().slice(11, 19));
+    const tick = () => {
+      setNow(new Date().toISOString().slice(11, 19));
+      setClock(Date.now());
+    };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -40,6 +53,12 @@ export function StatusBar({ onRange }: { onRange: (span: number, tf: number) => 
       <span className="tb-sep" />
       <span className="sb-info">{info.join(' · ') || 'Historique à jour'}</span>
       <div className="sb-right">
+        {mark && meta?.market === 'futures' && (
+          <span className="sb-info" title="Positif : les positions longues paient les courtes à chaque échéance">
+            Marque {fmt(mark.mark, 2)} · Financement <b className={mark.funding >= 0 ? 'pos' : 'neg'}>{sgn(mark.funding * 100, 4)} %</b> dans {countdown(mark.nextFunding - clock)}
+          </span>
+        )}
+        <span className="tb-sep" />
         <span className="sb-info">{meta?.mode === 'replay' ? 'Replay' : 'Direct'} · Binance {meta?.market === 'spot' ? 'Spot' : 'Futures USD-M'}</span>
         <span className="tb-sep" />
         <span className="sb-info"><Icon icon={Clock01Icon} size={14} />{now} UTC</span>

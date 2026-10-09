@@ -28,7 +28,7 @@ interface Bar {
 
 const LAYER_COLOR: Record<string, string> = {
   heat: '#b6d6ff', bubbles: '#4ebe96', big: '#ffa16c', quotes: '#cccccc', profile: '#868f97',
-  naked: '#ffa16c', vwap: '#e6e6e6', signals: '#4ebe96', alerts: '#ffa16c',
+  naked: '#ffa16c', vwap: '#e6e6e6', signals: '#4ebe96', alerts: '#ffa16c', liq: '#e0685f',
 };
 
 interface NavChart {

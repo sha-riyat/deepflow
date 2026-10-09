@@ -55,7 +55,7 @@ export function connectStream(h: StreamHandlers): () => void {
   on('reset', () => {
     ready = false;
     known.clear();
-    setLive({ signals: [], dom: null });
+    setLive({ signals: [], dom: null, mark: null });
     getData().reset();
     engine.tape?.clear();
     h.onReset();
@@ -77,6 +77,7 @@ export function connectStream(h: StreamHandlers): () => void {
   });
   on('dom', (d) => engine.dom?.update(d));
   on('history', (hs) => setLive({ history: hs as never }));
+  on('mark', (m) => setLive({ mark: m as never }));
   on('alerts', (list) => setLive({ alerts: list as never }));
   on<AlertFired>('alert', (a) => h.onAlert(a));
   on<Signal>('signal', (s) => {

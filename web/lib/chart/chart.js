@@ -9,7 +9,7 @@ import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVolumeProfiles, drawVwap, drawTpo } from '../layers/profile.js';
-import { drawBubbles, drawBigPrints, drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
+import { drawBubbles, drawBigPrints, drawQuotes, drawSignals, drawAlertLines, drawLiquidations } from '../layers/marks.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { C } from '../theme.js';
 
@@ -32,7 +32,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
     };
     const mk = (cls) => {
       const c = document.createElement('canvas');
@@ -236,13 +236,14 @@ export class Chart {
     if (fpOn) drawFootprint(ctx, items, geo, s, { mode: st.fpMode, bucket: this.meta.fpBucket });
     if (L.vwap && !DERIVED.includes(st.style)) drawVwap(ctx, items, geo, s, this.data.vwapAnchor);
     if (L.big) drawBigPrints(ctx, s, items, this.data.bigPrints());
+    if (L.liq) drawLiquidations(ctx, s, items, this.data.liqs);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     if (L.signals) drawSignals(ctx, s, items, this.signals);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
     st.panes.forEach((kind, k) => {
-      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, axisW: AXIS_W });
+      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, axisW: AXIS_W });
     });
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
   }

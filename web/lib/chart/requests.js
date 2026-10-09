@@ -51,6 +51,13 @@ export function requestData(chart, items) {
       chart.data.loadProfiles(from, tR, meta.fpBucket);
     }
   }
+  if ((layers.liq || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
+    const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(now / 30_000)}`;
+    if (key !== chart.requests.liqs) {
+      chart.requests.liqs = key;
+      chart.data.loadLiquidations(tL, tR);
+    }
+  }
   const first = chart.data.bars[0];
   if (layers.vwap && first && first.t0 % DAY !== 0 && chart.requests.vwap !== first.t0) {
     chart.requests.vwap = first.t0; // VWAP du jour : ancrage avant la première bougie chargée
