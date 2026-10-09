@@ -5,7 +5,10 @@ export const fmt = (v, d = 2) =>
 export const sgn = (v, d = 2) => (v === null || v === undefined ? '—' : (v >= 0 ? '+' : '') + fmt(v, d));
 
 // Quantité avec un nombre de décimales adapté à sa taille.
-export const qty = (v) => fmt(v, v >= 100 ? 0 : v >= 10 ? 1 : v >= 1 ? 2 : 3);
+export const qty = (v) => {
+  const a = Math.abs(v);
+  return fmt(v, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3);
+};
 
 export const time = (t) => new Date(t).toLocaleTimeString('fr-FR');
 
