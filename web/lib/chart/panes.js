@@ -1,11 +1,12 @@
 // Panneaux d'indicateurs sous le graphique principal, alignés sur les mêmes colonnes :
-// volume, delta par bougie, CVD (delta cumulé depuis la première bougie chargée), open interest,
+// volume, delta par bougie, CVD (delta cumulé, remis à zéro à chaque session UTC), open interest,
 // liquidations. Le nom et les valeurs de la bougie survolée sont affichés en HTML (ChartView) ;
 // chaque panneau renvoie la conversion hauteur -> valeur utilisée par le réticule.
 import { compact, qty, sgn } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
+import { sessionCvd, sessionStart } from '@shared/cvd.js';
 
-export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques' };
+export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques' };
 
 // Lignes du tableau de statistiques, par priorité (celles qui tiennent dans la hauteur sont gardées).
 const STATS = [
@@ -147,10 +148,10 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
     // Séries en ligne : CVD calculé sur les bougies, OI venant de Binance.
     const pts = [];
     if (kind === 'cvd') {
-      let cum = 0;
-      for (let i = 0; i <= i1; i++) {
-        cum += items[i].b - items[i].s;
-        if (i >= i0) pts.push([geo.x(items[i], i), cum]);
+      const cvd = sessionCvd(items, i1);
+      for (let i = Math.max(0, i0); i <= i1; i++) {
+        if (sessionStart(items, i) && pts.length) pts.push(null); // nouvelle session : tracé interrompu
+        pts.push([geo.x(items[i], i), cvd[i]]);
       }
     } else {
       for (const [t, v] of oi) {
@@ -158,15 +159,25 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
         if (x >= -10 && x <= w + 10) pts.push([x, v]);
       }
     }
-    if (pts.length) {
-      lo = Math.min(...pts.map((p) => p[1]));
-      hi = Math.max(...pts.map((p) => p[1]));
+    const vals = pts.filter(Boolean).map((p) => p[1]);
+    if (vals.length) {
+      lo = Math.min(...vals);
+      hi = Math.max(...vals);
       if (hi - lo < 1e-9) hi = lo + 1;
       const yOf = (v) => top + pad + (1 - (v - lo) / (hi - lo)) * inner;
       ctx.strokeStyle = kind === 'cvd' ? C.ember : C.mist;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      pts.forEach(([x, v], k) => (k ? ctx.lineTo(x, yOf(v)) : ctx.moveTo(x, yOf(v))));
+      let pen = false;
+      for (const p of pts) {
+        if (!p) {
+          pen = false;
+          continue;
+        }
+        if (pen) ctx.lineTo(p[0], yOf(p[1]));
+        else ctx.moveTo(p[0], yOf(p[1]));
+        pen = true;
+      }
       ctx.stroke();
       const [l0, h0] = [lo, hi];
       valueAt = (y) => l0 + (1 - (y - top - pad) / inner) * (h0 - l0);
@@ -206,8 +217,7 @@ export function paneValues(kind, items, i, { oi = [], liqs = [] } = {}) {
     return [['', (d >= 0 ? '+' : '') + qty(d), tone(d)], ['', b.v > 0 ? `${sgn((d / b.v) * 100, 1)} % du volume` : '', '']];
   }
   if (kind === 'cvd') {
-    let cum = 0;
-    for (let k = 0; k <= i; k++) cum += items[k].b - items[k].s;
+    const cum = sessionCvd(items, i)[i];
     return [['', qty(cum), tone(cum)], ['Δ bougie', (b.b >= b.s ? '+' : '') + qty(b.b - b.s), tone(b.b - b.s)]];
   }
   if (kind === 'oi') {
