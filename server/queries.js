@@ -1,7 +1,8 @@
 // Requêtes d'historique : bougies (klines ou trades), bulles de trades, profils de session,
-// heatmap, open interest, tickers.
+// heatmap, open interest, delta spot, tickers.
 import { BarBuilder, BAR_TYPES, klineToWire } from '../shared/bars.js';
 import { SessionProfiler } from '../shared/profile.js';
+import { BinanceRest } from './history/rest.js';
 
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
@@ -174,6 +175,20 @@ export async function vwapAnchor(s, q) {
     v += vol;
   }
   return { day, t, pv, p2v, v };
+}
+
+// Delta du marché spot du même actif (klines spot Binance : volume acheteur taker exact par bougie),
+// pour comparer le CVD spot (achat réel) au CVD perp (levier). Lignes [début, achats, ventes].
+let spotRest = null;
+export async function spotDelta(s, q) {
+  const param = num(q.param, 60_000);
+  const interval = KLINE[param];
+  if (!interval) throw new Error('intervalle non disponible en klines spot');
+  spotRest ??= new BinanceRest('spot');
+  const to = Math.min(num(q.to, nowOf(s)), nowOf(s));
+  const from = Math.max(num(q.from, to - 1000 * param), to - 1000 * param);
+  const rows = await spotRest.klines(s.cfg.symbol, interval, { startTime: Math.floor(from), endTime: Math.floor(to), limit: 1000 });
+  return { symbol: s.cfg.symbol, rows: rows.map((k) => [k[0], Number(k[9]), Number(k[5]) - Number(k[9])]) };
 }
 
 export function heatmap(s, q) {

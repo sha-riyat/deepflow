@@ -5,8 +5,9 @@
 import { compact, qty, sgn } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 import { sessionCvd, sessionStart } from '@shared/cvd.js';
+import { drawSpotPane, spotValues } from './spotpane.js';
 
-export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques' };
+export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques', spot: 'CVD spot / perp' };
 
 // Lignes du tableau de statistiques, par priorité (celles qui tiennent dans la hauteur sont gardées).
 const STATS = [
@@ -87,7 +88,7 @@ function oiAt(oi, item) {
   return k < 0 ? null : { v: oi[k][1], prev: k > 0 ? oi[k - 1][1] : null };
 }
 
-export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], axisW }) {
+export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], spot = null, axisW }) {
   const { y: top, h } = rect;
   const w = scale.w;
   ctx.save();
@@ -109,6 +110,11 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
   let hi = 1;
   let valueAt = null;
 
+  if (kind === 'spot') {
+    drawSpotPane(ctx, items, geo, { top, h, w, axisW }, spot);
+    ctx.restore();
+    return { kind, top, h, valueAt: null, format: qty };
+  }
   if (kind === 'stats') {
     drawStats(ctx, items, geo, { top, h, w, axisW });
     ctx.restore();
@@ -206,7 +212,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
 }
 
 // Valeurs d'une bougie pour la légende HTML du panneau : [libellé, valeur, ton].
-export function paneValues(kind, items, i, { oi = [], liqs = [] } = {}) {
+export function paneValues(kind, items, i, { oi = [], liqs = [], spot = null } = {}) {
   const b = items[i];
   if (!b) return [];
   const tone = (v) => (v >= 0 ? 'pos' : 'neg');
@@ -220,6 +226,7 @@ export function paneValues(kind, items, i, { oi = [], liqs = [] } = {}) {
     const cum = sessionCvd(items, i)[i];
     return [['', qty(cum), tone(cum)], ['Δ bougie', (b.b >= b.s ? '+' : '') + qty(b.b - b.s), tone(b.b - b.s)]];
   }
+  if (kind === 'spot') return spotValues(items, i, spot);
   if (kind === 'oi') {
     const p = oiAt(oi, b);
     if (!p) return [['', '—', '']];

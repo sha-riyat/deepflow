@@ -38,6 +38,7 @@ export class DataManager {
     this.heatBusy = false;
     this.heatNext = null;
     this.oi = [];
+    this.spot = { rows: new Map(), param: 0, error: null }; // delta spot par bougie : début -> [achats, ventes]
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
     this.vwapAnchor = null; // sommes du jour avant la première bougie chargée (voir loadVwapAnchor)
@@ -239,6 +240,19 @@ export class DataManager {
       this.onChange('vwap');
     } catch {
       this.vwapAnchor = null;
+    }
+  }
+
+  // Delta du spot du même actif (klines spot), fusionné par début de bougie.
+  async loadSpot(param, from, to) {
+    if (this.spot.param !== param) this.spot = { rows: new Map(), param, error: null };
+    try {
+      const r = await getJSON(`/api/spotdelta?${new URLSearchParams({ param, from: Math.floor(from), to: Math.floor(to) })}`);
+      for (const [t, buy, sell] of r.rows) this.spot.rows.set(t, [buy, sell]);
+      this.spot.error = null;
+      this.onChange('spot');
+    } catch (err) {
+      this.spot.error = `CVD spot indisponible : ${err.message}`;
     }
   }
 

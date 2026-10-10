@@ -102,6 +102,20 @@ export function requestData(chart, items) {
       chart.data.loadLiquidations(tL, tR);
     }
   }
+  if (chart.settings.panes.includes('spot')) {
+    // CVD spot : klines spot du même actif (bougies temps uniquement, 1000 bougies par requête).
+    const param = chart.spec.type === 'time' ? chart.spec.param : 0;
+    if (!param || meta.market !== 'futures') {
+      chart.data.spot.error = 'CVD spot : bougies temps sur un marché futures uniquement';
+    } else {
+      if (chart.data.spot.error?.startsWith('CVD spot : bougies')) chart.data.spot.error = null;
+      const key = `${param}:${Math.floor(tL / (param * 500))}:${Math.floor(now / 20_000)}`;
+      if (key !== chart.requests.spot) {
+        chart.requests.spot = key;
+        chart.data.loadSpot(param, Math.max(tL, tR - 999 * param), tR + param);
+      }
+    }
+  }
   if (chart.settings.panes.includes('oi') && meta.market === 'futures') {
     // Période Binance la plus proche de l'intervalle des bougies (5 min au minimum, 30 jours d'historique).
     const tf = chart.spec.type === 'time' ? chart.spec.param : 0;
