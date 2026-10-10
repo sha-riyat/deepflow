@@ -122,14 +122,21 @@ npm run dev
     signalé « historique incomplet » si l'ancre précède les bougies chargées.
   - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
     calculés par le collecteur à partir de chaque trade ; 3 jours au plus (au-delà, les 3 derniers).
+    La taille des lignes s'adapte à la hauteur de la plage (environ 30 lignes : 10 $ pour 220 $ sur
+    BTC), sans descendre sous la tranche du collecteur.
 - **Bulles de trades** (cercles, à la Bookmap / DeepCharts) : une bulle par créneau de temps
   (environ 8 px, choisi pour tomber dans une seule bougie), placée au VWAP du créneau ; taille
   rapportée à la moyenne des créneaux visibles (échelle racine, linéaire ou logarithmique) ; couleur
-  achats / ventes (camembert), delta ou volume seul ; filtre par rapport à la moyenne.
-- **Gros prints** (carrés, à la ATAS / DeepCharts) : fills d'un même ordre agresseur regroupés
-  (même heure, même côté), au prix moyen de l'ordre ; seuil automatique (0,5 % des ordres les plus
-  gros), selon l'actif (50 k $ sur BTC, 25 k $ ailleurs, à calibrer) ou en montant (25 k $ à
-  1 M $) ; nombre affiché et étiquettes réglables.
+  achats / ventes (camembert), delta ou volume seul ; filtre par rapport à la moyenne. Les bulles
+  sont centrées sur la colonne de leur bougie (réglable : à l'heure exacte).
+- **Gros prints** (cercles pleins, comme DeepCharts) : fills d'un même ordre agresseur regroupés
+  (même heure, même côté), puis additionnés par niveau de prix dans la bougie (« ×6 » : six
+  ordres) ; seuil automatique (0,5 % des ordres les plus gros), selon l'actif (50 k $ sur BTC,
+  25 k $ ailleurs, à calibrer) ou en montant (25 k $ à 1 M $), éventuellement ajusté par session
+  (Asie ×0,5, Londres ×1, New York ×2). Centrés sur la bougie, acheteurs à droite et vendeurs à
+  gauche de la mèche, trois au plus par bougie ; un anneau creux signale un gros ordre absorbé (le
+  prix n'a pas avancé dans son sens, en fraction de l'amplitude moyenne d'une bougie) ; trois
+  étiquettes au plus. Maj + G masque ou réaffiche d'un coup bulles et gros prints.
 - **Liquidations** (losanges, à la Exocharts / Kiyotaka) : au prix moyen d'exécution, regroupées par
   bougie et par côté (cascades) ou une par liquidation ; montant minimum en dollars.
 - **Footprint** (menu Footprint, modes d'ATAS / LuxAlgo / Exocharts) : bid × ask, échelle bid × ask,
@@ -137,8 +144,9 @@ npm run dev
   diagonal encadrées (ratio 150 à 400 %, 300 % par défaut ; une case face à zéro est ignorée par
   défaut, comme Flowsurface), déséquilibres empilés (2 à 5 niveaux) en zones prolongées jusqu'au
   retest, enchères inachevées (acheteurs et vendeurs sur l'extrême) prolongées jusqu'au retour du
-  prix, badges A (absorption : agression massive encaissée à l'extrême) et E (épuisement :
-  agression quasi nulle à l'extrême), bougie à gauche ou au centre entre bid et ask, delta sous
+  prix, badges A (absorption : agression d'au moins 1,5 fois une ligne moyenne encaissée à
+  l'extrême) et E (épuisement : agression quasi nulle à l'extrême alors que la ligne voisine était
+  fournie), calibrés pour toucher environ une bougie sur vingt, bougie à gauche ou au centre entre bid et ask, delta sous
   chaque bougie, lignes regroupées automatiquement au dézoom.
 - **Profil de volume** : par jour UTC, par semaine (depuis lundi), sur la plage visible (épinglé à
   droite, comme le « visible range » de TradingView) ou composite des 5 / 10 derniers jours ; lignes
@@ -190,8 +198,9 @@ npm run dev
   en barre orange, simples impressions en trait bleu prolongées jusqu'au retest, poor high / poor
   low (au moins deux TPO à l'extrême), ouverture et clôture en triangles, profil de volume à
   droite, POC / VAH / VAL de la session en cours et POC non testés prolongés.
-- **Panneau Statistiques** : tableau par bougie (delta, volume, delta %, achats, ventes, trades),
-  fond d'intensité relative à la vue, valeurs dès que la colonne est assez large.
+- **Panneau Statistiques** : tableau par bougie (delta, volume, delta % en couleur au-delà de 10 %,
+  volume relatif, delta des gros prints, achats, ventes, trades, taille moyenne d'un ordre), fond
+  d'intensité relative à la vue, valeurs dès que la colonne est assez large.
 - **Rail à droite** : Flux (déséquilibre du carnet, z-score du delta, VWAP, seuil des gros prints,
   murs actifs), DOM, Trades, Marchés, Alertes, Journal, Apprendre (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
