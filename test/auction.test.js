@@ -75,3 +75,15 @@ test('taille des lignes d’un profil de plage : ~30 lignes sur la hauteur, jama
   assert.equal(rangeBucket(100, 100, 5), 5); // plage sans hauteur
   assert.equal(rangeBucket(0, 3_000, 10, 30), 100); // 100 $ : multiple de la tranche
 });
+
+test('HVN / LVN : le pic est sur la ligne de plus gros volume, pas sur son voisin après lissage', () => {
+  // Profil réel d'une plage de BTC (lignes de 10 $, du bas vers le haut) : pic de 159 à l'indice 17,
+  // voisin d'un creux de 46 (indice 18) ; la moyenne lissée du creux (94) dépasse celle du pic (89).
+  const vols = [33, 25, 79, 342, 60, 57, 23, 48, 91, 30, 75, 81, 103, 60, 103, 56, 62, 159, 46, 76];
+  const rows = vols.map((v, i) => [i, v / 2, v / 2]);
+  const { hvn, lvn } = volumeNodes(rows);
+  assert.ok(hvn.includes(3), 'le POC est un HVN');
+  assert.ok(hvn.includes(17), 'le pic de 159 est sur sa propre ligne');
+  assert.ok(!hvn.includes(18), 'pas sur la ligne creuse voisine (46)');
+  assert.deepEqual(lvn, [6]); // le creux de 23, entre les deux pics
+});

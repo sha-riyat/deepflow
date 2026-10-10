@@ -9,7 +9,9 @@ const DAY = 86_400_000;
 // lissé par une moyenne mobile centrée, extrema locaux sur ± `span` lignes, puis filtre de
 // proéminence. Un HVN doit dépasser `prom` × le maximum au-dessus du creux le plus haut qui le
 // sépare d'un pic plus fort ; un LVN est le creux le plus bas entre deux HVN retenus et doit être
-// au moins `prom` sous le plus petit des deux. rows = [[ligne, achats, ventes], ...].
+// au moins `prom` sous le plus petit des deux. Les extrema sont cherchés sur la courbe lissée mais
+// ramenés à la ligne de volume brut la plus haute (la plus basse) de leur voisinage : sinon un pic étroit
+// voisin d'un creux (159 puis 46) serait signalé une ligne trop loin. rows = [[ligne, achats, ventes], ...].
 export function volumeNodes(rows, { smooth = 3, span = 2, prom = 0.15 } = {}) {
   if (rows.length < 5) return { hvn: [], lvn: [] };
   const lo = rows[0][0];
@@ -54,7 +56,12 @@ export function volumeNodes(rows, { smooth = 3, span = 2, prom = 0.15 } = {}) {
     for (let i = peaks[k - 1]; i <= peaks[k]; i++) if (v[i] < v[m]) m = i;
     if (v[m] <= (1 - prom) * Math.min(v[peaks[k - 1]], v[peaks[k]])) lvn.push(m + lo);
   }
-  return { hvn: peaks.map((i) => i + lo), lvn };
+  const near = (i, better) => {
+    let b = i;
+    for (let k = Math.max(0, i - half); k <= Math.min(raw.length - 1, i + half); k++) if (better(raw[k], raw[b])) b = k;
+    return b + lo;
+  };
+  return { hvn: peaks.map((i) => near(i, (a, b) => a > b)), lvn: lvn.map((r) => near(r - lo, (a, b) => a < b)) };
 }
 
 // Forme du profil (Dalton) : « double » si un LVN sépare deux HVN importants, « P » si le volume
