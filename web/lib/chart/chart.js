@@ -250,7 +250,7 @@ export class Chart {
     const O = st.opts;
     const tpo = st.style === 'tpo';
     if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
-    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile);
+    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile, this.data.dailySessions);
     if (L.prev && !tpo) drawPrevLevels(ctx, this.data.dailySessions, s, items);
     if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.dailySessions, this.data.bars), s, items);
     // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).

@@ -1,5 +1,10 @@
 // Lecture d'enchère sur les profils de session (calculs sans dessin, testables) : état
-// d'acceptation ou de rejet par rapport à la value area de la veille et taille des lignes.
+// d'acceptation ou de rejet par rapport à la value area de la veille, profils composites sur
+// plusieurs sessions et taille des lignes.
+import { valueArea } from './profile.js';
+
+const DAY = 86_400_000;
+
 // État de l'enchère du jour face à la value area de la veille, sur les clôtures de périodes de
 // 30 min terminées (règle d'acceptation du cours : 2 périodes) :
 //  - inside : dans la valeur, pas de sortie ;
@@ -53,6 +58,39 @@ export function auctionLabel(st) {
   if (st.state === 'outside') return `sortie ${where} en cours (${st.count}/2)`;
   if (st.state === 'returning') return `retour dans la valeur en cours (${st.count}/2)`;
   return 'dans la valeur de la veille';
+}
+
+// Profil composite : fusion de sessions (rows, POC, value area recalculés). `n` dernières
+// sessions terminées si précisé.
+export function compositeSession(sessions, n = sessions.length) {
+  const list = sessions.slice(-n);
+  if (!list.length) return null;
+  const rows = new Map();
+  let hiP = -Infinity;
+  let loP = Infinity;
+  for (const s of list) {
+    for (const [row, bv, sv] of s.rows) {
+      const cell = rows.get(row) ?? [0, 0];
+      cell[0] += bv;
+      cell[1] += sv;
+      rows.set(row, cell);
+    }
+    hiP = Math.max(hiP, s.hi);
+    loP = Math.min(loP, s.lo);
+  }
+  const [poc, val, vah] = valueArea(rows);
+  return {
+    t0: list[0].t0,
+    t1: list[list.length - 1].t1,
+    bucket: list[0].bucket,
+    rows: [...rows].sort((a, b) => a[0] - b[0]).map(([r, [bv, sv]]) => [r, bv, sv]),
+    poc,
+    val,
+    vah,
+    hi: hiP,
+    lo: loP,
+    days: Math.round((list[list.length - 1].t1 - list[0].t0) / DAY),
+  };
 }
 
 // Taille des lignes d'un profil : `pct` du prix arrondi à un pas rond (1, 2, 2,5, 5 × 10^k),

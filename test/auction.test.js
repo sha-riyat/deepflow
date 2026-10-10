@@ -1,7 +1,7 @@
-// Tests de la lecture d'enchère : acceptation / rejet face à la value area de la veille.
+// Tests de la lecture d'enchère : acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -30,4 +30,14 @@ test('acceptation / rejet face à la value area de la veille (2 périodes de 30 
   const back = auctionState(prev, day([[0, 108, 112, 111], [1, 105, 111, 106]]), now);
   assert.equal(back.state, 'returning');
   assert.equal(auctionState(prev, day([[0, 102, 106, 104]]), now).state, 'inside');
+});
+
+test('profil composite : volumes fusionnés, POC et value area recalculés', () => {
+  const a = { t0: 0, t1: 86_400_000, bucket: 1, rows: [[100, 5, 5], [101, 1, 1]], hi: 102, lo: 100 };
+  const b = { t0: 86_400_000, t1: 172_800_000, bucket: 1, rows: [[101, 6, 6], [102, 1, 0]], hi: 103, lo: 101 };
+  const c = compositeSession([a, b]);
+  assert.deepEqual(c.rows, [[100, 5, 5], [101, 7, 7], [102, 1, 0]]);
+  assert.equal(c.poc, 101);
+  assert.deepEqual([c.lo, c.hi, c.days], [100, 103, 2]);
+  assert.equal(compositeSession([a, b], 1).poc, 101);
 });

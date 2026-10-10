@@ -40,7 +40,7 @@ export const OPTIONS = {
     group: { label: 'Regroupement', choices: [['bar', 'Par bougie et par côté'], ['none', 'Une par liquidation']] },
   },
   profile: {
-    range: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine'], ['visible', 'Plage visible']] },
+    range: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine'], ['visible', 'Plage visible'], ['c5', 'Composite 5 j'], ['c10', 'Composite 10 j']] },
     kind: { label: 'Type', choices: [['volume', 'Volume'], ['bidask', 'Achats / ventes'], ['delta', 'Delta']] },
     row: { label: 'Taille des lignes', choices: [[0.05, '0,05 % du prix'], [0.1, '0,1 %'], [0, 'Fine (tranche du footprint)']] },
     width: { label: 'Largeur', choices: [[0.3, '30 %'], [0.15, '15 %'], [0.5, '50 %']] },

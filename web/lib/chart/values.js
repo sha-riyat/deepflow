@@ -3,7 +3,7 @@ import { compact as money, fmt, qty } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
 import { bigMin } from './requests.js';
 import { vwapStart } from '../layers/vwap.js';
-import { nakedList, weeklySessions } from '../layers/volprofile.js';
+import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
 import { auctionLabel, auctionState } from '@shared/auction.js';
 
@@ -32,9 +32,9 @@ export function indicatorValues(chart, items) {
   }
   const range = opts.profile.range;
   const list = range === 'week' ? weeklySessions(data.profiles) : data.profiles;
-  const s = list[list.length - 1];
+  const s = range.startsWith('c') ? compositeOf(data.dailySessions, range) : list[list.length - 1];
   if (L.profile && style !== 'tpo' && s && s.poc !== null) {
-    const what = { day: 'Jour', week: 'Semaine', visible: 'Visible' }[range] ?? '';
+    const what = { day: 'Jour', week: 'Semaine', visible: 'Visible', c5: 'Composite 5 j', c10: 'Composite 10 j' }[range] ?? '';
     out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
   }
   if (L.prev && style !== 'tpo') {

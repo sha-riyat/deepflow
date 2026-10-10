@@ -63,7 +63,9 @@ export function requestData(chart, items) {
       chart.data.loadBubbles(Math.max(tL, tR - 86_400_000), tR, slot, min);
     }
   }
-  if (layers.profile || tpo) {
+  // Composite : calculé côté navigateur à partir des sessions journalières (pas de requête de profil).
+  const composite = layers.profile && chart.settings.opts.profile.range.startsWith('c');
+  if ((layers.profile && !composite) || tpo) {
     // Vue TPO : les N dernières sessions ; profil : sessions visibles (7 jours au plus), depuis le
     // lundi pour la semaine, ou un profil unique de la plage visible (3 jours au plus).
     const { tpo: T, profile: P } = chart.settings.opts;
@@ -82,9 +84,9 @@ export function requestData(chart, items) {
       chart.data.loadProfiles(from, to, bucket, params);
     }
   }
-  if ((layers.naked || layers.prev) && !tpo) {
+  if ((layers.naked || layers.prev || composite) && !tpo) {
     // Sessions journalières (10 jours + aujourd'hui), quelle que soit la vue : POC non testés, value
-    // area de la veille et état d'acceptation.
+    // area de la veille et état d'acceptation, profils composites.
     const from = Math.floor(now / DAY) * DAY - 10 * DAY;
     const bucket = profileBucket(chart);
     const key = `${from}:${Math.floor(now / 15_000)}:${bucket}`;
