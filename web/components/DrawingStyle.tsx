@@ -2,7 +2,7 @@
 // Barre flottante du dessin sélectionné (en haut du graphique) : couleur, épaisseur (taille du
 // texte pour une note), trait, suppression. La règle n'a pas de style : sa couleur suit le sens ;
 // la position propose son capital et son risque.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Delete02Icon } from '@hugeicons/core-free-icons';
 import { Icon, MenuButton } from './ui';
 import { engine } from '@/lib/engine';
@@ -58,12 +58,26 @@ function StyleMenus({ style, note, set }: { style: Style; note: boolean; set: (p
   );
 }
 
-// Champ numérique validé à la sortie ou par Entrée (une saisie invalide reprend la valeur courante).
+const parse = (text: string) => {
+  const v = Number(text.replace(',', '.').replace(/\s/g, ''));
+  return Number.isFinite(v) && v > 0 ? v : null;
+};
+
+// Champ numérique validé à la sortie, par Entrée, ou quand la barre disparaît (un clic sur le
+// graphique désélectionne la position avant que le champ ne perde le focus). Une saisie invalide
+// reprend la valeur courante.
 function NumField({ label, value, unit, onChange }: { label: string; value: number; unit: string; onChange: (v: number) => void }) {
   const [text, setText] = useState(String(value));
+  const latest = useRef({ text, value, onChange });
+  latest.current = { text, value, onChange };
+  useEffect(() => () => {
+    const { text: t, value: old, onChange: done } = latest.current;
+    const v = parse(t);
+    if (v !== null && v !== old) done(v);
+  }, []);
   const commit = () => {
-    const v = Number(text.replace(',', '.').replace(/\s/g, ''));
-    if (Number.isFinite(v) && v > 0) onChange(v);
+    const v = parse(text);
+    if (v !== null) onChange(v);
     else setText(String(value));
   };
   return (
@@ -76,8 +90,8 @@ function NumField({ label, value, unit, onChange }: { label: string; value: numb
   );
 }
 
-function PositionFields({ calc }: { calc: PositionCalc }) {
-  const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch);
+function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
+  const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
   return (
     <>
       <NumField label="Capital" value={calc.capital} unit="$" onChange={(capital) => set({ capital })} />
@@ -93,7 +107,7 @@ export function DrawingStyle() {
   const set = (patch: Partial<Style>) => engine.chart?.drawings.setStyle(patch);
   return (
     <div id="drawstyle" onMouseDown={(e) => e.stopPropagation()}>
-      {draw.calc && POSITIONS.includes(draw.type ?? '') && <PositionFields key={JSON.stringify(draw.calc)} calc={draw.calc} />}
+      {draw.id && draw.calc && POSITIONS.includes(draw.type ?? '') && <PositionFields key={`${draw.id}${JSON.stringify(draw.calc)}`} id={draw.id} calc={draw.calc} />}
       {draw.type !== 'ruler' && !POSITIONS.includes(draw.type ?? '') && <StyleMenus style={draw.style} note={draw.type === 'text'} set={set} />}
       <button type="button" className="tb-btn icon" title="Supprimer (Suppr)" onClick={() => engine.chart?.drawings.removeSelected()}>
         <Icon icon={Delete02Icon} size={16} />

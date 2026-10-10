@@ -82,9 +82,11 @@ export class DrawingEditor {
     this.#changed();
   }
 
-  // Capital et risque (%) de la position sélectionnée, retenus pour les prochaines positions.
-  setCalc(patch) {
-    const d = this.list.find((x) => x.id === this.sel);
+  // Capital et risque (%) d'une position (par défaut la sélectionnée), retenus pour les prochaines.
+  // L'identifiant est passé par la barre de style : la saisie est validée en quittant le champ, parfois
+  // après qu'un clic sur le graphique a déjà désélectionné la position.
+  setCalc(patch, id = this.sel) {
+    const d = this.list.find((x) => x.id === id);
     if (!d?.calc) return;
     d.calc = cleanCalc({ ...d.calc, ...patch });
     this.calc = d.calc;
@@ -276,7 +278,7 @@ export class DrawingEditor {
     const note = this.list.find((d) => d.id === this.editing);
     const edit = note ? { id: note.id, at: this.#px(note.pts[0]), text: note.text, color: note.style.color, size: textSize(note.style.width) } : null;
     this.onState?.({
-      tool: this.tool, magnet: this.magnet, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, calc: sel?.calc ?? null, count: this.list.length, edit,
+      tool: this.tool, magnet: this.magnet, sel: Boolean(sel), id: sel?.id ?? null, type: sel?.type ?? null, style: sel?.style ?? null, calc: sel?.calc ?? null, count: this.list.length, edit,
     });
   }
 }

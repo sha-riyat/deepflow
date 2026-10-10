@@ -29,6 +29,7 @@ export interface DrawState {
   tool: string | null;
   magnet: boolean;
   sel: boolean;
+  id: string | null; // identifiant du dessin sélectionné
   type: string | null; // type du dessin sélectionné
   style: DrawStyle | null;
   calc: PositionCalc | null; // outil position : capital et risque
@@ -60,7 +61,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
-  draw: { tool: null, magnet: false, sel: false, type: null, style: null, calc: null, count: 0, edit: null },
+  draw: { tool: null, magnet: false, sel: false, id: null, type: null, style: null, calc: null, count: 0, edit: null },
 };
 const listeners = new Set<() => void>();
 
