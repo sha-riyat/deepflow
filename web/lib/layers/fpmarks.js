@@ -1,6 +1,9 @@
-// Analyse des cellules du footprint : regroupement de lignes au dézoom, déséquilibres diagonaux,
-// déséquilibres empilés et enchères inachevées, avec leurs zones prolongées jusqu'au retest.
+// Zones prolongées du footprint (déséquilibres empilés, enchères inachevées) et regroupement de
+// lignes au dézoom. Les calculs sur les cellules sont dans shared/footprint.js.
 import { C, alpha } from '../theme.js';
+import { imbalances, mergeRows, stacks, unfinished } from '@shared/footprint.js';
+
+export { imbalances, mergeRows, stacks, unfinished };
 
 const MULTS = [1, 2, 4, 5, 10, 20, 25, 50, 100];
 
@@ -9,72 +12,9 @@ export function rowMult(rowPx, minPx) {
   return MULTS.find((m) => rowPx * m >= minPx) ?? MULTS[MULTS.length - 1];
 }
 
-// Cellules [ligne, ventes, achats, nb ventes, nb achats] triées et regroupées par `m` lignes
-// (mémorisé par footprint de bougie).
-const merged = new WeakMap();
-export function mergeRows(fp, m) {
-  const byM = merged.get(fp) ?? new Map();
-  merged.set(fp, byM);
-  if (byM.has(m)) return byM.get(m);
-  const rows = new Map();
-  for (const [row, sv, bv, sn, bn] of fp) {
-    const r = Math.floor(row / m);
-    const c = rows.get(r) ?? [r, 0, 0, 0, 0];
-    c[1] += sv;
-    c[2] += bv;
-    c[3] += sn ?? 0;
-    c[4] += bn ?? 0;
-    rows.set(r, c);
-  }
-  const out = [...rows.values()].sort((a, b) => a[0] - b[0]);
-  byM.set(m, out);
-  return out;
-}
-
-// Déséquilibres diagonaux : achats d'un niveau ≥ ratio × ventes du niveau inférieur (et inversement).
-export function imbalances(fp, ratio) {
-  const byRow = new Map(fp.map((c) => [c[0], c]));
-  const buy = new Set();
-  const sell = new Set();
-  for (const [row, sv, bv] of fp) {
-    const below = byRow.get(row - 1);
-    const above = byRow.get(row + 1);
-    if (below && bv > 0 && bv >= ratio * below[1]) buy.add(row);
-    if (above && sv > 0 && sv >= ratio * above[2]) sell.add(row);
-  }
-  return { buy, sell };
-}
-
-// Suites d'au moins `min` lignes consécutives : [[début, fin], ...].
-export function stacks(set, min) {
-  const rows = [...set].sort((a, b) => a - b);
-  const out = [];
-  let start = null;
-  rows.forEach((r, k) => {
-    if (start === null) start = r;
-    if (rows[k + 1] !== r + 1) {
-      if (r - start + 1 >= min) out.push([start, r]);
-      start = null;
-    }
-  });
-  return out;
-}
-
-// Enchère inachevée : acheteurs ET vendeurs sur la ligne extrême (plus haut ou plus bas) de la
-// bougie, aux lignes d'origine ; le marché y revient souvent. Retourne le milieu de ces lignes.
-export function unfinished(fp, step) {
-  if (!fp.length) return [];
-  const out = [];
-  const top = fp[fp.length - 1];
-  const bottom = fp[0];
-  if (top[1] > 0 && top[2] > 0) out.push({ price: (top[0] + 0.5) * step, high: true });
-  if (bottom[1] > 0 && bottom[2] > 0) out.push({ price: (bottom[0] + 0.5) * step, high: false });
-  return out;
-}
-
 // Zones prolongées : déséquilibres empilés (bande colorée) et enchères inachevées (trait), depuis
 // leur bougie jusqu'à la première bougie qui retraverse le niveau, ou jusqu'au bord droit.
-export function drawFootprintZones(ctx, items, geo, scale, { bucket, mult, ratio, stack, auctions, visible }) {
+export function drawFootprintZones(ctx, items, geo, scale, { bucket, mult, ratio, zeros, stack, auctions, visible }) {
   const [i0, i1] = geo.range;
   const y = (p) => scale.yOfPrice(p);
   const half = geo.slot * 0.45;
@@ -88,7 +28,7 @@ export function drawFootprintZones(ctx, items, geo, scale, { bucket, mult, ratio
     const b = items[i];
     if (!b.fp?.length) continue;
     const fp = mergeRows(b.fp, mult);
-    const imb = imbalances(fp, ratio);
+    const imb = imbalances(fp, ratio, zeros);
     for (const [side, set] of [[1, imb.buy], [-1, imb.sell]]) {
       for (const [lo, hi] of stacks(set, stack)) {
         const [pLo, pHi] = [lo * step, (hi + 1) * step];

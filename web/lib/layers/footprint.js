@@ -31,7 +31,7 @@ function drawCandle(ctx, b, x, y, wide) {
 }
 
 export function drawFootprint(ctx, items, geo, scale, opts) {
-  const { mode, bucket, ratio = 3, stack = 3, outline = 1, candle = 'left', auctions = 1, rows = 'auto' } = opts;
+  const { mode, bucket, ratio = 3, zeros = 'ignore', stack = 3, outline = 1, candle = 'left', auctions = 1, rows = 'auto' } = opts;
   const [i0, i1] = geo.range;
   const y = (p) => scale.yOfPrice(p);
   const baseH = Math.abs(y(0) - y(bucket));
@@ -39,7 +39,7 @@ export function drawFootprint(ctx, items, geo, scale, opts) {
   const mult = rows === 'auto' ? rowMult(baseH, textMode ? 12 : 4) : 1;
   const step = bucket * mult;
   const rowH = baseH * mult;
-  drawFootprintZones(ctx, items, geo, scale, { bucket, mult, ratio, stack, auctions, visible: geo.slot >= MIN_SLOT && mode !== 'off' });
+  drawFootprintZones(ctx, items, geo, scale, { bucket, mult, ratio, zeros, stack, auctions, visible: geo.slot >= MIN_SLOT && mode !== 'off' });
 
   if (geo.slot < MIN_SLOT || mode === 'off') return;
   const text = rowH >= 10 && geo.slot >= 56;
@@ -56,7 +56,7 @@ export function drawFootprint(ctx, items, geo, scale, opts) {
     const mid = left + width / 2;
     const gap = centered ? 6 : 0; // place de la bougie entre bid et ask
     const st = footprintStats(fp);
-    const imb = imbalances(fp, ratio);
+    const imb = imbalances(fp, ratio, zeros);
     let maxSide = 0;
     let maxAbsD = 0;
     for (const c of fp) {

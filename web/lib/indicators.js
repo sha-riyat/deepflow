@@ -63,6 +63,7 @@ export const TPO_OPTIONS = {
 // Réglages du footprint (menu Footprint).
 export const FP_OPTIONS = {
   ratio: { label: 'Déséquilibre (diagonal)', choices: [[3, '300 %'], [1.5, '150 %'], [2, '200 %'], [4, '400 %']] },
+  zeros: { label: 'Case opposée à zéro', choices: [['ignore', 'Pas un déséquilibre'], ['count', 'Compte comme déséquilibre']] },
   stack: { label: 'Déséquilibres empilés', choices: [[3, '3 niveaux'], [2, '2'], [4, '4'], [5, '5']] },
   outline: { label: 'Cases en déséquilibre', choices: [[1, 'Encadrées'], [0, 'Texte coloré seul']] },
   candle: { label: 'Bougie', choices: [['left', 'À gauche'], ['center', 'Au centre (bid | ask)']] },
