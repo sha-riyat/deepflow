@@ -13,6 +13,8 @@ const nextConfig = {
   // inutile de toute façon pour une application locale.
   compress: false,
   devIndicators: false,
+  // Sinon `next dev` écrit AGENTS.md et CLAUDE.md dans web/ à chaque lancement.
+  agentRules: false,
   // Le code partagé (../shared) est hors du dossier de l'application.
   turbopack: { root },
   outputFileTracingRoot: root,
