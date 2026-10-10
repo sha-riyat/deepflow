@@ -4,6 +4,7 @@
 export const GROUPS = [
   ['flow', 'Flux d’ordres'],
   ['levels', 'Profils et niveaux'],
+  ['time', 'Sessions et horaires'],
   ['trade', 'Alertes'],
 ];
 
@@ -20,8 +21,8 @@ export const LAYERS = {
   open: { label: 'Ouverture du jour', sub: 'Premier prix de la session UTC, dans ou hors de la valeur de la veille', group: 'levels', color: '#e6e6e6' },
   ib: { label: 'Initial balance et ouverture', sub: 'Première heure de la session UTC, extensions 1,5 × et 2 ×, type d’ouverture de Dalton (indicatif)', group: 'levels', color: '#ffa16c' },
   keys: { label: 'Niveaux clés', sub: 'Ouvertures de la semaine et du mois, plus hauts et plus bas de la veille, de la semaine et du mois précédents', group: 'levels', color: '#a78bfa' },
-  sessions: { label: 'Sessions Asie / Londres / NY', sub: 'Range de chaque session (heures de bureau locales, heure d’été comprise), du lundi au vendredi', group: 'levels', color: '#e8c35a' },
-  times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'levels', color: '#ffa16c' },
+  sessions: { label: 'Sessions Asie / Londres / NY', sub: 'Range de chaque session (heures de bureau locales, heure d’été comprise), du lundi au vendredi', group: 'time', color: '#e8c35a' },
+  times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'time', color: '#ffa16c' },
   naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
   vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour, de la semaine ou du mois (UTC) et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
   alerts: { label: 'Alertes de prix', sub: 'Niveaux surveillés', group: 'trade', color: '#ffa16c' },

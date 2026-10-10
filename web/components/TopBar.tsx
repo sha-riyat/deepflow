@@ -168,15 +168,20 @@ export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid, presets
           const group = (g: string) => (Object.entries(LAYERS) as [string, LayerDef][]).filter(([, d]) => d.group === g).map(([k, d]) => (
             <MenuItem key={k} label={d.label} sub={d.sub} on={prefs.layers[k]} hint={<Switch />} onClick={() => toggle(k)} />
           ));
-          const [flow, levels, trade] = GROUPS;
+          const [flow, levels, time, trade] = GROUPS;
+          // Deux colonnes de longueur voisine : le flux d'ordres et les panneaux à gauche ; le Market Profile,
+          // les niveaux, les horaires et les alertes à droite.
           return (
             <div className="pop-cols">
               <div>
                 <div className="pop-title">{flow[1]}</div>
                 {group(flow[0])}
                 <div className="pop-sep" />
-                <div className="pop-title">{trade[1]}</div>
-                {group(trade[0])}
+                <div className="pop-title">Panneaux sous le graphique</div>
+                {Object.entries(PANES as Record<string, string>).map(([k, label]) => (
+                  <MenuItem key={k} label={label} sub={PANE_SUB[k]} on={prefs.panes.includes(k)} hint={<Switch />}
+                    onClick={() => update({ panes: prefs.panes.includes(k) ? prefs.panes.filter((p) => p !== k) : [...prefs.panes, k] }, 'layout')} />
+                ))}
               </div>
               <div>
                 <div className="pop-title">Market Profile</div>
@@ -186,11 +191,11 @@ export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid, presets
                 <div className="pop-title">{levels[1]}</div>
                 {group(levels[0])}
                 <div className="pop-sep" />
-                <div className="pop-title">Panneaux sous le graphique</div>
-                {Object.entries(PANES as Record<string, string>).map(([k, label]) => (
-                  <MenuItem key={k} label={label} sub={PANE_SUB[k]} on={prefs.panes.includes(k)} hint={<Switch />}
-                    onClick={() => update({ panes: prefs.panes.includes(k) ? prefs.panes.filter((p) => p !== k) : [...prefs.panes, k] }, 'layout')} />
-                ))}
+                <div className="pop-title">{time[1]}</div>
+                {group(time[0])}
+                <div className="pop-sep" />
+                <div className="pop-title">{trade[1]}</div>
+                {group(trade[0])}
               </div>
             </div>
           );
