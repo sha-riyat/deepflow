@@ -213,3 +213,16 @@ export function rangeBucket(lo, hi, min, rows = 30) {
   const step = [1, 2, 2.5, 5, 10].map((m) => m * k).find((v) => v >= need * 0.999);
   return Math.max(min, Number((Math.round(step / min) * min).toPrecision(6)));
 }
+
+// Totaux d'un profil (lignes [ligne, achats, ventes]) : volume, achats, ventes, delta et delta en % du
+// volume, pour l'étiquette d'un profil à plage fixe.
+export function profileTotals(s) {
+  let buy = 0;
+  let sell = 0;
+  for (const [, b, v] of s.rows) {
+    buy += b;
+    sell += v;
+  }
+  const volume = buy + sell;
+  return { volume, buy, sell, delta: buy - sell, deltaPct: volume > 0 ? ((buy - sell) / volume) * 100 : 0 };
+}

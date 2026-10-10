@@ -3,7 +3,9 @@
 // VWAP ancré, Volume Profile à plage fixe.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
+import { SHAPE_LABEL, profileShape, profileTotals } from '@shared/auction.js';
 import { histogram } from './volprofile.js';
+import { drawNodes } from './levels.js';
 import { compact, fmt, qty, sgn } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -132,9 +134,10 @@ function avwap(ctx, d, shape) {
 
 // Volume Profile à plage fixe : histogramme par prix depuis le bord gauche (30 % de la largeur) en
 // volume, en achats / ventes ou en delta (`style.kind`), POC (prix le plus échangé) et value area (70 %
-// du volume : VAH en haut, VAL en bas) prolongés sur la plage. Profil calculé par le collecteur à partir
-// de chaque trade.
-function vp(ctx, d, shape, { scale, digits, profileOf }) {
+// du volume : VAH en haut, VAL en bas) prolongés sur la plage, pics (HVN) et creux (LVN) de volume, et en
+// dessous une étiquette de totaux (volume, delta, bougies, forme du profil). Profil calculé par le
+// collecteur à partir de chaque trade.
+function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   const [x0, y0, x1, y1] = shape.areas[0];
   ctx.fillStyle = alpha(d.style.color, 0.05);
   ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
@@ -158,6 +161,16 @@ function vp(ctx, d, shape, { scale, digits, profileOf }) {
     ctx.setLineDash([]);
     label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
   }
+  const nodes = drawNodes(ctx, s, scale, x0, x1, { labels: true });
+  const t = profileTotals(s);
+  const [from, to] = [d.pts[0].t, d.pts[1].t].sort((a, b) => a - b);
+  const n = items.filter((b) => b.t1 > from && b.t0 < to).length;
+  const form = profileShape(s, nodes);
+  const total = `Volume ${qty(t.volume)} · Δ ${t.delta >= 0 ? '+' : ''}${qty(t.delta)} (${Math.round(t.deltaPct)} %) · ${n} bougie${n > 1 ? 's' : ''}${form ? ` · forme ${SHAPE_LABEL[form]}` : ''}`;
+  // Décalée vers la gauche si elle dépasserait le bord droit du graphique.
+  ctx.font = font(10, 500);
+  const lx = Math.max(4, Math.min(x0, scale.w - ctx.measureText(total).width - 14));
+  label(ctx, total, lx, y1 + 16 <= scale.h ? y1 + 16 : Math.max(y0, 0) + 16, C.mist, { size: 10 });
   if (r.clipped) note('Plage limitée aux 3 derniers jours de la sélection', C.ember);
   else if (r.partial) note('Historique en cours de téléchargement', C.ember);
 }

@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, rangeBucket, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -74,6 +74,16 @@ test('taille des lignes d’un profil de plage : ~30 lignes sur la hauteur, jama
   assert.equal(rangeBucket(82_990, 83_010, 5), 5); // 20 $ / 30 = 0,7 → la tranche du collecteur
   assert.equal(rangeBucket(100, 100, 5), 5); // plage sans hauteur
   assert.equal(rangeBucket(0, 3_000, 10, 30), 100); // 100 $ : multiple de la tranche
+});
+
+test('totaux d’un profil : volume, achats, ventes, delta et delta en % du volume', () => {
+  const s = { rows: [[10, 6, 2], [11, 1, 5], [12, 3, 3]] };
+  const t = profileTotals(s);
+  assert.deepEqual([t.volume, t.buy, t.sell, t.delta], [20, 10, 10, 0]);
+  assert.equal(t.deltaPct, 0);
+  const u = profileTotals({ rows: [[1, 15, 5]] });
+  assert.deepEqual([u.volume, u.delta, u.deltaPct], [20, 10, 50]);
+  assert.deepEqual(profileTotals({ rows: [] }), { volume: 0, buy: 0, sell: 0, delta: 0, deltaPct: 0 });
 });
 
 test('HVN / LVN : le pic est sur la ligne de plus gros volume, pas sur son voisin après lissage', () => {
