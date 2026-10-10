@@ -8,53 +8,9 @@ import { sessionCvd, sessionStart } from '@shared/cvd.js';
 import { drawSpotPane, spotValues } from './spotpane.js';
 import { drawFundingPane, fundingValues, pct } from './fundingpane.js';
 import { drawVenuesPane, venuesValues } from './venuespane.js';
+import { drawStats, statsValues } from './statspane.js';
 
 export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques', spot: 'CVD spot / perp', funding: 'Prime et financement', venues: 'CVD multi-plateformes' };
-
-// Lignes du tableau de statistiques, par priorité (celles qui tiennent dans la hauteur sont gardées).
-const STATS = [
-  ['Delta', (b) => b.b - b.s, 'delta'],
-  ['Volume', (b) => b.v, 'plain'],
-  ['Delta %', (b) => (b.v > 0 ? ((b.b - b.s) / b.v) * 100 : 0), 'pct'],
-  ['Achats', (b) => b.b, 'buy'],
-  ['Ventes', (b) => b.s, 'sell'],
-  ['Trades', (b) => b.n ?? 0, 'count'],
-];
-
-// Tableau par bougie (Bar Stats de LuxAlgo, Cluster Statistic d'ATAS) : une ligne par statistique,
-// fond d'intensité relative à la vue, valeurs écrites quand la colonne est assez large.
-function drawStats(ctx, items, geo, { top, h, w, axisW }) {
-  const [i0, i1] = geo.range;
-  const n = Math.max(1, Math.min(STATS.length, Math.floor((h - 6) / 13)));
-  const rowH = (h - 6) / n;
-  const colW = Math.max(1, geo.slot - 2);
-  const text = geo.slot >= 30 && rowH >= 11;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  STATS.slice(0, n).forEach(([label, get, kind], k) => {
-    const yt = top + 3 + k * rowH;
-    let max = 0;
-    for (let i = i0; i <= i1; i++) max = Math.max(max, Math.abs(get(items[i])));
-    for (let i = i0; i <= i1; i++) {
-      const v = get(items[i]);
-      const x = geo.x(items[i], i);
-      const color = kind === 'buy' ? C.growth : kind === 'sell' ? C.loss : kind === 'delta' || kind === 'pct' ? (v >= 0 ? C.growth : C.loss) : C.mist;
-      ctx.fillStyle = alpha(color, 0.05 + 0.4 * (max > 0 ? Math.abs(v) / max : 0));
-      ctx.fillRect(x - colW / 2, yt + 0.5, colW, rowH - 1);
-      if (!text) continue;
-      ctx.font = font(10, kind === 'delta' ? 600 : 400);
-      ctx.fillStyle = kind === 'plain' || kind === 'count' ? C.mist : color;
-      const s = kind === 'pct' ? `${Math.round(v)}%` : kind === 'count' ? compact(v) : qty(v);
-      ctx.fillText(s, x, yt + rowH / 2 + 0.5);
-    }
-    ctx.font = font(10);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = C.graphite;
-    ctx.fillText(label, w + 10, yt + rowH / 2 + 0.5); // nom de la ligne dans la colonne d'échelle
-    ctx.textAlign = 'center';
-  });
-  ctx.textAlign = 'left';
-}
 
 // Index de la bougie qui contient l'instant t (recherche dichotomique sur t0).
 export function barIndex(items, t) {
@@ -227,7 +183,7 @@ export function paneValues(kind, items, i, { oi = [], liqs = [], spot = null, fu
   if (!b) return [];
   const tone = (v) => (v >= 0 ? 'pos' : 'neg');
   if (kind === 'volume') return [['', qty(b.v), ''], ['Achats', qty(b.b), 'pos'], ['Ventes', qty(b.s), 'neg']];
-  if (kind === 'stats') return [['Trades', compact(b.n ?? 0), '']];
+  if (kind === 'stats') return statsValues(items, i);
   if (kind === 'delta') {
     const d = b.b - b.s;
     return [['', (d >= 0 ? '+' : '') + qty(d), tone(d)], ['', b.v > 0 ? `${sgn((d / b.v) * 100, 1)} % du volume` : '', '']];
