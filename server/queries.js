@@ -225,6 +225,27 @@ export async function openInterest(s, q) {
   return { period, rows: rows.map((r) => [r.timestamp, Number(r.sumOpenInterest)]) };
 }
 
+// Prime et financement (futures) : indice de prime en bougies (écart du perp à l'indice spot,
+// ce qui détermine le financement) et taux de financement passés. En replay, rien au-delà de
+// l'heure rejouée (bougie de prime en cours écartée).
+const PREMIUM = ['1m', '5m', '15m', '1h', '4h', '1d'];
+export async function funding(s, q) {
+  if (s.cfg.market !== 'futures') return { interval: null, premium: [], rates: [] };
+  const interval = PREMIUM.includes(q.interval) ? q.interval : '5m';
+  const now = s.now();
+  const to = Math.min(num(q.to, now), now);
+  const [klines, rates] = await Promise.all([
+    s.rest.premiumKlines(s.cfg.symbol, interval, { endTime: to, limit: 1000 }),
+    s.rest.fundingRates(s.cfg.symbol, { endTime: to, limit: 1000 }),
+  ]);
+  const live = s.mode === 'live';
+  return {
+    interval,
+    premium: klines.filter((k) => live || k[6] < now).map((k) => [k[0], Number(k[4])]),
+    rates: rates.map((r) => [r.fundingTime, Number(r.fundingRate)]),
+  };
+}
+
 // Tickers 24 h du marché (futures ou spot), en cache 5 s par marché.
 const tickerCache = new Map();
 export async function tickers(rest, market = 'futures') {

@@ -278,7 +278,7 @@ export class Chart {
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
     this.paneScales = st.panes.map((kind, k) =>
-      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot, axisW: AXIS_W }));
+      drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot, funding: this.data.funding, axisW: AXIS_W }));
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
     drawDrawingLabels(ctx, this.drawings, s, items, { axisW: AXIS_W, timeTop: this.timeTop, timeH: TIME_H, digits: this.digits(), tf, bars: this.data.bars }, indexed);
 
@@ -317,7 +317,7 @@ export class Chart {
   #reportPanes(items, item) {
     if (!this.onPaneValues) return;
     const i = item ? items.indexOf(item) : -1;
-    const ctx = { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot };
+    const ctx = { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot, funding: this.data.funding };
     const values = Object.fromEntries(this.settings.panes.map((kind) => [kind, i < 0 ? [] : paneValues(kind, items, i, ctx)]));
     const key = JSON.stringify(values);
     if (key === this.lastPaneValues) return;

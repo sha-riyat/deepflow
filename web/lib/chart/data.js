@@ -51,6 +51,7 @@ export class DataManager {
     this.spot = { rows: new Map(), param: 0, error: null }; // delta spot par bougie : début -> [achats, ventes]
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
+    this.funding = null; // prime et financement : { interval, premium, rates } (voir loadFunding)
     this.keyLevels = null; // ouvertures semaine / mois, hauts et bas précédents (voir loadLevels)
     this.vwapAnchor = null; // sommes de la période (jour, semaine, mois) avant la première bougie chargée (voir loadVwapAnchor)
     this.dailySessions = []; // sessions journalières des 10 derniers jours (nPOC, veille, composite)
@@ -243,6 +244,16 @@ export class DataManager {
     } catch {
       // nouvelle tentative au prochain cycle
     }
+  }
+
+  // Prime et financement (futures) : indice de prime et taux de financement passés.
+  async loadFunding(interval, to) {
+    try {
+      this.funding = await getJSON(this.url(`/api/funding?${new URLSearchParams({ interval, to: Math.floor(to) })}`));
+    } catch {
+      this.funding = { premium: [], rates: [], error: 'Prime et financement indisponibles (Binance injoignable)' };
+    }
+    this.onChange('funding');
   }
 
   // Niveaux clés : bougies journalières Binance, calculés par le collecteur une fois par jour.

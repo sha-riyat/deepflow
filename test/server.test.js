@@ -202,3 +202,19 @@ test('niveaux clés : bougies journalières jusqu’à aujourd’hui, calcul gar
   await levels(s);
   assert.equal(calls.length, 1);
 });
+
+test('prime et financement : futures seulement, rien après l’heure rejouée', async () => {
+  const { funding } = await import('../server/queries.js');
+  const now = 10 * 300_000;
+  const rest = {
+    premiumKlines: async () => [[now - 600_000, '0', '0', '0', '0.0001', 0, now - 300_001], [now - 300_000, '0', '0', '0', '0.0003', 0, now - 1], [now, '0', '0', '0', '0.0009', 0, now + 299_999]],
+    fundingRates: async () => [{ fundingTime: now - 3_600_000, fundingRate: '0.00010000' }],
+  };
+  const replay = { mode: 'archive', rest, cfg: { symbol: 'BTCUSDT', market: 'futures' }, now: () => now };
+  const r = await funding(replay, { interval: '5m' });
+  assert.deepEqual(r.premium, [[now - 600_000, 0.0001], [now - 300_000, 0.0003]]); // bougie en cours écartée
+  assert.deepEqual(r.rates, [[now - 3_600_000, 0.0001]]);
+  assert.equal((await funding({ ...replay, mode: 'live' }, { interval: 'x' })).interval, '5m');
+  assert.equal((await funding({ ...replay, mode: 'live' }, {})).premium.length, 3);
+  assert.deepEqual(await funding({ ...replay, cfg: { market: 'spot' } }, {}), { interval: null, premium: [], rates: [] });
+});

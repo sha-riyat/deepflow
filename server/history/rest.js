@@ -1,6 +1,6 @@
 // Accès REST à Binance avec une file d'attente qui respecte les limites de poids (en lisant le
 // poids consommé renvoyé par Binance) :
-// bougies (klines), trades agrégés, open interest, tickers 24 h.
+// bougies (klines), trades agrégés, open interest, prime et financement, tickers 24 h.
 // weightLimit : poids IP par minute autorisé par Binance (exchangeInfo, rateLimits).
 const BASE = {
   futures: { api: 'https://fapi.binance.com/fapi/v1', data: 'https://fapi.binance.com/futures/data', minGapMs: 250, weightLimit: 2400 },
@@ -81,6 +81,15 @@ export class BinanceRest {
 
   openInterest(symbol, period, { startTime, endTime, limit = 500 } = {}) {
     return this.get('/openInterestHist', { symbol, period, startTime, endTime, limit }, { data: true });
+  }
+
+  // Indice de prime (écart perp / indice spot) en bougies, et taux de financement passés (futures).
+  premiumKlines(symbol, interval, { startTime, endTime, limit = 1000 } = {}) {
+    return this.get('/premiumIndexKlines', { symbol, interval, startTime, endTime, limit });
+  }
+
+  fundingRates(symbol, { startTime, endTime, limit = 1000 } = {}) {
+    return this.get('/fundingRate', { symbol, startTime, endTime, limit });
   }
 
   tickers() {
