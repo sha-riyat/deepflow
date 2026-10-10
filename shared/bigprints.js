@@ -34,6 +34,31 @@ export function groupBigPrints(prints, items, row) {
   return [...groups.values()].map((g) => [g.tq / g.q, g.pq / g.q, g.q, g.side, g.n, g.i]);
 }
 
+// Amplitude moyenne (haut − bas) des 20 bougies jusqu'à la bougie i : l'échelle de mouvement normale de
+// l'unité de temps affichée (quelques dollars sur 1 minute, plusieurs dizaines sur 1 heure).
+export function avgRange(items, i) {
+  const from = Math.max(0, i - 19);
+  let sum = 0;
+  for (let k = from; k <= i; k++) sum += items[k].h - items[k].l;
+  return sum / (i - from + 1);
+}
+
+// Suite d'un gros print : le prix a-t-il avancé dans son sens (hausse pour un achat, baisse pour une vente)
+// d'au moins `move` × l'amplitude moyenne d'une bougie pendant les `bars` bougies suivantes ? On compare au
+// prix du print le meilleur entre la clôture de sa propre bougie et les extrêmes des bougies suivantes. Le
+// seuil suit l'unité de temps : un pourcentage fixe du prix donnerait « absorbé » presque partout en 1 minute.
+//  - 'follow' : le prix a suivi ;
+//  - 'absorbed' : gros ordre agressif sans résultat, lecture d'absorption (un acteur passif a tout encaissé) ;
+//  - null : pas encore jugeable (bougies de la fenêtre pas toutes terminées) ou hors des bougies.
+// Mesure sur les bougies chargées, pas un signal : un prix qui n'avance pas peut aussi avancer plus tard.
+export function printFollow([, p, , side, , i], items, { bars = 3, move = 0.5 } = {}) {
+  if (!(bars >= 1) || i < 0 || i + bars >= items.length - 1) return null;
+  let best = items[i].c;
+  for (let k = i + 1; k <= i + bars; k++) best = side > 0 ? Math.max(best, items[k].h) : Math.min(best, items[k].l);
+  const adv = side * (best - p);
+  return adv > 0 && adv >= move * avgRange(items, i) ? 'follow' : 'absorbed';
+}
+
 // Garde au plus `k` groupes par bougie, les plus gros (k ≤ 0 : tous). Évite qu'une bougie agitée porte une
 // dizaine de cercles empilés sur sa mèche pendant que les autres restent vides. Retourne les groupes triés du
 // plus gros au plus petit ; ceux hors des bougies chargées (index -1) sont tous gardés.

@@ -38,6 +38,37 @@ test('gros prints : sans ligne de regroupement, un ordre = un groupe ; avant la 
   assert.deepEqual(groupBigPrints([], bars, 1), []);
 });
 
+test('suite d’un gros print : le prix avance, ou le gros ordre est absorbé', async () => {
+  const { printFollow } = await import('../shared/bigprints.js');
+  const bar = (k, h, l, c) => ({ t0: k * 5 * MIN, t1: (k + 1) * 5 * MIN, h, l, c });
+  // Bougie 0 : achat de 20 à 100. Ensuite le prix monte à 100,3 (suite) ou reste sous 100,02 (absorbé).
+  const up = [bar(0, 100.1, 99.9, 100), bar(1, 100.3, 100, 100.2), bar(2, 100.2, 100.1, 100.1), bar(3, 100.2, 100, 100.1), bar(4, 100, 100, 100)];
+  const flat = [bar(0, 100.1, 99.9, 99.95), bar(1, 100.02, 99.9, 100), bar(2, 100.01, 99.9, 99.9), bar(3, 100, 99.8, 99.9), bar(4, 100, 100, 100)];
+  const buy = [10, 100, 20, 1, 1, 0];
+  assert.equal(printFollow(buy, up, { bars: 3, move: 0.5 }), 'follow'); // +0,3 ≥ ½ × 0,2 (amplitude moyenne)
+  assert.equal(printFollow(buy, flat, { bars: 3, move: 0.5 }), 'absorbed'); // +0,02 < ½ × 0,2
+  // Vente : le prix doit baisser.
+  assert.equal(printFollow([10, 100, 20, -1, 1, 0], flat, { bars: 3, move: 0.5 }), 'follow'); // bas à 99,8 : -0,2
+  assert.equal(printFollow([10, 100, 20, -1, 1, 0], up, { bars: 3, move: 0.5 }), 'absorbed');
+  // Fenêtre pas terminée (la dernière bougie est peut-être ouverte) ou hors bougies : pas de jugement.
+  assert.equal(printFollow(buy, up.slice(0, 3), { bars: 3 }), null);
+  assert.equal(printFollow([10, 100, 20, 1, 1, -1], up, { bars: 3 }), null);
+  assert.equal(printFollow(buy, up, { bars: 0 }), null);
+});
+
+test('suite d’un gros print : le seuil suit l’amplitude des bougies de l’unité de temps', async () => {
+  const { avgRange, printFollow } = await import('../shared/bigprints.js');
+  const flat = { h: 100, l: 100, c: 100 };
+  assert.equal(avgRange([{ h: 12, l: 2 }, { h: 6, l: 2 }, { h: 5, l: 1 }], 2), 6); // (10 + 4 + 4) / 3
+  // Achat à 100 dans une bougie d'amplitude `range` ; la bougie suivante monte de 5.
+  const follow = (range) => {
+    const bars = [{ ...flat, h: 100 + range / 2, l: 100 - range / 2 }, { ...flat, h: 105 }, flat, flat, flat].map((b, k) => ({ ...b, t0: k * MIN, t1: (k + 1) * MIN }));
+    return printFollow([10, 100, 20, 1, 1, 0], bars, { bars: 3, move: 0.5 });
+  };
+  assert.equal(follow(4), 'follow'); // +5 ≥ ½ × 4 : sur de petites bougies, le prix a bien suivi
+  assert.equal(follow(40), 'absorbed'); // +5 < ½ × 40 : sur de grandes bougies, ce n'est pas une vraie avancée
+});
+
 test('au plus k gros prints par bougie : les plus gros restent, les autres bougies sont épargnées', async () => {
   const { topPerBar } = await import('../shared/bigprints.js');
   // [t, prix, quantité, côté, nombre, index de bougie] : la bougie 0 en porte 4, la bougie 1 en porte 1.

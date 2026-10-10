@@ -2,7 +2,7 @@
 // Inspirés des réglages de Bookmap / DeepCharts (bulles), ATAS / DeepCharts (gros prints)
 // et Exocharts / Kiyotaka (liquidations), adaptés aux données publiques de Binance.
 import { barIndex } from '../chart/panes.js';
-import { groupBigPrints, topPerBar } from '@shared/bigprints.js';
+import { groupBigPrints, printFollow, topPerBar } from '@shared/bigprints.js';
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -85,12 +85,14 @@ export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 
 // dans DeepCharts et les autres plateformes. Les bulles de volume (calque « Bulles de trades ») sont des
 // camemberts translucides : pour une lecture nette, n'affichez que l'un des deux.
 // Regroupement « par niveau » (par défaut) : les gros ordres du même côté, à la même ligne de prix de la
-// même bougie sont additionnés ; « par ordre » les montre un à un. Seuls les `perBar` plus gros de chaque
-// bougie, et les `limit` plus gros de la vue, sont dessinés.
+// même bougie sont additionnés ; « par ordre » les montre un à un. Avec `follow` (nombre de bougies), un
+// gros print dont le prix n'a pas avancé dans son sens (`move` × l'amplitude moyenne d'une bougie au moins)
+// est dessiné en anneau creux : gros ordre absorbé. Seuls les `perBar` plus gros de chaque bougie, et
+// les `limit` plus gros de la vue, sont dessinés.
 // Position horizontale : centre de la bougie (`align` = 'candle') ou heure exacte ('time').
 // Étiquettes (quantité, « ×n » si plusieurs ordres) : les 3 plus gros, ou toutes, ou aucune ; elles ne se
 // chevauchent jamais.
-export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, align = 'candle', perBar = 3 } = {}, geo = null) {
+export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, follow = 0, move = 0.5, align = 'candle', perBar = 3 } = {}, geo = null) {
   const seen = all.filter((b) => {
     const x = scale.xAt(b[0], items);
     return x >= -40 && x <= scale.w + 40;
@@ -109,8 +111,15 @@ export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'bi
   const shapes = big.map(([x, g]) => ({ x, y: scale.yOfPrice(g[1]), r: 3 + 11 * Math.sqrt(g[2] / max), q: g[2], n: g[4], side: g[3], g }));
   for (const s of [...shapes].reverse()) {
     const color = s.side > 0 ? C.growth : C.loss;
+    const absorbed = follow > 0 && printFollow(s.g, items, { bars: follow, move }) === 'absorbed';
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    if (absorbed) {
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = alpha(color, 0.95);
+      ctx.stroke(); // anneau creux
+      continue;
+    }
     ctx.shadowColor = color;
     ctx.shadowBlur = 6;
     ctx.fillStyle = alpha(color, 0.55);

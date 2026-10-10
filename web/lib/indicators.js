@@ -44,6 +44,8 @@ export const OPTIONS = {
     labels: { label: 'Étiquettes', choices: [['big', 'Les 3 plus gros'], ['all', 'Toutes'], ['none', 'Aucune']] },
     align: { label: 'Position horizontale', choices: [['candle', 'Sur la bougie'], ['time', 'Selon l’heure']] },
     group: { label: 'Regroupement', choices: [['level', 'Par niveau dans la bougie'], ['order', 'Par ordre']] },
+    follow: { label: 'Suite du prix (absorbé = anneau creux)', choices: [[3, 'Sur 3 bougies'], [1, 'Sur 1 bougie'], [5, 'Sur 5 bougies'], [0, 'Masquée']] },
+    move: { label: 'Avancée minimale', choices: [[0.5, 'Une demi-bougie moyenne'], [0.25, 'Un quart de bougie'], [1, 'Une bougie moyenne']] },
   },
   oiprof: {
     width: { label: 'Largeur', choices: [[0.15, '15 %'], [0.25, '25 %'], [0.1, '10 %']] },
