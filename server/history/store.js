@@ -40,6 +40,16 @@ export class TradeStore extends EventEmitter {
     this.live.push(t, p, q, s, id);
   }
 
+  // Replay d'une archive : le jour `d` jusqu'à `t0` (trades de l'archive) est déjà connu, les
+  // trades rejoués ensuite arrivent comme le direct, les jours précédents viennent des archives.
+  seed(d, t0, trades) {
+    this.liveStart = t0;
+    this.memStart = d;
+    this.backFrom = d;
+    for (let h = d; h < t0; h += HOUR) this.back.set(h, trades.slice(h, Math.min(h + HOUR, t0)));
+    this.backfill = { done: 1, total: 1, error: null };
+  }
+
   stop() {
     this.stopped = true;
   }
