@@ -69,6 +69,11 @@ test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () 
   assert.deepEqual(cleanStyle({ color: '#E0685F', width: 3, dash: 'dot' }), { color: '#E0685F', width: 3, dash: 'dot' });
   assert.deepEqual(cleanStyle({ color: 'red; x', width: 40, dash: 'wavy' }), { color: '#479ffa', width: 1.5, dash: 'solid' });
   assert.deepEqual(cleanStyle(undefined), cleanStyle({}));
+  // Type de profil (profil à plage fixe) : conservé s'il est valide, absent sinon (= volume).
+  assert.equal(cleanStyle({ kind: 'delta' }).kind, 'delta');
+  assert.equal(cleanStyle({ kind: 'bidask' }).kind, 'bidask');
+  assert.equal('kind' in cleanStyle({ kind: 'n’importe quoi' }), false);
+  assert.equal('kind' in cleanStyle({ color: '#ffffff' }), false);
 });
 
 test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du tracé', () => {

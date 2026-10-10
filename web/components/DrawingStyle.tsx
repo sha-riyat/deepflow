@@ -7,8 +7,9 @@ import { Delete02Icon } from '@hugeicons/core-free-icons';
 import { Icon, MenuButton } from './ui';
 import { engine } from '@/lib/engine';
 import { useLive, type DrawStyle as Style, type PositionCalc } from '@/lib/store';
-import { DRAW_COLORS, DRAW_DASHES, DRAW_WIDTHS, POSITIONS, textSize } from '@shared/drawings.js';
+import { DRAW_COLORS, DRAW_DASHES, DRAW_WIDTHS, POSITIONS, PROFILE_KINDS, textSize } from '@shared/drawings.js';
 
+const KIND_LABELS: Record<string, string> = { volume: 'Volume', bidask: 'Achats / ventes', delta: 'Delta' };
 const DASH_LABELS: Record<string, string> = { solid: 'Plein', dash: 'Tirets', dot: 'Pointillés' };
 const DASH_SVG: Record<string, string> = { solid: '', dash: '6 4', dot: '2 3' };
 
@@ -21,9 +22,18 @@ function Stroke({ width, dash }: { width: number; dash: string }) {
   );
 }
 
-function StyleMenus({ style, note, set }: { style: Style; note: boolean; set: (patch: Partial<Style>) => void }) {
+function StyleMenus({ style, note, profile, set }: { style: Style; note: boolean; profile: boolean; set: (patch: Partial<Style>) => void }) {
   return (
     <>
+      {profile && (
+        <MenuButton title="Type de profil" caret label={<span className="ds-size">{KIND_LABELS[style.kind ?? 'volume']}</span>}>
+          {(close) => PROFILE_KINDS.map((k) => (
+            <button key={k} type="button" className={`pop-item${k === (style.kind ?? 'volume') ? ' on' : ''}`} onClick={() => (set({ kind: k }), close())}>
+              <span>{KIND_LABELS[k]}</span>
+            </button>
+          ))}
+        </MenuButton>
+      )}
       <MenuButton title="Couleur" caret={false} label={<i className="swatch" style={{ background: style.color }} />}>
         {(close) => (
           <div className="swatches">
@@ -109,7 +119,7 @@ export function DrawingStyle() {
   return (
     <div id="drawstyle" onMouseDown={(e) => e.stopPropagation()}>
       {draw.id && draw.calc && POSITIONS.includes(draw.type ?? '') && <PositionFields key={`${draw.id}${JSON.stringify(draw.calc)}`} id={draw.id} calc={draw.calc} />}
-      {draw.type !== 'ruler' && !POSITIONS.includes(draw.type ?? '') && <StyleMenus style={draw.style} note={draw.type === 'text'} set={set} />}
+      {draw.type !== 'ruler' && !POSITIONS.includes(draw.type ?? '') && <StyleMenus style={draw.style} note={draw.type === 'text'} profile={draw.type === 'vp'} set={set} />}
       <button type="button" className="tb-btn icon" title="Supprimer (Suppr)" onClick={() => engine.chart?.drawings.removeSelected()}>
         <Icon icon={Delete02Icon} size={16} />
       </button>

@@ -12,6 +12,7 @@ export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
 export const DRAW_WIDTHS = [1, 1.5, 2, 3];
 export const DRAW_DASHES = ['solid', 'dash', 'dot'];
+export const PROFILE_KINDS = ['volume', 'bidask', 'delta']; // type d'histogramme du profil à plage fixe
 export const TEXT_MAX = 500;
 
 // Notes : l'épaisseur choisie donne la taille du texte ; boîte estimée (sans canvas) pour le clic.
@@ -30,6 +31,7 @@ export function cleanStyle(style) {
     color: /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : DEFAULT_STYLE.color,
     width: DRAW_WIDTHS.includes(s.width) ? s.width : DEFAULT_STYLE.width,
     dash: DRAW_DASHES.includes(s.dash) ? s.dash : DEFAULT_STYLE.dash,
+    ...(PROFILE_KINDS.includes(s.kind) ? { kind: s.kind } : {}), // profil à plage fixe : sans valeur = volume
   };
 }
 

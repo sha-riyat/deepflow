@@ -130,9 +130,10 @@ function avwap(ctx, d, shape) {
   label(ctx, shape.partial ? 'VWAP ancré · historique incomplet' : 'VWAP ancré', x + 6, y - 6, shape.partial ? C.ember : d.style.color);
 }
 
-// Volume Profile à plage fixe : histogramme du volume par prix depuis le bord gauche (30 % de la
-// largeur), POC (prix le plus échangé) et value area (70 % du volume : VAH en haut, VAL en bas)
-// prolongés sur la plage. Profil calculé par le collecteur à partir de chaque trade.
+// Volume Profile à plage fixe : histogramme par prix depuis le bord gauche (30 % de la largeur) en
+// volume, en achats / ventes ou en delta (`style.kind`), POC (prix le plus échangé) et value area (70 %
+// du volume : VAH en haut, VAL en bas) prolongés sur la plage. Profil calculé par le collecteur à partir
+// de chaque trade.
 function vp(ctx, d, shape, { scale, digits, profileOf }) {
   const [x0, y0, x1, y1] = shape.areas[0];
   ctx.fillStyle = alpha(d.style.color, 0.05);
@@ -143,7 +144,7 @@ function vp(ctx, d, shape, { scale, digits, profileOf }) {
   if (r.error) return note(`Profil indisponible : ${r.error}`, C.ember);
   const s = r.session;
   if (!s?.rows.length) return note('Aucun trade sur cette plage');
-  histogram(ctx, s, scale, x0, Math.max(24, (x1 - x0) * 0.3), 1, { kind: 'volume', va: 1 });
+  histogram(ctx, s, scale, x0, Math.max(24, (x1 - x0) * 0.3), 1, { kind: d.style.kind ?? 'volume', va: 1 });
   const lines = [['POC', (s.poc + 0.5) * s.bucket, C.ember, []], ['VAH', (s.vah + 1) * s.bucket, C.mist, [4, 3]], ['VAL', s.val * s.bucket, C.mist, [4, 3]]];
   for (const [name, price, color, dash] of lines) {
     const y = scale.yOfPrice(price);

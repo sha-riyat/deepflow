@@ -25,6 +25,7 @@ export interface DrawStyle {
   color: string;
   width: number;
   dash: string;
+  kind?: string; // profil à plage fixe : volume, achats / ventes ou delta
 }
 
 export interface DrawState {
