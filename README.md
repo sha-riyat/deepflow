@@ -107,8 +107,6 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   murs actifs), DOM, Trades, Marchés, Alertes (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
 
-Les choix d'interface sont décrits dans `docs/ux-ui.md`.
-
 ## Historique
 
 - Bougies temps sans footprint : klines Binance, depuis la cotation de la paire.
