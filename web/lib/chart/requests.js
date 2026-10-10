@@ -84,9 +84,9 @@ export function requestData(chart, items) {
       chart.data.loadProfiles(from, to, bucket, params);
     }
   }
-  if ((layers.naked || layers.prev || composite) && !tpo) {
+  if ((layers.naked || layers.prev || layers.open || composite) && !tpo) {
     // Sessions journalières (10 jours + aujourd'hui), quelle que soit la vue : POC non testés, value
-    // area de la veille et état d'acceptation, profils composites.
+    // area de la veille et état d'acceptation, ouverture du jour, profils composites.
     const from = Math.floor(now / DAY) * DAY - 10 * DAY;
     const bucket = profileBucket(chart);
     const key = `${from}:${Math.floor(now / 15_000)}:${bucket}`;

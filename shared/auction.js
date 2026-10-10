@@ -130,6 +130,18 @@ export function auctionState(prev, today, now = Date.now(), need = 2) {
   return res;
 }
 
+// Position de l'ouverture du jour (premier prix de la session UTC) face à la value area de la
+// veille. Lecture de Dalton : une ouverture dans la valeur annonce plutôt une journée de rotation
+// entre VAH et VAL, une ouverture hors de la valeur un déséquilibre possible (tendance).
+export function openLocation(prev, today) {
+  if (!prev || prev.vah === null || !today) return null;
+  const vah = (prev.vah + 1) * prev.bucket;
+  const val = prev.val * prev.bucket;
+  return { open: today.open, where: today.open > vah ? 'above' : today.open < val ? 'below' : 'inside' };
+}
+
+export const OPEN_LABEL = { above: 'au-dessus de la valeur de la veille', inside: 'dans la valeur de la veille', below: 'sous la valeur de la veille' };
+
 export function auctionLabel(st) {
   if (!st) return '';
   const where = st.side > 0 ? 'au-dessus de la VAH' : 'sous la VAL';

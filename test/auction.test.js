@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, profileShape, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -58,4 +58,12 @@ test('profil composite : volumes fusionnés, POC et value area recalculés', () 
   assert.equal(c.poc, 101);
   assert.deepEqual([c.lo, c.hi, c.days], [100, 103, 2]);
   assert.equal(compositeSession([a, b], 1).poc, 101);
+});
+
+test('ouverture du jour face à la value area de la veille', () => {
+  const prev = { bucket: 1, val: 100, vah: 109 }; // VAL 100, VAH 110
+  assert.deepEqual(openLocation(prev, { open: 112 }), { open: 112, where: 'above' });
+  assert.equal(openLocation(prev, { open: 110 }).where, 'inside'); // sur la VAH : encore dans la valeur
+  assert.equal(openLocation(prev, { open: 99.5 }).where, 'below');
+  assert.equal(openLocation(prev, null), null);
 });

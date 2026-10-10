@@ -54,6 +54,21 @@ export function drawPrevLevels(ctx, daily, scale, items) {
   return st;
 }
 
+// Ouverture du jour : premier prix de la session UTC, de 00:00 au bord droit.
+export function drawDayOpen(ctx, daily, scale, items) {
+  const { today } = prevAndToday(daily);
+  if (!today) return;
+  const x0 = Math.max(0, scale.xAt(today.t0, items));
+  const y = scale.yOfPrice(today.open);
+  if (!(x0 < scale.w) || y < 0 || y > scale.h) return;
+  hline(ctx, x0, scale.w, y, alpha(C.pale, 0.55), [1, 3], 1.25);
+  // Étiquette à gauche de 00:00 (celles de la veille, VAH, POC, VAL J-1, sont à droite et souvent
+  // toutes proches) ; après elles si la veille n'est pas visible.
+  const text = `Ouv. J ${fmt(today.open)}`;
+  if (x0 > 110) pill(ctx, x0 - 6, y, text, { bg: C.obsidian, fg: C.pale, size: 10, align: 'right' });
+  else pill(ctx, x0 + 118, y, text, { bg: C.obsidian, fg: C.pale, size: 10 });
+}
+
 // HVN (pics) et LVN (creux) d'un profil : repère orange au bout des barres HVN, trait pointillé
 // sur les LVN (zones traversées vite, où placer un stop de l'autre côté). x0..x1 = étendue.
 export function drawNodes(ctx, s, scale, x0, x1, { labels = false } = {}) {

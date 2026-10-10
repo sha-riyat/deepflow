@@ -6,7 +6,7 @@ import { cvdDivergences, sessionCvd } from '@shared/cvd.js';
 import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
-import { SHAPE_LABEL, auctionLabel, auctionState, profileShape } from '@shared/auction.js';
+import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
 
 const DAY = 86_400_000;
 
@@ -42,6 +42,11 @@ export function indicatorValues(chart, items) {
   if (L.prev && style !== 'tpo') {
     const { prev, today } = prevAndToday(data.dailySessions);
     out.prev = prev ? (today ? auctionLabel(auctionState(prev, today)) : 'session du jour en attente') : 'chargement…';
+  }
+  if (L.open && style !== 'tpo') {
+    const { prev, today } = prevAndToday(data.dailySessions);
+    const loc = openLocation(prev, today);
+    out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
   }
   if (L.naked && style !== 'tpo') {
     const list = nakedList(data.dailySessions, data.bars);

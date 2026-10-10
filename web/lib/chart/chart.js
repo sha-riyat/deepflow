@@ -11,7 +11,7 @@ import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVwap } from '../layers/vwap.js';
 import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
-import { drawPrevLevels } from '../layers/levels.js';
+import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
 import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawAlertLines } from '../layers/marks.js';
@@ -42,7 +42,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, div: true, naked: true, vwap: false, alerts: true, liq: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, div: true, naked: true, vwap: false, alerts: true, liq: true },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
@@ -262,6 +262,7 @@ export class Chart {
     if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
     else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile, this.data.dailySessions);
     if (L.prev && !tpo) drawPrevLevels(ctx, this.data.dailySessions, s, items);
+    if (L.open && !tpo) drawDayOpen(ctx, this.data.dailySessions, s, items);
     if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.dailySessions, this.data.bars), s, items);
     // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
     if (L.bubbles && !tpo) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
