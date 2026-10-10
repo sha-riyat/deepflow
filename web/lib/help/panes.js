@@ -75,10 +75,11 @@ export const PANE_ARTICLES = [
     group: 'Panneaux',
     title: 'Statistiques par bougie',
     level: 'fact',
-    what: 'Tableau d’une colonne par bougie : delta, volume, delta en % du volume, volume relatif (× la moyenne des 20 bougies précédentes), achats, ventes, nombre de trades et taille moyenne d’un ordre. Les lignes qui ne tiennent pas dans la hauteur du panneau sont masquées, dans cet ordre de priorité.',
+    what: 'Tableau d’une colonne par bougie : delta, volume, delta en % du volume, volume relatif (× la moyenne des 20 bougies précédentes), delta des gros prints, achats, ventes, nombre de trades et taille moyenne d’un ordre. Les lignes qui ne tiennent pas dans la hauteur du panneau sont masquées, dans cet ordre de priorité.',
     read: [
       'Delta % : au-delà de 10 % (en couleur pleine), la bougie a un camp qui mène (initiative) ; au-delà de 30 %, un camp domine nettement. En dessous de 10 %, les deux camps s’équilibrent (gris).',
       'Volume relatif (Vol. ×) : ×2 et plus (en orange) = bougie deux fois plus active que d’habitude. Une cassure portée par un volume relatif fort et un delta % franc est plus crédible qu’une cassure à volume faible.',
+      'Gros Δ : achats moins ventes des seuls gros prints de la bougie (vide s’il n’y en a pas dans la plage chargée). Un delta des gros qui faiblit pendant que le prix monte : les gros ne poussent plus.',
       'Taille moyenne d’un ordre : volume divisé par le nombre de trades. Elle grossit quand de gros ordres arrivent, et baisse quand ce sont surtout de petits ordres.',
     ],
     traps: [

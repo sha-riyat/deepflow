@@ -39,7 +39,7 @@ export const FLOW_ARTICLES = [
     group: 'Flux d’ordres',
     title: 'Bulles de trades',
     level: 'fact',
-    what: 'Une bulle par petit créneau de temps, placée au prix moyen des trades du créneau ; sa taille suit le volume, sa couleur la part d’achats et de ventes agresseurs.',
+    what: 'Une bulle par petit créneau de temps, placée au prix moyen des trades du créneau ; sa taille suit le volume, sa couleur la part d’achats et de ventes agresseurs. Les bulles d’une même bougie sont empilées sur sa colonne (réglage « Position horizontale » pour les étaler à l’heure exacte).',
     read: [
       'Grosses bulles à un extrême suivies d’un retournement : activité forte rejetée (piège possible).',
       'Grosses bulles qui poussent le prix dans leur sens : initiative, le mouvement a de l’élan.',
@@ -49,14 +49,22 @@ export const FLOW_ARTICLES = [
   {
     id: 'big',
     group: 'Flux d’ordres',
-    title: 'Gros prints',
+    title: 'Gros prints (lire les gros ordres)',
     level: 'fact',
-    what: 'Ordres agresseurs de grande taille (plusieurs fills regroupés en un seul ordre), au-delà d’un seuil : par défaut les 0,5 % d’ordres les plus gros.',
+    what: 'Ordres agresseurs de grande taille (plusieurs fills regroupés en un seul ordre), au-delà d’un seuil : par défaut 50 000 $ sur BTC et 25 000 $ ailleurs. Cercle plein vert = achat agresseur, rouge = vente ; plus il est gros, plus l’ordre est gros. Par défaut, les gros ordres du même côté, au même niveau de prix de la même bougie sont additionnés (« ×4 » : quatre ordres). Maj + G masque ou réaffiche d’un coup les bulles et les gros prints, pour lire le prix seul. Les cercles sont centrés sur la colonne de leur bougie (seul le prix varie) ; le réglage « Position horizontale » permet de les placer à l’heure exacte.',
     read: [
-      'Un gros print acheteur qui n’arrive pas à faire monter le prix : un vendeur passif l’a absorbé.',
+      'Cercle plein : le prix a avancé dans le sens du gros ordre pendant les bougies suivantes (3 par défaut). Anneau creux : le prix n’a pas suivi, c’est une lecture d’absorption (règle empirique : un acteur passif a encaissé l’ordre). « Avancer » se mesure en fraction de l’amplitude moyenne d’une bougie : le critère s’adapte à l’unité de temps.',
       'Plusieurs gros prints du même côté à un niveau : un acteur important y montre son intérêt.',
+      'Acheteurs à droite et vendeurs à gauche de la mèche ; au plus 3 cercles par bougie (les plus gros), pour garder une colonne lisible : réglable avec « Maximum par bougie ».',
+      'Le réglage « Seuil par session » baisse le seuil en Asie (×0,5) et le monte à New York (×2), pour comparer des activités comparables.',
+      'La ligne « Gros Δ » du panneau Statistiques donne le delta des seuls gros prints de chaque bougie : un prix qui monte alors que ce delta faiblit montre que les gros ne poussent plus.',
     ],
-    traps: ['Un gros ordre peut être un rachat forcé (liquidation) et non une conviction.'],
+    traps: [
+      'Un gros ordre peut être un rachat forcé (liquidation) et non une conviction.',
+      'Binance publie des trades agrégés, pas les ordres un par un : un « gros ordre » est un ordre agresseur, et deux ordres distincts au même instant peuvent être comptés comme un seul. Le « ×n » est donc le nombre d’ordres agrégés, pas de participants.',
+      'L’anneau creux est jugé sur les bougies déjà terminées : un print récent n’est pas encore jugé (il reste plein), et un prix qui n’avance pas peut avancer plus tard.',
+      'Lisibilité : n’affichez pas à la fois les bulles de trades et les gros prints, ou réduisez le nombre affiché ; Maj + G masque les deux d’un coup.',
+    ],
   },
   {
     id: 'liq',
