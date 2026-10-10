@@ -1,8 +1,8 @@
 'use client';
-// Barre des outils de dessin, à gauche du graphique : curseur, outils (Alt + lettre), suppression
-// du dessin sélectionné et effacement de tous les dessins du symbole.
+// Barre des outils de dessin, à gauche du graphique : curseur, outils (Alt + lettre), aimant,
+// suppression du dessin sélectionné et effacement de tous les dessins du symbole.
 import type { ReactNode } from 'react';
-import { Cursor01Icon, Delete02Icon, Eraser01Icon } from '@hugeicons/core-free-icons';
+import { Cursor01Icon, Delete02Icon, Eraser01Icon, Magnet01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
 import { engine } from '@/lib/engine';
 import { useLive } from '@/lib/store';
@@ -91,6 +91,10 @@ export function DrawingBar() {
         </button>
       ))}
       <span className="rail-sep" />
+      <button type="button" className={`rail-btn${draw.magnet ? ' on' : ''}`} title="Aimant : coller les points aux prix des bougies (ouverture, plus haut, plus bas, clôture)"
+        onClick={() => ed()?.setMagnet(!draw.magnet)}>
+        <Icon icon={Magnet01Icon} size={18} />
+      </button>
       <button type="button" className="rail-btn" title="Supprimer le dessin sélectionné (Suppr)" disabled={!draw.sel} onClick={() => ed()?.removeSelected()}>
         <Icon icon={Delete02Icon} size={18} />
       </button>

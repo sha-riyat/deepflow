@@ -27,6 +27,7 @@ export interface DrawStyle {
 
 export interface DrawState {
   tool: string | null;
+  magnet: boolean;
   sel: boolean;
   type: string | null; // type du dessin sélectionné
   style: DrawStyle | null;
@@ -59,7 +60,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
-  draw: { tool: null, sel: false, type: null, style: null, calc: null, count: 0, edit: null },
+  draw: { tool: null, magnet: false, sel: false, type: null, style: null, calc: null, count: 0, edit: null },
 };
 const listeners = new Set<() => void>();
 

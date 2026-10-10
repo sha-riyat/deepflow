@@ -16,6 +16,7 @@ type Chart = {
   drawings: {
     onState: ((s: DrawState) => void) | null;
     setTool(tool: string | null): void;
+    setMagnet(on: boolean): void;
     setStyle(patch: Partial<DrawStyle>): void;
     setText(text: string | null): void;
     setCalc(patch: Partial<PositionCalc>): void;

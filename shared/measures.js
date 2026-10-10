@@ -1,5 +1,5 @@
-// Mesures des outils de dessin : niveaux de Fibonacci, règle, position (et, au fil des outils,
-// VWAP ancré, aimant). Fonctions pures, communes au graphique et aux tests.
+// Mesures des outils de dessin : niveaux de Fibonacci, règle, position, aimant (et VWAP ancré).
+// Fonctions pures, communes au graphique et aux tests.
 
 // Retracement de Fibonacci, comme TradingView : 0 sur le second point (fin du mouvement), 1 sur
 // le premier (début) ; les niveaux mesurent le recul depuis la fin du mouvement.
@@ -71,4 +71,22 @@ export function positionStats({ side, entry, stop, target, capital, risk }) {
     stopPct: (perUnit / entry) * 100,
     targetPct: (reward / entry) * 100,
   };
+}
+
+// ---------- Aimant ----------
+
+// Le point se colle au prix (ouverture, plus haut, plus bas, clôture) de la bougie sous le curseur le
+// plus proche en pixels, s'il est à moins de `maxPx`, et au milieu de la bougie dans le temps
+// (`tf` = intervalle des bougies temps ; sinon milieu de t0 – t1). Sinon le point reste libre.
+export function snapToBar(bar, pt, y, yOfPrice, { maxPx = 30, tf = null } = {}) {
+  if (!bar) return pt;
+  let best = null;
+  let dist = Infinity;
+  for (const p of [bar.o, bar.h, bar.l, bar.c]) {
+    if (!Number.isFinite(p)) continue;
+    const d = Math.abs(yOfPrice(p) - y);
+    if (d < dist) [best, dist] = [p, d];
+  }
+  if (best === null || dist > maxPx) return pt;
+  return { t: Math.round(tf ? bar.t0 + tf / 2 : (bar.t0 + bar.t1) / 2), p: best };
 }

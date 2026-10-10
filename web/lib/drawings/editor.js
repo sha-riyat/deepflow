@@ -1,11 +1,11 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
 // redimensionnement par les poignées, style, suppression. Sauvegarde par marché et par symbole, et
 // dernier style de chaque outil : storage.js.
-import { cleanCalc, positionPoints } from '@shared/measures.js';
+import { cleanCalc, positionPoints, snapToBar } from '@shared/measures.js';
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeOf, textSize, toPixel,
 } from '@shared/drawings.js';
-import { loadCalc, loadSet, loadStyles, saveCalc, saveSet, saveStyles } from './storage.js';
+import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles } from './storage.js';
 
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
 
@@ -25,6 +25,7 @@ export class DrawingEditor {
     this.onState = null; // (état résumé) -> barres de dessin et de style, saisie des notes
     this.styles = loadStyles();
     this.calc = loadCalc();
+    this.magnet = loadMagnet(); // points collés aux prix OHLC des bougies
   }
 
   // Charge les dessins du symbole affiché quand il change.
@@ -73,6 +74,12 @@ export class DrawingEditor {
     this.styles[d.type] = d.style;
     saveStyles(this.styles);
     this.#save();
+  }
+
+  setMagnet(on) {
+    this.magnet = on;
+    saveMagnet(on);
+    this.#changed();
   }
 
   // Capital et risque (%) de la position sélectionnée, retenus pour les prochaines positions.
@@ -215,8 +222,13 @@ export class DrawingEditor {
     return toPixel(this.chart.scale, this.#items(), pt);
   }
 
+  // Point (heure, prix) sous la souris, collé à la bougie la plus proche si l'aimant est actif.
   #point(p) {
-    return fromPixel(this.chart.scale, this.#items(), p.x, p.y);
+    const { scale, spec } = this.chart;
+    const pt = fromPixel(scale, this.#items(), p.x, p.y);
+    if (!this.magnet) return pt;
+    const tf = scale.mode === 'time' && spec.type === 'time' ? spec.param : null;
+    return snapToBar(this.chart.itemAt(this.#items(), p.x), pt, p.y, (v) => scale.yOfPrice(v), { tf });
   }
 
   #hit(p) {
@@ -245,7 +257,7 @@ export class DrawingEditor {
     const note = this.list.find((d) => d.id === this.editing);
     const edit = note ? { id: note.id, at: this.#px(note.pts[0]), text: note.text, color: note.style.color, size: textSize(note.style.width) } : null;
     this.onState?.({
-      tool: this.tool, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, calc: sel?.calc ?? null, count: this.list.length, edit,
+      tool: this.tool, magnet: this.magnet, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, calc: sel?.calc ?? null, count: this.list.length, edit,
     });
   }
 }

@@ -159,3 +159,14 @@ test('dessins : position longue / courte (taille selon le risque, R:R)', async (
   const sh2 = shapeOf(d, [[100, 200], [300, 220], [300, 160]]);
   assert.deepEqual(sh2.areas, [[100, 160, 300, 200], [100, 200, 300, 220]]); // cible, stop
 });
+
+test('dessins : aimant sur l’ouverture, le plus haut, le plus bas ou la clôture', async () => {
+  const { snapToBar } = await import('../shared/measures.js');
+  const bar = { t0: 60_000, t1: 119_000, o: 100, h: 110, l: 95, c: 105 };
+  const yOf = (p) => (200 - p) * 4; // 1 de prix = 4 px
+  const pt = { t: 70_000, p: 108.9 };
+  assert.deepEqual(snapToBar(bar, pt, yOf(108.9), yOf, { tf: 60_000 }), { t: 90_000, p: 110 }); // plus haut, milieu de la minute
+  assert.deepEqual(snapToBar(bar, { t: 70_000, p: 104 }, yOf(104), yOf), { t: 89_500, p: 105 }); // clôture, milieu de t0 – t1
+  assert.deepEqual(snapToBar(bar, { t: 1, p: 140 }, yOf(140), yOf), { t: 1, p: 140 }); // trop loin (120 px) : libre
+  assert.deepEqual(snapToBar(null, pt, 0, yOf), pt);
+});
