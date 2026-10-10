@@ -10,6 +10,7 @@ import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { tpoItems } from '../layers/tpo.js';
+import { composeSnapshot } from './snapshot.js';
 import { INDEXED, drawAbove, drawBehind } from './plot.js';
 import { drawDrawings, drawDrawingLabels } from '../layers/drawings.js';
 import { DrawingEditor } from '../drawings/editor.js';
@@ -238,6 +239,15 @@ export class Chart {
       requestData(this, items);
     }
     this.#renderCross(items);
+  }
+
+  // Capture du graphique (journal) : image redessinée aussitôt (la heatmap WebGL n'est lisible que
+  // dans la foulée de son tracé), puis composée (voir snapshot.js).
+  snapshot() {
+    if (!this.meta || !this.W || !this.view) return null;
+    useClockOf(this.data);
+    this.#render(this.view);
+    return composeSnapshot(this);
   }
 
   #render(items) {

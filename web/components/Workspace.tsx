@@ -13,6 +13,7 @@ import { SymbolSearch } from './SymbolSearch';
 import { FlowPanel } from './panels/FlowPanel';
 import { AlertsPanel } from './panels/AlertsPanel';
 import { LearnPanel } from './panels/LearnPanel';
+import { JournalPanel } from './panels/JournalPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { activate, dropPane, engine, paneOf } from '@/lib/engine';
@@ -269,6 +270,7 @@ export default function Workspace() {
     if (id === 'tape') return <TapePanel />;
     if (id === 'markets') return <MarketsPanel onSelect={selectSymbol} />;
     if (id === 'learn') return <LearnPanel topic={topic} />;
+    if (id === 'journal') return <JournalPanel />;
     return <AlertsPanel preset={preset} />;
   };
 

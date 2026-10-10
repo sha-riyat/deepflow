@@ -116,3 +116,25 @@ label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2)
 .learn-level { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; color: var(--bg); }
 .learn-back { gap: 4px; padding: 0 6px; }
 .learn-note { margin-top: 14px; font-size: 11px; }
+
+/* Journal de trading */
+.journal, .journal-form { display: grid; gap: 8px; padding: 4px 4px 10px; font-size: 12px; }
+.jf-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.jf-row input { flex: 1; min-width: 0; }
+.jf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.jf-grid label { display: grid; gap: 2px; color: var(--text-3); font-size: 11px; }
+.jf-grid input { min-width: 0; }
+.journal-form textarea { resize: vertical; min-height: 70px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--bg); color: var(--text); font: 400 12px/1.45 var(--font); }
+.jf-calc, .jf-msg { margin: 0; font-size: 12px; }
+.jf-check { display: flex; gap: 6px; align-items: center; color: var(--text-2); }
+.journal-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px; border-radius: 8px; background: var(--active); color: var(--text-2); }
+.journal-entry { border-radius: 8px; }
+.journal-entry.open { background: var(--hover); }
+.journal-row { display: grid; grid-template-columns: auto auto auto 1fr auto; gap: 8px; align-items: center; width: 100%; min-height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: none; color: var(--text-2); font: 400 12px var(--font); text-align: left; cursor: pointer; }
+.journal-row:hover { background: var(--hover); }
+.journal-row .tag { padding: 0 6px; border-radius: 4px; background: var(--active); font-size: 10px; font-weight: 600; }
+.journal-setup { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); }
+.journal-detail { display: grid; gap: 6px; padding: 0 8px 8px; color: var(--text-2); }
+.journal-detail p { margin: 0; line-height: 1.45; }
+.journal-notes { white-space: pre-wrap; }
+.journal-detail img { width: 100%; border-radius: 6px; border: 1px solid var(--line); }
