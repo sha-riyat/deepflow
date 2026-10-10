@@ -1,12 +1,22 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
 // redimensionnement par les poignées, style, suppression. Les dessins sont sauvegardés par marché et
 // par symbole dans le stockage du navigateur ; le dernier style choisi pour chaque outil est retenu.
+import { cleanCalc, positionPoints } from '@shared/measures.js';
 import {
-  DRAW_TYPES, TEXT_MAX, cleanStyle, textSize, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
+  DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, textSize, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
 } from '@shared/drawings.js';
 
 const KEY = 'deepflow.drawings';
 const STYLES_KEY = 'deepflow.drawings.styles'; // outil -> dernier style choisi
+const CALC_KEY = 'deepflow.drawings.calc'; // capital et risque du dernier outil position
+
+function store(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // stockage indisponible
+  }
+}
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
 
 function readStyles() {
@@ -41,6 +51,11 @@ export class DrawingEditor {
     this.editing = null; // identifiant de la note en cours de saisie
     this.onState = null; // (état résumé) -> barres de dessin et de style, saisie des notes
     this.styles = readStyles();
+    try {
+      this.calc = cleanCalc(JSON.parse(localStorage.getItem(CALC_KEY) ?? 'null'));
+    } catch {
+      this.calc = cleanCalc(null);
+    }
   }
 
   // Charge les dessins du symbole affiché quand il change.
@@ -87,11 +102,17 @@ export class DrawingEditor {
     if (!d) return;
     d.style = cleanStyle({ ...d.style, ...patch });
     this.styles[d.type] = d.style;
-    try {
-      localStorage.setItem(STYLES_KEY, JSON.stringify(this.styles));
-    } catch {
-      // stockage indisponible
-    }
+    store(STYLES_KEY, this.styles);
+    this.#save();
+  }
+
+  // Capital et risque (%) de la position sélectionnée, retenus pour les prochaines positions.
+  setCalc(patch) {
+    const d = this.list.find((x) => x.id === this.sel);
+    if (!d?.calc) return;
+    d.calc = cleanCalc({ ...d.calc, ...patch });
+    this.calc = d.calc;
+    store(CALC_KEY, this.calc);
     this.#save();
   }
 
@@ -151,7 +172,14 @@ export class DrawingEditor {
       const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: cleanStyle(this.styles[this.tool]) };
       if (this.tool === 'text') this.draft.text = '';
-      if (DRAW_TYPES[this.tool] === 1) this.#finish(); // un seul point : posé dès le clic
+      if (POSITIONS.includes(this.tool)) {
+        // Stop à 6 % de la hauteur visible, cible au double, sur 160 px de large.
+        const s = this.chart.scale;
+        this.draft.pts = positionPoints(pt, this.tool, (s.pTop - s.pBottom) * 0.06, this.#point({ x: p.x + 160, y: p.y }).t);
+        this.draft.calc = { ...this.calc };
+      }
+      // Un seul clic : posé aussitôt (un point, ou position avec stop et cible par défaut).
+      if (DRAW_TYPES[this.tool] === 1 || POSITIONS.includes(this.tool)) this.#finish();
       else {
         this.downAt = p;
         this.#changed();
@@ -255,6 +283,8 @@ export class DrawingEditor {
     const sel = this.list.find((d) => d.id === this.sel);
     const note = this.list.find((d) => d.id === this.editing);
     const edit = note ? { id: note.id, at: this.#px(note.pts[0]), text: note.text, color: note.style.color, size: textSize(note.style.width) } : null;
-    this.onState?.({ tool: this.tool, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, count: this.list.length, edit });
+    this.onState?.({
+      tool: this.tool, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, calc: sel?.calc ?? null, count: this.list.length, edit,
+    });
   }
 }

@@ -51,6 +51,19 @@ const GLYPHS: Record<string, ReactNode> = {
       <rect x="3" y="8" width="18" height="8" rx="1" />
       <path d="M7 8v3M11 8v4M15 8v3M19 8v4" />
     </>
+  ),  long: (
+    <>
+      <rect x="4" y="4" width="16" height="9" rx="1" />
+      <rect x="4" y="13" width="16" height="7" rx="1" strokeDasharray="2 2" />
+      <path d="M12 10V6M10 8l2-2 2 2" />
+    </>
+  ),
+  short: (
+    <>
+      <rect x="4" y="4" width="16" height="7" rx="1" strokeDasharray="2 2" />
+      <rect x="4" y="11" width="16" height="9" rx="1" />
+      <path d="M12 14v4M10 16l2 2 2-2" />
+    </>
   ),
 };
 

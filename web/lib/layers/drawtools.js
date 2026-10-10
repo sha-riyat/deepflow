@@ -1,12 +1,19 @@
 // Habillage propre à chaque outil de dessin (étiquettes, zones), après le tracé commun de
-// drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle.
-import { indexOfTime, textBox } from '@shared/drawings.js';
-import { fibLevels, formatDuration, rulerStats } from '@shared/measures.js';
-import { fmt, sgn } from '../fmt.js';
+// drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle, position longue / courte.
+import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
+import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
+import { compact, fmt, qty, sgn } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
-// Couleur du tracé : celle choisie, sauf la règle (verte si le prix monte, rouge s'il baisse).
-export const colorOf = (d) => (d.type === 'ruler' ? (d.pts[1].p >= d.pts[0].p ? C.growth : C.loss) : d.style.color);
+// Couleur du tracé : celle choisie, sauf la règle (verte si le prix monte, rouge s'il baisse) et
+// la position (ligne d'entrée neutre ; zones cible et stop colorées par position()).
+export function colorOf(d) {
+  if (d.type === 'ruler') return d.pts[1].p >= d.pts[0].p ? C.growth : C.loss;
+  return POSITIONS.includes(d.type) ? C.mist : d.style.color;
+}
+
+// Zones remplies ici plutôt que par le tracé commun.
+export const OWN_FILL = POSITIONS;
 
 // Texte sur un fond sombre arrondi (comme la légende), lisible sur la heatmap ; (x, y) = coin
 // bas du fond, à gauche (align 'left') ou à droite ('right'). Retourne la largeur du fond.
@@ -76,7 +83,36 @@ function ruler(ctx, d, shape, { digits, tf, items }) {
   lines.forEach((l, i) => label(ctx, l, mx - w / 2, bottom + (i + 1) * 17, color, { weight: 600 }));
 }
 
-const DECOR = { fib, text, ruler };
+// Position : zones cible (verte) et stop (rouge), prix et montants ; au centre, R:R et taille de
+// position pour risquer le pourcentage choisi du capital (calcul affiché seulement).
+function position(ctx, d, shape, { digits, base }) {
+  const [target, stop] = shape.areas;
+  for (const [[x0, y0, x1, y1], color] of [[target, C.growth], [stop, C.loss]]) {
+    ctx.fillStyle = alpha(color, 0.16);
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  }
+  const [entry, sl, tp] = d.pts.map((q) => q.p);
+  const st = positionStats({ side: d.type, entry, stop: sl, target: tp, ...d.calc });
+  // Étiquettes hors des zones (lisibles même sur une petite position) : cible au-delà de sa zone,
+  // stop au-delà de la sienne, résumé à droite de la ligne d'entrée.
+  const left = target[0];
+  const above = (box) => box[1] - 3;
+  const below = (box) => box[3] + 20;
+  const long = d.type === 'long';
+  if (!st.valid) {
+    label(ctx, 'Stop et cible de part et d’autre de l’entrée', left, long ? above(target) : below(target), C.ember, { weight: 600 });
+    return;
+  }
+  const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · +${compact(st.gain)} $`;
+  const sText = `Stop ${fmt(sl, digits)} · −${fmt(st.stopPct, 2)} % · −${compact(st.riskAmount)} $`;
+  label(ctx, tText, left, long ? above(target) : below(target), C.growth, { weight: 600 });
+  label(ctx, sText, left, long ? below(stop) : above(stop), C.loss, { weight: 600 });
+  const [, yE] = shape.handles[0];
+  const info = `R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %`;
+  label(ctx, info, target[2] + 6, yE + 8.5, C.white, { weight: 600 });
+}
+
+const DECOR = { fib, text, ruler, long: position, short: position };
 
 export function decorate(ctx, d, shape, opts) {
   DECOR[d.type]?.(ctx, d, shape, opts);

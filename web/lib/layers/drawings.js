@@ -1,7 +1,7 @@
 // Dessins de l'utilisateur (voir lib/drawings) : tracé, poignées du dessin sélectionné ou en cours,
 // étiquettes sur les axes (prix des horizontales, heure de la verticale sélectionnée).
 import { PRICE_ONLY, shapeOf, toPixel } from '@shared/drawings.js';
-import { colorOf, decorate } from './drawtools.js';
+import { OWN_FILL, colorOf, decorate } from './drawtools.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
@@ -11,14 +11,14 @@ const pad = (n) => String(n).padStart(2, '0');
 // Dessins à afficher : dans les vues sans échelle de temps continue, seulement ceux sans heure.
 const shown = (editor, priceOnly) => editor.visible().filter((d) => !priceOnly || PRICE_ONLY.includes(d.type));
 
-export function drawDrawings(ctx, editor, scale, items, { digits, tf }, priceOnly = false) {
+export function drawDrawings(ctx, editor, scale, items, { digits, tf, base }, priceOnly = false) {
   const view = { w: scale.w, h: scale.h };
   for (const d of shown(editor, priceOnly)) {
     const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)), view);
     const { width, dash } = d.style;
     const color = colorOf(d);
     ctx.fillStyle = alpha(color, 0.12); // zones (rectangle, règle) : fond léger de la couleur du trait
-    for (const [x0, y0, x1, y1] of shape.areas ?? []) ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    if (!OWN_FILL.includes(d.type)) for (const [x0, y0, x1, y1] of shape.areas ?? []) ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
     ctx.beginPath();
     for (const [x1, y1, x2, y2] of shape.segs) {
       ctx.moveTo(x1, y1);
@@ -42,7 +42,7 @@ export function drawDrawings(ctx, editor, scale, items, { digits, tf }, priceOnl
     }
     ctx.stroke();
     ctx.setLineDash([]);
-    decorate(ctx, d, shape, { digits, tf, items, editing: editor.editing });
+    decorate(ctx, d, shape, { digits, tf, items, base, editing: editor.editing });
     if (d.id !== editor.sel && d !== editor.draft) continue;
     ctx.fillStyle = C.ink;
     ctx.strokeStyle = color;

@@ -9,6 +9,8 @@ export const TOOLS = {
   fib: { label: 'Retracement de Fibonacci', key: 'F' },
   text: { label: 'Texte / note', key: 'N' },
   ruler: { label: 'Règle de mesure', key: 'M' },
+  long: { label: 'Position longue', key: 'L' },
+  short: { label: 'Position courte', key: 'S' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

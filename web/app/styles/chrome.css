@@ -56,6 +56,9 @@
 
 #drawstyle .popover { min-width: 150px; }
 #drawstyle .swatch { display: block; width: 16px; height: 16px; border-radius: 4px; }
+.ds-field { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 6px; color: var(--text-3); font-size: 12px; }
+.ds-field input { width: 64px; height: 24px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg); color: var(--text); font: 500 12px var(--font); text-align: right; }
+.ds-field i { font-style: normal; }
 .ds-size { min-width: 18px; font-size: 12px; text-align: center; }
 .ds-sep { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
 .swatches { display: grid; grid-template-columns: repeat(4, 22px); gap: 6px; padding: 4px; }

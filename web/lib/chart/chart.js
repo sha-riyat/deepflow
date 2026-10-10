@@ -277,7 +277,7 @@ export class Chart {
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
     const tf = this.spec.type === 'time' ? this.spec.param : null;
-    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf }, indexed);
+    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '' }, indexed);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));

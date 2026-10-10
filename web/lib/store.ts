@@ -30,8 +30,14 @@ export interface DrawState {
   sel: boolean;
   type: string | null; // type du dessin sélectionné
   style: DrawStyle | null;
+  calc: PositionCalc | null; // outil position : capital et risque
   count: number;
   edit: NoteEdit | null; // note en cours de saisie
+}
+
+export interface PositionCalc {
+  capital: number;
+  risk: number; // en % du capital
 }
 
 export interface NoteEdit {
@@ -53,7 +59,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
-  draw: { tool: null, sel: false, type: null, style: null, count: 0, edit: null },
+  draw: { tool: null, sel: false, type: null, style: null, calc: null, count: 0, edit: null },
 };
 const listeners = new Set<() => void>();
 

@@ -2,10 +2,11 @@
 // pixels et test du clic (mesures des outils : measures.js). Un dessin est accroché à des points
 // (heure, prix) et non à des pixels : il garde sa place au zoom, au défilement et au changement
 // d'unité de temps.
-import { FIB_LEVELS } from './measures.js';
+import { FIB_LEVELS, cleanCalc } from './measures.js';
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3 }; // type -> nombre de points
+export const POSITIONS = ['long', 'short']; // points : entrée (début), stop et cible (fin)
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
@@ -112,6 +113,14 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
       const [mx, my] = [(x + x1) / 2, (y + y1) / 2];
       return { segs: [[mx, y, mx, y1], [x, my, x1, my]], areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: px };
     }
+    case 'long':
+    case 'short': {
+      // Zones cible et stop de l'entrée jusqu'à la fin ; poignées : entrée, stop, cible, fin.
+      const [x1, ys] = px[1];
+      const [, yt] = px[2];
+      const box = (ya) => [Math.min(x, x1), Math.min(y, ya), Math.max(x, x1), Math.max(y, ya)];
+      return { segs: [[x, y, x1, y]], areas: [box(yt), box(ys)], handles: [px[0], [x, ys], [x, yt], [x1, y]] };
+    }
     case 'text': {
       const box = textBox(d.text, d.style?.width);
       return { segs: [], areas: [[x, y, x + box.w, y + box.h]], handles: px };
@@ -136,6 +145,10 @@ export function setHandle(d, i, pt) {
     const [a, b] = i === 2 ? [0, 1] : [1, 0];
     pts[a].t = pt.t;
     pts[b].p = pt.p;
+  } else if (POSITIONS.includes(d.type) && i > 0) {
+    // Position : stop (1) et cible (2) ne changent que de prix ; la fin (3) que d'heure.
+    if (i === 3) pts[1].t = pts[2].t = pt.t;
+    else pts[i].p = pt.p;
   } else pts[i] = { ...pt };
   return pts;
 }
@@ -186,7 +199,9 @@ export function parseDrawings(text) {
   const sets = {};
   for (const [key, list] of Object.entries(raw?.sets ?? {})) {
     if (!Array.isArray(list)) continue;
-    const ok = list.filter(validDrawing).map((d) => ({ ...d, style: cleanStyle(d.style) }));
+    const ok = list.filter(validDrawing).map((d) => ({
+      ...d, style: cleanStyle(d.style), ...(POSITIONS.includes(d.type) ? { calc: cleanCalc(d.calc) } : {}),
+    }));
     if (ok.length) sets[key] = ok;
   }
   return sets;

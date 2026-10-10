@@ -130,3 +130,32 @@ test('dessins : règle (écart, %, bougies, durée)', async () => {
   assert.equal(rulerStats({ t: 0, p: 10 }, { t: 1, p: 9 }).bars, null);
   assert.deepEqual([45e3, 12 * 6e4, 135 * 6e4, 120 * 6e4, (3 * 24 + 4) * 36e5, 2 * 864e5].map(formatDuration), ['45 s', '12 min', '2 h 15', '2 h', '3 j 4 h', '2 j']);
 });
+
+test('dessins : position longue / courte (taille selon le risque, R:R)', async () => {
+  const { positionStats, positionPoints, cleanCalc } = await import('../shared/measures.js');
+  // Long à 60 000, stop 59 400 (-1 %), cible 61 200 (+2 %), capital 1 000 $, risque 1 % = 10 $.
+  const st = positionStats({ side: 'long', entry: 60_000, stop: 59_400, target: 61_200, capital: 1000, risk: 1 });
+  assert.equal(st.valid, true);
+  assert.equal(st.rr, 2);
+  assert.equal(st.riskAmount, 10);
+  assert.ok(Math.abs(st.qty - 10 / 600) < 1e-12); // 0,0167 BTC
+  assert.ok(Math.abs(st.notional - 1000) < 1e-9);
+  assert.ok(Math.abs(st.leverage - 1) < 1e-12);
+  assert.ok(Math.abs(st.gain - 20) < 1e-9);
+  assert.equal(st.stopPct, 1);
+  assert.equal(st.targetPct, 2);
+  // Court : stop au-dessus, cible en dessous.
+  const sh = positionStats({ side: 'short', entry: 100, stop: 105, target: 90, capital: 500, risk: 2 });
+  assert.equal(sh.rr, 2);
+  assert.equal(sh.qty, 2); // 10 $ risqués / 5 $ par unité
+  // Stop du mauvais côté : calcul refusé.
+  assert.equal(positionStats({ side: 'long', entry: 100, stop: 101, target: 110, capital: 1000, risk: 1 }).valid, false);
+  assert.deepEqual(positionPoints({ t: 0, p: 100 }, 'short', 2, 50), [{ t: 0, p: 100 }, { t: 50, p: 102 }, { t: 50, p: 96 }]);
+  assert.deepEqual(cleanCalc({ capital: -5, risk: 'x' }), { capital: 1000, risk: 1 });
+  // Poignées : stop et cible ne bougent qu'en prix, la fin qu'en heure.
+  const d = { type: 'long', pts: positionPoints({ t: 0, p: 100 }, 'long', 2, 50) };
+  assert.deepEqual(setHandle(d, 1, { t: 99, p: 97 })[1], { t: 50, p: 97 });
+  assert.deepEqual(setHandle(d, 3, { t: 80, p: 1 }).map((q) => q.t), [0, 80, 80]);
+  const sh2 = shapeOf(d, [[100, 200], [300, 220], [300, 160]]);
+  assert.deepEqual(sh2.areas, [[100, 160, 300, 200], [100, 200, 300, 220]]); // cible, stop
+});
