@@ -1,3 +1,5 @@
+<img src="assets/logo.svg" width="72" alt="Logo deepflow : profil de volume, POC en orange">
+
 # deepflow
 
 Plateforme d'order flow locale pour Binance (style TradingView / DeepCharts / Bookmap), avec des
@@ -153,5 +155,8 @@ par le levier. Refus si frais > 0,35R, mur opposé avant la cible 1 ou taille so
   liquidations affichées sont un échantillon, pas le total.
 - Nombre de trades : les klines comptent les trades individuels, nos bougies construites depuis les
   trades comptent les aggTrades (un ordre agresseur regroupé) ; les deux ne sont pas comparables.
+
+Logo : profil de volume stylisé, le POC (niveau le plus échangé) en orange ; fichiers dans `assets/`
+(icône, version simplifiée, monochrome, logo + nom) et favicon dans `web/app/icon.svg`.
 
 Icônes : Hugeicons (jeu gratuit, licence MIT).
