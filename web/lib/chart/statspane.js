@@ -1,10 +1,13 @@
 // Panneau « Statistiques » (Bar Stats de LuxAlgo, Cluster Statistic d'ATAS, « order flow values » de
 // DeepCharts) : une ligne par statistique et par bougie, fond d'intensité relative à la vue, valeurs
 // écrites quand la colonne est assez large. Lecture effort / résultat : delta % au-delà du seuil
-// d'initiative en couleur pleine, volume relatif fort (×2 et plus) en orange.
+// d'initiative en couleur pleine, volume relatif fort (×2 et plus) en orange. Le tableau laisse en haut
+// la place de la légende HTML du panneau (nom et valeurs de la bougie survolée) quand il y a la hauteur.
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 import { INITIATIVE_PCT, avgSize, deltaPct, relativeVolume } from '@shared/barstats.js';
+
+const LEGEND_H = 18; // hauteur de la légende HTML posée en haut du panneau
 
 // Lignes, par priorité (celles qui tiennent dans la hauteur sont gardées) : [libellé, valeur, sorte].
 const STATS = [
@@ -37,14 +40,16 @@ function label(kind, v) {
 
 export function drawStats(ctx, items, geo, { top, h, w }) {
   const [i0, i1] = geo.range;
-  const n = Math.max(1, Math.min(STATS.length, Math.floor((h - 6) / 13)));
-  const rowH = (h - 6) / n;
+  const head = h >= 64 ? LEGEND_H : 0;
+  const body = h - 6 - head;
+  const n = Math.max(1, Math.min(STATS.length, Math.floor(body / 13)));
+  const rowH = body / n;
   const colW = Math.max(1, geo.slot - 2);
   const text = geo.slot >= 30 && rowH >= 11;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   STATS.slice(0, n).forEach(([name, get, kind], k) => {
-    const yt = top + 3 + k * rowH;
+    const yt = top + 3 + head + k * rowH;
     const vals = [];
     let max = 0;
     for (let i = i0; i <= i1; i++) {
