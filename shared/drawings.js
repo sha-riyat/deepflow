@@ -3,7 +3,8 @@
 // il garde sa place au zoom, au défilement et au changement d'unité de temps.
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1 }; // type -> nombre de points
+export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
 export const DRAW_WIDTHS = [1, 1.5, 2, 3];
@@ -75,10 +76,21 @@ export function movePoints(scale, items, pts, dx, dy) {
 // ---------- Forme en pixels et test du clic ----------
 
 // Segments (tracé et clic) et poignées (points que l'on peut saisir) d'un dessin, à partir de ses
-// points convertis en pixels.
-export function shapeOf(d, px) {
-  if (d.type === 'trend') return { segs: [[...px[0], ...px[1]]], handles: px };
-  return { segs: [], handles: px };
+// points convertis en pixels ; `view` = dimensions du tracé (lignes prolongées jusqu'aux bords).
+export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
+  const [x, y] = px[0];
+  switch (d.type) {
+    case 'trend':
+      return { segs: [[x, y, ...px[1]]], handles: px };
+    case 'hline':
+      return { segs: [[0, y, view.w, y]], handles: px };
+    case 'hray':
+      return { segs: [[x, y, view.w, y]], handles: px };
+    case 'vline':
+      return { segs: [[x, 0, x, view.h]], handles: px };
+    default:
+      return { segs: [], handles: px };
+  }
 }
 
 export function distToSegment(px, py, x1, y1, x2, y2) {

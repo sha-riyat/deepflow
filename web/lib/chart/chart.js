@@ -16,7 +16,7 @@ import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
-import { drawDrawings } from '../layers/drawings.js';
+import { drawDrawings, drawDrawingLabels } from '../layers/drawings.js';
 import { DrawingEditor } from '../drawings/editor.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
@@ -275,13 +275,15 @@ export class Chart {
     if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
-    if (!INDEXED.includes(st.style)) drawDrawings(ctx, this.drawings, s, items);
+    const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
+    drawDrawings(ctx, this.drawings, s, items, indexed);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
     this.paneScales = st.panes.map((kind, k) =>
       drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot, axisW: AXIS_W }));
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
+    drawDrawingLabels(ctx, this.drawings, s, items, { axisW: AXIS_W, timeTop: this.timeTop, timeH: TIME_H, digits: this.digits() }, indexed);
 
     const values = indicatorValues(this, items);
     const key = JSON.stringify(values);
@@ -350,6 +352,11 @@ export class Chart {
     const mm = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
     const ss = String(sec % 60).padStart(2, '0');
     return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  }
+
+  // Décimales des prix selon le pas de cotation (2 sur BTCUSDT, davantage sur les petits prix).
+  digits() {
+    return Math.max(0, Math.round(-Math.log10(this.meta?.tickSize ?? 0.01)));
   }
 
   // Position des panneaux (pour leurs légendes HTML).

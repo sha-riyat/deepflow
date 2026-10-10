@@ -17,6 +17,24 @@ const GLYPHS: Record<string, ReactNode> = {
       <circle cx="19" cy="5" r="2" />
     </>
   ),
+  hline: (
+    <>
+      <path d="M3 12h7M14 12h7" />
+      <circle cx="12" cy="12" r="2" />
+    </>
+  ),
+  hray: (
+    <>
+      <path d="M8 12h13" />
+      <circle cx="5" cy="12" r="2" />
+    </>
+  ),
+  vline: (
+    <>
+      <path d="M12 3v7M12 14v7" />
+      <circle cx="12" cy="12" r="2" />
+    </>
+  ),
 };
 
 function Glyph({ id }: { id: string }) {

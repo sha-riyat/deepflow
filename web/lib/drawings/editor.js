@@ -123,8 +123,11 @@ export class DrawingEditor {
     if (this.tool) {
       const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: cleanStyle(this.styles[this.tool]) };
-      this.downAt = p;
-      this.#changed();
+      if (DRAW_TYPES[this.tool] === 1) this.#finish(); // un seul point : posé dès le clic
+      else {
+        this.downAt = p;
+        this.#changed();
+      }
       return true;
     }
     const hit = this.#hit(p);
@@ -192,7 +195,8 @@ export class DrawingEditor {
   }
 
   #hit(p) {
-    const shapes = this.list.map((d) => shapeOf(d, d.pts.map((pt) => this.#px(pt))));
+    const { w, h } = this.chart.scale;
+    const shapes = this.list.map((d) => shapeOf(d, d.pts.map((pt) => this.#px(pt)), { w, h }));
     return hitTest(shapes, p.x, p.y, 6, this.list.findIndex((d) => d.id === this.sel));
   }
 

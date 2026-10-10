@@ -1,12 +1,19 @@
-// Dessins de l'utilisateur (voir lib/drawings) et poignées du dessin sélectionné ou en cours.
-import { shapeOf, toPixel } from '@shared/drawings.js';
-import { C } from '../theme.js';
+// Dessins de l'utilisateur (voir lib/drawings) : tracé, poignées du dessin sélectionné ou en cours,
+// étiquettes sur les axes (prix des horizontales, heure de la verticale sélectionnée).
+import { PRICE_ONLY, shapeOf, toPixel } from '@shared/drawings.js';
+import { fmt } from '../fmt.js';
+import { C, font, pill } from '../theme.js';
 
 const DASH = { solid: [], dash: [6, 4], dot: [2, 3] };
+const pad = (n) => String(n).padStart(2, '0');
 
-export function drawDrawings(ctx, editor, scale, items) {
-  for (const d of editor.visible()) {
-    const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)));
+// Dessins à afficher : dans les vues sans échelle de temps continue, seulement ceux sans heure.
+const shown = (editor, priceOnly) => editor.visible().filter((d) => !priceOnly || PRICE_ONLY.includes(d.type));
+
+export function drawDrawings(ctx, editor, scale, items, priceOnly = false) {
+  const view = { w: scale.w, h: scale.h };
+  for (const d of shown(editor, priceOnly)) {
+    const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)), view);
     const { color, width, dash } = d.style;
     ctx.beginPath();
     for (const [x1, y1, x2, y2] of shape.segs) {
@@ -30,6 +37,25 @@ export function drawDrawings(ctx, editor, scale, items) {
       ctx.arc(x, y, 4.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+    }
+  }
+}
+
+// Étiquettes sur les axes, dessinées après eux : prix des horizontales et des rayons (toujours),
+// heure de la verticale sélectionnée.
+export function drawDrawingLabels(ctx, editor, scale, items, { axisW, timeTop, timeH, digits }, priceOnly = false) {
+  for (const d of shown(editor, priceOnly)) {
+    const [x, y] = toPixel(scale, items, d.pts[0]);
+    if ((d.type === 'hline' || d.type === 'hray') && y >= 0 && y <= scale.h) {
+      pill(ctx, scale.w + 4, y, fmt(d.pts[0].p, digits), { bg: d.style.color, fg: C.ink, size: 11, weight: 600 });
+    }
+    const selected = d.id === editor.sel || d === editor.draft;
+    if (d.type === 'vline' && selected && x >= 0 && x <= scale.w) {
+      const t = new Date(d.pts[0].t);
+      const text = `${pad(t.getDate())}/${pad(t.getMonth() + 1)} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+      ctx.font = font(11, 600);
+      const w = ctx.measureText(text).width + 14;
+      pill(ctx, Math.min(scale.w + axisW - w, Math.max(0, x - w / 2)), timeTop + timeH / 2, text, { bg: d.style.color, fg: C.ink, size: 11, weight: 600 });
     }
   }
 }

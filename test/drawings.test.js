@@ -70,3 +70,13 @@ test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () 
   assert.deepEqual(cleanStyle({ color: 'red; x', width: 40, dash: 'wavy' }), { color: '#479ffa', width: 1.5, dash: 'solid' });
   assert.deepEqual(cleanStyle(undefined), cleanStyle({}));
 });
+
+test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du tracé', () => {
+  const view = { w: 800, h: 400 };
+  assert.deepEqual(shapeOf({ type: 'hline' }, [[300, 120]], view).segs, [[0, 120, 800, 120]]);
+  assert.deepEqual(shapeOf({ type: 'hray' }, [[300, 120]], view).segs, [[300, 120, 800, 120]]);
+  assert.deepEqual(shapeOf({ type: 'vline' }, [[300, 120]], view).segs, [[300, 0, 300, 400]]);
+  const shapes = [shapeOf({ type: 'hray' }, [[300, 120]], view)];
+  assert.equal(hitTest(shapes, 200, 120), null); // à gauche de l'origine du rayon
+  assert.deepEqual(hitTest(shapes, 700, 123), { index: 0, handle: -1 });
+});
