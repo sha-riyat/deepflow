@@ -43,17 +43,25 @@ export class ArchiveSource extends EventEmitter {
 
   play() {
     this.playing = this.clock < this.end;
+    this.#status();
     this.#state();
   }
 
   pause() {
     this.playing = false;
+    this.#status();
     this.#state();
   }
 
   setSpeed(speed) {
     if (SPEEDS.includes(speed)) this.speed = speed;
+    this.#status();
     this.#state();
+  }
+
+  // Texte d'état affiché en haut de l'interface.
+  #status() {
+    this.emit('status', this.playing ? `replay en lecture ×${this.speed}` : 'replay en pause');
   }
 
   // Avance jusqu'à `t` (au plus la fin des données), en pause comme en lecture ; attend la fin du
