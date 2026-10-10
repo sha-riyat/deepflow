@@ -14,15 +14,12 @@ export const KLINE = {
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const num = (v, d) => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? d : Number(v));
 
-// Instant « présent » : l'horloge en direct, le dernier trade rejoué en replay.
-const nowOf = (s) => (s.mode === 'replay' ? (s.store.live.last ?? Date.now()) : Date.now());
-
 export async function bars(s, q) {
   const type = BAR_TYPES.includes(q.type) ? q.type : 'time';
   const param = num(q.param, 60_000);
   if (!(param > 0)) throw new Error('paramètre invalide');
   const fp = Math.max(0, num(q.fp, 0));
-  const now = nowOf(s);
+  const now = s.now();
   const to = Math.min(num(q.to, now), now);
   const count = clamp(num(q.count, 600), 10, 3000);
 
@@ -67,7 +64,7 @@ export async function bars(s, q) {
 // du seuil automatique (0,5 % des ordres les plus gros, celui du moteur en direct) ou, si `min`
 // est fourni, au-delà de ce montant en devise de cotation.
 export async function bubbles(s, q) {
-  const now = nowOf(s);
+  const now = s.now();
   const to = Math.min(num(q.to, now), now);
   const from = num(q.from, to - HOUR);
   const slot = clamp(num(q.slot, 1000), 100, 3_600_000);
@@ -108,7 +105,7 @@ const profileCache = new WeakMap();
 const TPO_MINUTES = [15, 30, 60];
 
 export async function profiles(s, q) {
-  const now = nowOf(s);
+  const now = s.now();
   const to = Math.min(num(q.to, now), now);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
   const tpoMs = (TPO_MINUTES.includes(num(q.tpo, 30)) ? num(q.tpo, 30) : 30) * 60_000;
@@ -159,7 +156,7 @@ async function rangeProfile(s, { from, to, bucket, tpoMs }) {
 // première bougie chargée), tirées des klines 1 min (volume en cotation / volume = VWAP exact de la
 // minute). Sans lui, le VWAP du jour ne partirait que de la première bougie chargée.
 export async function vwapAnchor(s, q) {
-  const t = Math.floor(num(q.t, nowOf(s)) / 60_000) * 60_000;
+  const t = Math.floor(Math.min(num(q.t, s.now()), s.now()) / 60_000) * 60_000;
   const day = Math.floor(t / DAY) * DAY;
   if (t <= day) return { day, t: day, pv: 0, p2v: 0, v: 0 };
   const rows = await s.rest.klines(s.cfg.symbol, '1m', { startTime: day, endTime: t - 1, limit: 1500 });
@@ -185,14 +182,14 @@ export async function spotDelta(s, q) {
   const interval = KLINE[param];
   if (!interval) throw new Error('intervalle non disponible en klines spot');
   spotRest ??= new BinanceRest('spot');
-  const to = Math.min(num(q.to, nowOf(s)), nowOf(s));
+  const to = Math.min(num(q.to, s.now()), s.now());
   const from = Math.max(num(q.from, to - 1000 * param), to - 1000 * param);
   const rows = await spotRest.klines(s.cfg.symbol, interval, { startTime: Math.floor(from), endTime: Math.floor(to), limit: 1000 });
   return { symbol: s.cfg.symbol, rows: rows.map((k) => [k[0], Number(k[9]), Number(k[5]) - Number(k[9])]) };
 }
 
 export function heatmap(s, q) {
-  const now = nowOf(s);
+  const now = s.now();
   const to = num(q.to, now);
   const from = num(q.from, to - 300_000);
   const rowLo = Math.floor(num(q.rowLo, 0));
@@ -204,7 +201,8 @@ export function heatmap(s, q) {
 export async function openInterest(s, q) {
   if (s.cfg.market !== 'futures') return { rows: [] };
   const period = ['5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d'].includes(q.period) ? q.period : '5m';
-  const rows = await s.rest.openInterest(s.cfg.symbol, period, { endTime: num(q.to, undefined), limit: 500 });
+  const now = s.now(); // en replay : rien au-delà de l'heure rejouée
+  const rows = await s.rest.openInterest(s.cfg.symbol, period, { endTime: Math.min(num(q.to, now), now), limit: 500 });
   return { period, rows: rows.map((r) => [r.timestamp, Number(r.sumOpenInterest)]) };
 }
 
@@ -223,7 +221,7 @@ export async function tickers(rest) {
 
 // Liquidations enregistrées sur la plage (direct uniquement : pas d'historique public Binance).
 export function liquidations(s, q) {
-  const now = nowOf(s);
+  const now = s.now();
   const to = Math.min(num(q.to, now), now);
   const from = num(q.from, to - 86_400_000);
   return { rows: s.liqs.range(from, to), since: s.liqs.rows[0]?.[0] ?? null };

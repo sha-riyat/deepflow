@@ -139,7 +139,7 @@ test('bulles : une par créneau au VWAP, volumes acheteur / vendeur, gros prints
   tr.push(1_500, 102, 3, -1, 2);
   tr.push(1_500, 102, 2, -1, 3); // même ordre agresseur que le précédent
   tr.push(2_200, 101, 4, 1, 4);
-  const s = { mode: 'live', store: { getRange: async () => ({ trades: tr, partial: false }) }, flow: { bigThreshold: 5 } };
+  const s = { mode: 'live', store: { getRange: async () => ({ trades: tr, partial: false }) }, flow: { bigThreshold: 5 }, now: () => Date.now() };
   const r = await bubbles(s, { from: 0, to: 3_000, slot: 1000 });
   const [a, b] = r.rows;
   assert.deepEqual([a[0], a[2], a[3]], [1000, 1, 5]);
@@ -159,7 +159,7 @@ test('profils : plage libre (profil visible) et sous-période TPO', async () => 
   tr.push(day + 1_000, 100.5, 2, 1, 1);
   tr.push(day + 3_700_000, 101.5, 1, -1, 2);
   const store = { getRange: async () => ({ trades: tr, partial: false }), backFrom: null, hasDay: () => true };
-  const s = { mode: 'live', store, cfg: { footprint: { bucket: 1 } } };
+  const s = { mode: 'live', store, cfg: { footprint: { bucket: 1 } }, now: () => Date.now() };
   const r = await profiles(s, { mode: 'range', from: day, to: day + 7_200_000, bucket: 1, tpo: 60 });
   assert.equal(r.sessions.length, 1);
   const [p] = r.sessions;

@@ -68,6 +68,13 @@ export class Session extends EventEmitter {
     this.source = null;
   }
 
+  // Instant « présent » de toutes les requêtes : l'horloge en direct ; en replay, l'heure rejouée,
+  // pour qu'aucune donnée postérieure (le « futur » du replay) ne soit renvoyée.
+  now() {
+    if (this.mode === 'live') return Date.now();
+    return this.source?.clock ?? this.store?.live.last ?? 0;
+  }
+
   // Instantané du flux en direct (panneau Flux, API /api/state).
   state() {
     const { flow, frame: f } = this;

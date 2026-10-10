@@ -74,6 +74,7 @@ export class ReplaySource extends EventEmitter {
       if (obj.meta) continue;
       if (prevT !== null && this.speed > 0) await sleep((obj.t - prevT) / this.speed);
       prevT = obj.t;
+      this.clock = obj.t; // heure rejouée (voir Session.now)
       for (const [p, q, side, T, id] of obj.tr) this.emit('trade', { t: T, p, q, side, id: id ?? -1 });
       for (const [p, q, side, T] of obj.liq ?? []) this.emit('liquidation', { t: T, p, q, side });
       this.emit('frame', obj);
