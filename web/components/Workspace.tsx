@@ -233,8 +233,9 @@ export default function Workspace() {
     return () => window.removeEventListener('deepflow-help', open);
   }, [setRail]);
 
-  // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap ; dessins :
-  // Alt + lettre -> outil, Échap -> annulation, Suppr -> suppression du dessin sélectionné.
+  // Clavier : lettres -> recherche de symbole ; Maj + G -> masque ou réaffiche bulles et gros prints ;
+  // flèches -> contraste de la heatmap ; dessins : Alt + lettre -> outil, Échap -> annulation,
+  // Suppr -> suppression du dessin sélectionné.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -250,7 +251,14 @@ export default function Workspace() {
       }
       if (e.key === 'Escape' && draw?.escape()) e.preventDefault();
       else if ((e.key === 'Delete' || e.key === 'Backspace') && draw?.removeSelected()) e.preventDefault();
-      else if (/^[a-zA-Z0-9]$/.test(e.key) && search === null) {
+      else if (e.shiftKey && e.key.toLowerCase() === 'g') {
+        // Lecture du prix seul : bulles et gros prints disparaissent d'un coup, et reviennent au même raccourci.
+        const prefs = layoutRef.current.panes.find((p) => p.id === layoutRef.current.active)?.prefs;
+        if (!prefs) return;
+        e.preventDefault();
+        const on = !(prefs.layers.bubbles || prefs.layers.big);
+        update({ layers: { ...prefs.layers, bubbles: on, big: on } }, 'view');
+      } else if (/^[a-zA-Z0-9]$/.test(e.key) && search === null) {
         e.preventDefault();
         setSearch(e.key.toUpperCase());
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
