@@ -1,6 +1,7 @@
 // Données du graphique : bougies (historique paginé + direct, raccordés par le même
 // constructeur que le serveur), bulles de trades, profils de session, heatmap et open interest.
 import { BarBuilder } from '@shared/bars.js';
+import { clockNow } from '../clock.js';
 
 const HOUR = 3_600_000;
 
@@ -53,7 +54,7 @@ export class DataManager {
     this.onChange('bars');
     const { type, param, fp } = this.spec;
     const q = new URLSearchParams({ type, param, fp, count: 800, recent: 1 });
-    if (type !== 'time') q.set('from', Date.now() - 6 * HOUR);
+    if (type !== 'time') q.set('from', clockNow() - 6 * HOUR);
     try {
       const r = await getJSON(`/api/bars?${q}`);
       if (gen !== this.gen) return;

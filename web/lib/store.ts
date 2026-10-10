@@ -1,7 +1,7 @@
 // État en direct partagé par les composants, sans bibliothèque : un store observable lu via
 // useSyncExternalStore. Les données à haute fréquence (ticks, bougies) restent hors de React.
 import { useSyncExternalStore } from 'react';
-import type { AlertFired, AlertItem, Dom, HistoryStatus, Mark, Meta } from './types';
+import type { AlertFired, AlertItem, Dom, HistoryStatus, Mark, Meta, ReplayState } from './types';
 import { defaultOptions } from './indicators.js';
 
 export interface Live {
@@ -15,6 +15,7 @@ export interface Live {
   dataStatus: string;
   following: boolean;
   mark: Mark | null;
+  replay: ReplayState | null; // replay des archives : heure rejouée, vitesse, lecture
   draw: DrawState;
 }
 
@@ -62,6 +63,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
+  replay: null,
   draw: { tool: null, magnet: false, sel: false, id: null, type: null, style: null, calc: null, count: 0, edit: null },
 };
 const listeners = new Set<() => void>();

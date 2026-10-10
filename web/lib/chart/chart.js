@@ -23,6 +23,7 @@ import { RangeProfiles } from '../drawings/profiles.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
+import { clockNow } from '../clock.js';
 
 const AXIS_W = 84;
 const TIME_H = 24;
@@ -191,7 +192,7 @@ export class Chart {
   #follow(items) {
     const s = this.scale;
     if (!s.follow) return;
-    if (s.mode === 'time') s.tRight = Date.now() + s.w * 0.08 * s.msPerPx;
+    if (s.mode === 'time') s.tRight = clockNow() + s.w * 0.08 * s.msPerPx;
     else s.iRight = items.length - 1 + (s.w * 0.08) / s.pxPerBar;
   }
 
@@ -352,7 +353,7 @@ export class Chart {
   // Temps restant avant la clôture de la bougie en cours (bougies temps uniquement).
   #countdown(items) {
     if (this.spec.type !== 'time' || !items.length) return null;
-    const left = items[items.length - 1].t0 + this.spec.param - Date.now();
+    const left = items[items.length - 1].t0 + this.spec.param - clockNow();
     if (left <= 0 || left > 86_400_000) return null;
     const sec = Math.floor(left / 1000);
     const h = Math.floor(sec / 3600);

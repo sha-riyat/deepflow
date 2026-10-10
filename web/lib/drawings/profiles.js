@@ -3,6 +3,7 @@
 // 15 s ; un résultat incomplet (historique en cours de téléchargement) ou en erreur est redemandé
 // après 15 s. Pendant qu'on déplace ou étire le dessin, son dernier profil reste affiché.
 import { profileBucket } from '../chart/requests.js';
+import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
 const MAX_SPAN = 3 * DAY; // limite du collecteur (profil de plage)
@@ -18,11 +19,11 @@ export class RangeProfiles {
   // Résultat pour un dessin : { session, partial, clipped } | { error } | { loading: true }.
   get(d, moving) {
     const [from, end] = [d.pts[0].t, d.pts[1].t].sort((a, b) => a - b);
-    const now = Date.now();
+    const now = clockNow();
     const live = end > now - 60_000;
     const to = live ? now : end;
     const bucket = profileBucket(this.chart);
-    const key = `${from}:${live ? `direct${Math.floor(now / RETRY_MS)}` : end}:${bucket}`;
+    const key = `${from}:${live ? `direct${Math.floor(Date.now() / RETRY_MS)}` : end}:${bucket}`; // rafraîchi en heure réelle
     const entry = this.cache.get(key);
     if (entry?.result) {
       this.byId.set(d.id, entry.result);

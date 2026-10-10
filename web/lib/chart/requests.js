@@ -1,6 +1,7 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
 import { rowBucket } from '@shared/auction.js';
+import { clockNow } from '../clock.js';
 
 const INDEXED = ['linebreak', 'kagi', 'pnf', 'tpo'];
 const DAY = 86_400_000;
@@ -33,9 +34,12 @@ export function bigMin(chart) {
 }
 
 export function requestData(chart, items) {
-  const now = Date.now();
-  if (now - chart.requests.t < 250) return;
-  chart.requests.t = now;
+  // `now` : présent du graphique (heure rejouée en replay) pour les plages de données ; `real` :
+  // heure réelle pour le rythme des requêtes (4 par seconde au plus, rafraîchissements).
+  const now = clockNow();
+  const real = Date.now();
+  if (real - chart.requests.t < 250) return;
+  chart.requests.t = real;
   const s = chart.scale;
   const { layers } = chart.settings;
   const meta = chart.meta;
@@ -78,7 +82,7 @@ export function requestData(chart, items) {
     // Plage visible : rechargée quand la vue bouge d'un dixième de sa largeur.
     const step = visible ? Math.max(60_000, (tR - tL) / 10) : DAY;
     const bucket = tpo ? meta.fpBucket : profileBucket(chart);
-    const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(now / 15_000)}:${bucket}:${JSON.stringify(params)}`;
+    const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(real / 15_000)}:${bucket}:${JSON.stringify(params)}`;
     if (key !== chart.requests.profiles) {
       chart.requests.profiles = key;
       chart.data.loadProfiles(from, to, bucket, params);
@@ -89,14 +93,14 @@ export function requestData(chart, items) {
     // area de la veille et état d'acceptation, ouverture du jour, profils composites.
     const from = Math.floor(now / DAY) * DAY - 10 * DAY;
     const bucket = profileBucket(chart);
-    const key = `${from}:${Math.floor(now / 15_000)}:${bucket}`;
+    const key = `${from}:${Math.floor(real / 15_000)}:${bucket}`;
     if (key !== chart.requests.daily) {
       chart.requests.daily = key;
       chart.data.loadDaily(from, now, bucket);
     }
   }
   if (((layers.liq && !tpo) || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
-    const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(now / 30_000)}`;
+    const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(real / 30_000)}`;
     if (key !== chart.requests.liqs) {
       chart.requests.liqs = key;
       chart.data.loadLiquidations(tL, tR);
@@ -109,7 +113,7 @@ export function requestData(chart, items) {
       chart.data.spot.error = 'CVD spot : bougies temps sur un marché futures uniquement';
     } else {
       if (chart.data.spot.error?.startsWith('CVD spot : bougies')) chart.data.spot.error = null;
-      const key = `${param}:${Math.floor(tL / (param * 500))}:${Math.floor(now / 20_000)}`;
+      const key = `${param}:${Math.floor(tL / (param * 500))}:${Math.floor(real / 20_000)}`;
       if (key !== chart.requests.spot) {
         chart.requests.spot = key;
         chart.data.loadSpot(param, Math.max(tL, tR - 999 * param), tR + param);
@@ -120,7 +124,7 @@ export function requestData(chart, items) {
     // Période Binance la plus proche de l'intervalle des bougies (5 min au minimum, 30 jours d'historique).
     const tf = chart.spec.type === 'time' ? chart.spec.param : 0;
     const [period, ms] = OI_PERIODS.find(([, p]) => p >= tf) ?? OI_PERIODS[OI_PERIODS.length - 1];
-    const key = `${period}:${Math.floor(tR / (ms * 100))}:${Math.floor(now / 60_000)}`;
+    const key = `${period}:${Math.floor(tR / (ms * 100))}:${Math.floor(real / 60_000)}`;
     if (key !== chart.requests.oi) {
       chart.requests.oi = key;
       chart.data.loadOI(period, Math.min(now, tR + ms * 50));

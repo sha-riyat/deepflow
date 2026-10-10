@@ -2,6 +2,7 @@
 
 export interface Meta {
   mode: 'live' | 'replay';
+  archive: { from: number } | null; // replay des archives (pilotable depuis l'interface)
   symbol: string;
   market: 'futures' | 'spot';
   bucket: number;
@@ -82,4 +83,12 @@ export interface Ticker {
   last: number;
   change: number;
   volume: number;
+}
+
+// État du replay des archives (collecteur) : heure rejouée, vitesse, lecture, fin des données.
+export interface ReplayState {
+  t: number;
+  speed: number;
+  playing: boolean;
+  end: number;
 }

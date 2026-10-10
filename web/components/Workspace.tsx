@@ -100,7 +100,9 @@ export default function Workspace() {
         if (engine.chart) engine.chart.meta = m;
         if (changed) reloadSeries(prefsRef.current);
       },
-      onReset: () => {},
+      onReset: () => {
+        prev = null; // le collecteur repart de zéro (symbole, saut dans le replay) : rechargement au prochain meta
+      },
       onAlert: (a) => {
         beep();
         toast(`${a.label} · ${a.symbol}`, a.text);

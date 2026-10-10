@@ -9,6 +9,7 @@ import { prevAndToday } from '../layers/levels.js';
 import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
 import { nextMarkers } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
+import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
 
@@ -53,7 +54,7 @@ export function indicatorValues(chart, items) {
   if (L.times) {
     // Prochains repères : délai avant l'ouverture de New York et avant le financement.
     const show = opts.times.show;
-    const now = Date.now();
+    const now = clockNow();
     const next = nextMarkers(now, { ny: show !== 'funding', funding: show !== 'ny' && chart.meta?.market === 'futures' });
     const parts = [];
     if (next.ny) parts.push(`NY dans ${formatDuration(next.ny - now)}`);
@@ -97,5 +98,5 @@ function visibleTimes(chart, items) {
   if (s.mode === 'time') return [s.tLeft, s.tRight];
   const a = items[Math.max(0, Math.floor(s.indexOfX(0)))];
   const b = items[Math.min(items.length - 1, Math.ceil(s.indexOfX(s.w)))];
-  return [a?.t0 ?? 0, b?.t1 ?? Date.now()];
+  return [a?.t0 ?? 0, b?.t1 ?? clockNow()];
 }

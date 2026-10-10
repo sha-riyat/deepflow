@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Clock01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
-import { useLive } from '@/lib/store';
+import { getLive, useLive } from '@/lib/store';
+import { clockNow } from '@/lib/clock.js';
 import { fmt, sgn } from '@/lib/fmt.js';
 
 // Plage visible -> intervalle de bougie adapté.
@@ -31,7 +32,9 @@ export function StatusBar({ onRange }: { onRange: (span: number, tf: number) => 
 
   useEffect(() => {
     const tick = () => {
-      setNow(new Date().toISOString().slice(11, 19));
+      // En replay des archives : date et heure rejouées.
+      const iso = new Date(clockNow()).toISOString();
+      setNow(getLive().meta?.archive ? `${iso.slice(8, 10)}/${iso.slice(5, 7)} ${iso.slice(11, 19)}` : iso.slice(11, 19));
       setClock(Date.now());
     };
     tick();

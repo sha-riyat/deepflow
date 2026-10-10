@@ -2,6 +2,7 @@
 // POC d'hier), extrême de la sortie en cours, et nœuds de volume (HVN / LVN) d'un profil.
 import { auctionState, volumeNodes } from '@shared/auction.js';
 import { fmt } from '../fmt.js';
+import { clockNow } from '../clock.js';
 import { C, alpha, font, pill } from '../theme.js';
 
 const DAY = 86_400_000;
@@ -18,7 +19,7 @@ function hline(ctx, x0, x1, y, color, dash = [], width = 1) {
 }
 
 // Veille (avant-dernière session) et jour (dernière session, si elle est celle d'aujourd'hui).
-export function prevAndToday(daily, now = Date.now()) {
+export function prevAndToday(daily, now = clockNow()) {
   const today = daily[daily.length - 1];
   if (!today || today.t0 !== Math.floor(now / DAY) * DAY) return { prev: daily[daily.length - 1] ?? null, today: null };
   return { prev: daily[daily.length - 2] ?? null, today };

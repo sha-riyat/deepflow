@@ -6,6 +6,7 @@ import { nakedPocs, valueArea } from '@shared/profile.js';
 import { compositeSession } from '@shared/auction.js';
 import { drawNodes, prevAndToday } from './levels.js';
 import { fmt } from '../fmt.js';
+import { clockNow } from '../clock.js';
 import { C, alpha, pill } from '../theme.js';
 
 const DAY = 86_400_000;
@@ -38,7 +39,7 @@ export function weeklySessions(sessions) {
     }
     w.hi = Math.max(w.hi, s.hi);
     w.lo = Math.min(w.lo, s.lo);
-    w.dev.push([Math.min(s.t1, Date.now()), ...valueArea(w.rows)]);
+    w.dev.push([Math.min(s.t1, clockNow()), ...valueArea(w.rows)]);
     weeks.set(w0, w);
   }
   return [...weeks.values()].map((w) => {
@@ -50,7 +51,7 @@ export function weeklySessions(sessions) {
 
 // Évolution [instant, poc, val, vah] d'une session journalière (fin de chaque sous-période).
 function devPoints(s) {
-  if (s.dev?.length && s.tpoMs) return s.dev.map(([k, ...v]) => [Math.min(s.t0 + (k + 1) * s.tpoMs, Date.now()), ...v]);
+  if (s.dev?.length && s.tpoMs) return s.dev.map(([k, ...v]) => [Math.min(s.t0 + (k + 1) * s.tpoMs, clockNow()), ...v]);
   return s.dev ?? [];
 }
 
@@ -130,7 +131,7 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily
     return;
   }
   const list = range === 'week' ? weeklySessions(sessions) : sessions;
-  const lastT = items.length ? items[items.length - 1].t1 : Date.now();
+  const lastT = items.length ? items[items.length - 1].t1 : clockNow();
   for (const s of list) {
     const x0 = scale.xAt(s.t0, items);
     const x1 = scale.xAt(Math.min(s.t1, lastT), items);

@@ -2,7 +2,8 @@
 // les widgets impératifs (DOM, trades), et connexion au flux temps réel du collecteur.
 import { DataManager } from './chart/data.js';
 import { getLive, setLive, type DrawState, type DrawStyle, type PositionCalc } from './store';
-import type { AlertFired, Meta, Tick } from './types';
+import type { AlertFired, Meta, ReplayState, Tick } from './types';
+import { setReplayClock } from './clock.js';
 
 type Chart = {
   invalidate(): void;
@@ -65,6 +66,10 @@ export function connectStream(h: StreamHandlers): () => void {
     h.onReset();
   });
   on<Meta>('meta', (m) => {
+    if (!m.archive) {
+      setReplayClock(null); // direct (ou replay d'un enregistrement) : heure réelle
+      setLive({ replay: null });
+    }
     setLive({ meta: m, conn: m.mode === 'replay' ? 'replay' : 'live' });
     h.onMeta(m);
   });
@@ -81,6 +86,11 @@ export function connectStream(h: StreamHandlers): () => void {
   on('dom', (d) => engine.dom?.update(d));
   on('history', (hs) => setLive({ history: hs as never }));
   on('mark', (m) => setLive({ mark: m as never }));
+  on<ReplayState>('replay', (st) => {
+    setReplayClock(st);
+    setLive({ replay: st });
+    engine.chart?.invalidate();
+  });
   on('alerts', (list) => setLive({ alerts: list as never }));
   on<AlertFired>('alert', (a) => h.onAlert(a));
   es.onerror = () => setLive({ status: 'Serveur injoignable, reconnexion…', conn: 'off' });
