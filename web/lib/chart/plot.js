@@ -4,6 +4,7 @@ import { drawVwap } from '../layers/vwap.js';
 import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
 import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
 import { drawKeyLevels } from '../layers/keylevels.js';
+import { drawIb } from '../layers/ib.js';
 import { drawTimeMarkers } from '../layers/times.js';
 import { MAX_SESSION_TF, drawMarketSessions } from '../layers/marketsessions.js';
 import { drawDivergences } from '../layers/divergence.js';
@@ -24,6 +25,7 @@ export function drawBehind(chart, ctx, items, geo) {
   else if (L.profile) drawVolumeProfiles(ctx, data.profiles, s, items, O.profile, data.dailySessions);
   if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items);
   if (L.open && !tpo) drawDayOpen(ctx, data.dailySessions, s, items);
+  if (L.ib && !tpo) drawIb(ctx, data.dailySessions, s, items, clockNow(), O.ib);
   if (L.keys && !tpo) drawKeyLevels(ctx, data.keyLevels, s, items, O.keys);
   if (L.sessions && s.mode === 'time' && chart.spec.param <= MAX_SESSION_TF) drawMarketSessions(ctx, s, items, data.bars, clockNow(), O.sessions);
   if (L.times && !INDEXED.includes(st.style)) drawTimeMarkers(ctx, s, items, { show: O.times.show, futures: chart.meta.market === 'futures' });

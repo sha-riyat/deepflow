@@ -10,6 +10,7 @@ import { MAX_SESSION_TF, SESSION_STYLE, rangesOf } from '../layers/marketsession
 import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
 import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
+import { ibLevels, openType, openTypeLabel } from '@shared/opening.js';
 import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
@@ -52,6 +53,14 @@ export function indicatorValues(chart, items) {
     const { prev, today } = prevAndToday(data.dailySessions);
     const loc = openLocation(prev, today);
     out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
+  }
+  if (L.ib && style !== 'tpo') {
+    const { today } = prevAndToday(data.dailySessions);
+    const ib = ibLevels(today, clockNow());
+    const open = openType(today, clockNow());
+    if (!ib) out.ib = data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
+    else if (!ib.done) out.ib = `en formation jusqu’à ${new Date(ib.end).toISOString().slice(11, 16)} UTC`;
+    else out.ib = `${fmt(ib.lo)} – ${fmt(ib.hi)}${open ? ` · ${openTypeLabel(open)}` : ''}`;
   }
   if (L.keys && style !== 'tpo') {
     const k = data.keyLevels;
