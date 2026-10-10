@@ -176,7 +176,9 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   // Décalée vers la gauche si elle dépasserait le bord droit du graphique.
   ctx.font = font(10, 500);
   const lx = Math.max(4, Math.min(x0, scale.w - ctx.measureText(total).width - 14));
-  const ly = y1 + 16 <= scale.h ? y1 + 16 : Math.max(y0, 0) + 16;
+  // Sous la zone, et sous l'étiquette « VAL » (qui descend de 8 px sous la ligne) quand le VAL est près du bas.
+  const below = Math.max(y1 + 16, scale.yOfPrice(s.val * s.bucket) + 27);
+  const ly = below <= scale.h ? below : Math.max(y0, 0) + 16;
   label(ctx, total, lx, ly, C.mist, { size: 10 });
   if (ext && r.after?.session) {
     const st = auctionState(s, r.after.session, clockNow(), 2);
