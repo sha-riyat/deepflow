@@ -78,9 +78,10 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
     les vues sans échelle de temps continue (TPO, Kagi, P&F, Line break), seules les horizontales
     restent affichées.
   - Position : stop et cible par défaut (rapport gain / risque de 2), à déplacer par les poignées ;
-    affiche le R:R, la taille de position pour risquer le pourcentage choisi du capital (1 % de
-    1 000 $ par défaut), la valeur, le levier implicite et les montants au stop et à la cible.
-    Calcul affiché seulement, sans frais : aucun ordre n'est passé.
+    affiche le R:R, la taille de position pour perdre le pourcentage choisi du capital au stop,
+    frais compris (1 % de 1 000 $ et 0,05 % de frais par ordre par défaut ; 0,1 % en spot), la
+    valeur, le levier implicite et les montants nets au stop et à la cible ; signale une cible dont
+    le gain ne couvre pas les frais. Calcul affiché seulement : aucun ordre n'est passé.
   - VWAP ancré : depuis le début de la bougie cliquée jusqu'au direct, valeur courante sur l'axe ;
     signalé « historique incomplet » si l'ancre précède les bougies chargées.
   - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
