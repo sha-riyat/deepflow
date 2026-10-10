@@ -2,6 +2,7 @@
 // derniers ticks (prix + trades) et dernier état de chaque type (status, dom, history, mark,
 // alerts).
 const TICK_BACKLOG = 3000; // 5 min à 100 ms
+const BACKLOG_BYTES = 16 * 1024 * 1024; // plafond (replay rapide : des milliers de trades par tick)
 
 export class Hub {
   constructor() {
@@ -12,6 +13,7 @@ export class Hub {
   // Nouveau symbole : on oublie tout et les navigateurs repartent de zéro.
   reset() {
     this.ticks = [];
+    this.tickBytes = 0;
     this.latest = {};
     this.meta = null;
     this.#broadcast('reset', '{}');
@@ -39,7 +41,8 @@ export class Hub {
   tick(tick) {
     const data = JSON.stringify(tick);
     this.ticks.push(data);
-    if (this.ticks.length > TICK_BACKLOG) this.ticks.shift();
+    this.tickBytes += data.length;
+    while (this.ticks.length > TICK_BACKLOG || (this.tickBytes > BACKLOG_BYTES && this.ticks.length > 1)) this.tickBytes -= this.ticks.shift().length;
     this.#broadcast('tick', data);
   }
 

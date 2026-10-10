@@ -111,7 +111,8 @@ export class DataManager {
   }
 
   onTick(tick) {
-    this.ticks.push(tick);
+    // Meilleurs prix récents (calque bid / ask) : sans les trades, qui pèsent lourd en replay rapide.
+    this.ticks.push({ t: tick.t, bid: tick.bid, ask: tick.ask });
     if (this.ticks.length > 3000) this.ticks.shift();
     const slot = this.bubbles.slot;
     for (const [p, q, side, T] of tick.tr) {

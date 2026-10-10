@@ -76,3 +76,13 @@ test('replay des archives : le magasin connaît le jour jusqu’au départ', asy
   assert.equal(r.trades.n, 90 * 6 + 1); // 05:00 à 06:30 de l'archive, puis le trade rejoué
   assert.equal(r.trades.t[r.trades.n - 1], from);
 });
+
+test('derniers ticks gardés pour les navigateurs : nombre et taille plafonnés', async () => {
+  const { Hub } = await import('../server/hub.js');
+  const hub = new Hub();
+  const big = { t: 1, tr: Array.from({ length: 20_000 }, () => [100000.5, 1.234, 1, 1791550800000, 123456789]) };
+  for (let i = 0; i < 40; i++) hub.tick(big); // ~1 Mo chacun
+  assert.ok(hub.tickBytes <= 16 * 1024 * 1024);
+  assert.ok(hub.ticks.length < 40 && hub.ticks.length > 1);
+  assert.equal(hub.tickBytes, hub.ticks.reduce((n, d) => n + d.length, 0));
+});
