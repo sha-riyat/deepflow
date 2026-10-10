@@ -15,6 +15,14 @@ export interface Live {
   dataStatus: string;
   following: boolean;
   mark: Mark | null;
+  draw: DrawState;
+}
+
+// Outils de dessin : outil actif (null = curseur), sélection, nombre de dessins du symbole.
+export interface DrawState {
+  tool: string | null;
+  sel: boolean;
+  count: number;
 }
 
 let state: Live = {
@@ -28,6 +36,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
+  draw: { tool: null, sel: false, count: 0 },
 };
 const listeners = new Set<() => void>();
 

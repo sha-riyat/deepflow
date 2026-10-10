@@ -3,7 +3,8 @@
 //  - glisser sur l'axe des prix : zoom vertical ; double-clic : échelle automatique ;
 //  - glisser sur l'axe du temps : zoom horizontal ;
 //  - molette : zoom horizontal autour du curseur ; Maj + molette : zoom vertical ;
-//  - double-clic dans le graphique : retour au direct.
+//  - double-clic dans le graphique : retour au direct ;
+//  - dessins (lib/drawings/editor.js) : prioritaires dans le tracé principal sur le déplacement.
 export function attachInteractions(chart) {
   const el = chart.crossCanvas;
   let drag = null;
@@ -21,11 +22,17 @@ export function attachInteractions(chart) {
 
   el.addEventListener('mousedown', (e) => {
     const p = pos(e);
-    drag = { ...p, zone: zone(p.x, p.y) };
+    const z = zone(p.x, p.y);
+    if (e.button === 0 && z === 'plot' && chart.drawings.down(p)) {
+      drag = { ...p, zone: 'draw' };
+      return;
+    }
+    drag = { ...p, zone: z };
     el.style.cursor = drag.zone === 'price' ? 'ns-resize' : drag.zone === 'time' ? 'ew-resize' : 'grabbing';
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (e) => {
+    if (drag?.zone === 'draw') chart.drawings.up(pos(e));
     drag = null;
     el.style.cursor = 'crosshair';
   });
@@ -33,7 +40,11 @@ export function attachInteractions(chart) {
   el.addEventListener('mousemove', (e) => {
     const p = pos(e);
     chart.mouse = p;
-    if (!drag) return;
+    if (!drag || drag.zone === 'draw') {
+      chart.drawings.move(p);
+      el.style.cursor = (zone(p.x, p.y) === 'plot' && chart.drawings.cursor(p)) || 'crosshair';
+      return;
+    }
     const s = chart.scale;
     const dx = p.x - drag.x;
     const dy = p.y - drag.y;
@@ -73,6 +84,7 @@ export function attachInteractions(chart) {
 
   el.addEventListener('dblclick', (e) => {
     const p = pos(e);
+    if (chart.drawings.busy()) return;
     const s = chart.scale;
     if (zone(p.x, p.y) === 'price') s.autoScale = true;
     else {

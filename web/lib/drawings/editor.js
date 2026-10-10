@@ -1,0 +1,199 @@
+// Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
+// redimensionnement par les poignées, suppression. Les dessins sont sauvegardés par marché et par
+// symbole dans le stockage du navigateur.
+import {
+  DEFAULT_STYLE, DRAW_TYPES, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, shapeOf, toPixel,
+} from '@shared/drawings.js';
+
+const KEY = 'deepflow.drawings';
+const CLICK_PX = 5; // en deçà, un glisser est un simple clic
+
+function readAll() {
+  try {
+    return parseDrawings(localStorage.getItem(KEY));
+  } catch {
+    return {}; // stockage indisponible (navigation privée)
+  }
+}
+
+export class DrawingEditor {
+  // enabled() : faux dans les vues sans échelle de temps continue (TPO, Kagi, P&F, Line break).
+  constructor(chart, enabled) {
+    this.chart = chart;
+    this.enabled = enabled;
+    this.key = '';
+    this.list = [];
+    this.tool = null; // outil actif (null = curseur)
+    this.sel = null; // identifiant du dessin sélectionné
+    this.draft = null; // dessin en cours de création
+    this.downAt = null;
+    this.drag = null;
+    this.onState = null; // (état résumé) -> barre de dessin
+  }
+
+  // Charge les dessins du symbole affiché quand il change.
+  sync() {
+    const m = this.chart.meta;
+    const key = m ? `${m.market}:${m.symbol}` : '';
+    if (key === this.key) return;
+    this.key = key;
+    this.list = key ? readAll()[key] ?? [] : [];
+    this.sel = null;
+    this.draft = null;
+    this.drag = null;
+    this.#changed();
+  }
+
+  // Dessins à afficher, dessin en cours compris.
+  visible() {
+    return this.draft ? [...this.list, this.draft] : this.list;
+  }
+
+  setTool(tool) {
+    this.tool = tool;
+    this.draft = null;
+    if (tool) this.sel = null;
+    this.#changed();
+  }
+
+  // Échap : annule le tracé en cours, puis l'outil, puis la sélection. Faux s'il n'y avait rien.
+  escape() {
+    if (!this.draft && !this.tool && !this.sel) return false;
+    if (this.draft || this.tool) this.setTool(null);
+    else {
+      this.sel = null;
+      this.#changed();
+    }
+    return true;
+  }
+
+  removeSelected() {
+    if (!this.sel) return false;
+    this.list = this.list.filter((d) => d.id !== this.sel);
+    this.sel = null;
+    this.#save();
+    return true;
+  }
+
+  clear() {
+    this.list = [];
+    this.sel = null;
+    this.draft = null;
+    this.#save();
+  }
+
+  // ---------- Souris (coordonnées du tracé principal) ; vrai si l'événement est consommé ----------
+
+  down(p) {
+    if (!this.enabled()) return false;
+    const pt = this.#point(p);
+    if (this.draft) {
+      // Second clic : ignoré s'il retombe sur le premier point (ligne de longueur nulle).
+      const [x, y] = this.#px(this.draft.pts[0]);
+      if (Math.hypot(p.x - x, p.y - y) < CLICK_PX) return true;
+      this.draft.pts[this.draft.pts.length - 1] = pt;
+      this.#finish();
+      return true;
+    }
+    if (this.tool) {
+      const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: { ...DEFAULT_STYLE } };
+      this.downAt = p;
+      this.#changed();
+      return true;
+    }
+    const hit = this.#hit(p);
+    if (!hit) {
+      if (this.sel) {
+        this.sel = null;
+        this.#changed();
+      }
+      return false;
+    }
+    const d = this.list[hit.index];
+    this.sel = d.id;
+    this.drag = { d, handle: hit.handle, from: p, orig: d.pts.map((q) => ({ ...q })), moved: false };
+    this.#changed();
+    return true;
+  }
+
+  move(p) {
+    if (this.draft) {
+      this.draft.pts[this.draft.pts.length - 1] = this.#point(p);
+      this.chart.invalidate();
+    } else if (this.drag) {
+      const g = this.drag;
+      g.moved = true;
+      if (g.handle >= 0) g.d.pts[g.handle] = this.#point(p);
+      else g.d.pts = movePoints(this.chart.scale, this.#items(), g.orig, p.x - g.from.x, p.y - g.from.y);
+      this.chart.invalidate();
+    }
+  }
+
+  up(p) {
+    // Tracé en glissant : le relâchement pose le dernier point ; sinon on attend le second clic.
+    if (this.draft && this.downAt && Math.hypot(p.x - this.downAt.x, p.y - this.downAt.y) >= CLICK_PX) this.#finish();
+    this.downAt = null;
+    if (this.drag?.moved) this.#save();
+    this.drag = null;
+  }
+
+  // Curseur de la souris au survol du tracé (null : curseur par défaut du graphique).
+  cursor(p) {
+    if (!this.enabled()) return null;
+    if (this.tool || this.draft) return 'crosshair';
+    if (this.drag) return this.drag.handle >= 0 ? 'grabbing' : 'move';
+    const hit = this.#hit(p);
+    return hit ? (hit.handle >= 0 ? 'grab' : 'move') : null;
+  }
+
+  // Le graphique est occupé par un tracé (le double-clic ne doit pas revenir au direct).
+  busy() {
+    return Boolean(this.tool || this.draft || this.drag);
+  }
+
+  // ---------- Interne ----------
+
+  #items() {
+    return this.chart.view ?? [];
+  }
+
+  #px(pt) {
+    return toPixel(this.chart.scale, this.#items(), pt);
+  }
+
+  #point(p) {
+    return fromPixel(this.chart.scale, this.#items(), p.x, p.y);
+  }
+
+  #hit(p) {
+    const shapes = this.list.map((d) => shapeOf(d, d.pts.map((pt) => this.#px(pt))));
+    return hitTest(shapes, p.x, p.y, 6, this.list.findIndex((d) => d.id === this.sel));
+  }
+
+  #finish() {
+    this.list = [...this.list, this.draft];
+    this.sel = this.draft.id;
+    this.draft = null;
+    this.tool = null; // retour au curseur, comme TradingView
+    this.#save();
+  }
+
+  #save() {
+    if (this.key) {
+      const all = readAll();
+      all[this.key] = this.list;
+      try {
+        localStorage.setItem(KEY, serializeDrawings(all));
+      } catch {
+        // stockage indisponible : dessins non mémorisés
+      }
+    }
+    this.#changed();
+  }
+
+  #changed() {
+    this.chart.invalidate();
+    this.onState?.({ tool: this.tool, sel: Boolean(this.sel), count: this.list.length });
+  }
+}

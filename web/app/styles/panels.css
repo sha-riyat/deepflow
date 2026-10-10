@@ -1,5 +1,5 @@
 /* Rail d'icônes, panneaux latéraux et leurs contenus (flux, DOM, trades, marchés, alertes). */
-#rail { grid-column: 3; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-left: 1px solid var(--line); }
+#rail { grid-column: 4; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-left: 1px solid var(--line); }
 
 .rail-btn {
   position: relative;
@@ -19,7 +19,7 @@
 .rail-btn .badge-dot { position: absolute; right: 5px; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); }
 .rail-sep { width: 18px; height: 1px; margin: 3px 0; background: var(--line); }
 
-#panels { grid-column: 2; display: flex; min-height: 0; max-width: 45vw; border-left: 1px solid var(--line); background: var(--surface); }
+#panels { grid-column: 3; display: flex; min-height: 0; max-width: 45vw; border-left: 1px solid var(--line); background: var(--surface); }
 /* Aucun panneau ouvert : la colonne reste à largeur nulle, le rail garde sa place. */
 #panels.empty { width: 0; border-left: none; }
 .panels-resize { width: 5px; margin-left: -3px; cursor: col-resize; flex: none; z-index: 2; }

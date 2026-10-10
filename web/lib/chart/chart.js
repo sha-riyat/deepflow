@@ -16,6 +16,8 @@ import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
+import { drawDrawings } from '../layers/drawings.js';
+import { DrawingEditor } from '../drawings/editor.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
@@ -65,6 +67,9 @@ export class Chart {
     this.lastHover = undefined;
     this.lastFollow = undefined;
     this.requests = { heat: '', bubbles: '', profiles: '', t: 0 };
+    this.view = []; // série affichée à la dernière image (dessins)
+    // Dessins : masqués dans les vues sans échelle de temps continue.
+    this.drawings = new DrawingEditor(this, () => !INDEXED.includes(this.settings.style));
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(root);
     attachInteractions(this);
@@ -217,6 +222,8 @@ export class Chart {
     if ((window.devicePixelRatio || 1) !== this.dpr) this.resize();
     if (!this.meta || !this.W) return;
     const items = this.items();
+    this.view = items;
+    this.drawings.sync();
     // En suivi du direct, on redessine au plus 10 fois par seconde.
     const now = performance.now();
     if (this.dirty || (this.scale.follow && now - (this.lastRender ?? 0) > 100)) {
@@ -268,6 +275,7 @@ export class Chart {
     if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
+    if (!INDEXED.includes(st.style)) drawDrawings(ctx, this.drawings, s, items);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));

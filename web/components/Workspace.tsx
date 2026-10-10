@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TopBar } from './TopBar';
 import { ChartView } from './ChartView';
+import { DrawingBar } from './DrawingBar';
 import { Panels, Rail, toggleOpen } from './Rail';
 import { StatusBar } from './StatusBar';
 import { SymbolSearch } from './SymbolSearch';
@@ -13,6 +14,7 @@ import { DomPanel, TapePanel } from './panels/LivePanels';
 import { connectStream, engine, getData } from '@/lib/engine';
 import { getLive, loadPrefs, savePrefs, useLive, type UiPrefs } from '@/lib/store';
 import { beep } from '@/lib/sound';
+import { toolForKey } from '@/lib/drawings/tools.js';
 import type { FlowState, Meta } from '@/lib/types';
 import { seriesLabel } from './TopBar';
 
@@ -120,12 +122,24 @@ export default function Workspace() {
     engine.chart.invalidate();
   }, [alerts, meta]);
 
-  // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap.
+  // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap ; dessins :
+  // Alt + lettre -> outil, Échap -> annulation, Suppr -> suppression du dessin sélectionné.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (/^[a-zA-Z0-9]$/.test(e.key) && search === null) {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || e.ctrlKey || e.metaKey) return;
+      const draw = engine.chart?.drawings;
+      if (e.altKey) {
+        const tool = toolForKey(e.key, e.code);
+        if (tool && draw) {
+          e.preventDefault();
+          draw.setTool(getLive().draw.tool === tool ? null : tool);
+        }
+        return;
+      }
+      if (e.key === 'Escape' && draw?.escape()) e.preventDefault();
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && draw?.removeSelected()) e.preventDefault();
+      else if (/^[a-zA-Z0-9]$/.test(e.key) && search === null) {
         e.preventDefault();
         setSearch(e.key.toUpperCase());
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -160,6 +174,7 @@ export default function Workspace() {
         }}
       />
       <main id="workspace">
+        <DrawingBar />
         <ChartView prefs={prefs} update={update} />
         <Panels rail={prefs.rail} setRail={(rail) => update({ rail }, 'layout')} onToggle={toggle} render={render} />
         <Rail rail={prefs.rail} badges={badges} onToggle={toggle} />

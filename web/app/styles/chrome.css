@@ -30,8 +30,12 @@
 .conn.replay i { background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 
 /* ---------- Espace de travail ---------- */
-#workspace { display: grid; grid-template-columns: 1fr auto 40px; min-height: 0; }
-#chart-wrap { position: relative; min-width: 0; min-height: 0; }
+#workspace { display: grid; grid-template-columns: 40px 1fr auto 40px; min-height: 0; }
+#chart-wrap { grid-column: 2; position: relative; min-width: 0; min-height: 0; }
+
+/* Barre des outils de dessin (boutons du rail, voir panels.css) */
+#drawbar { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-right: 1px solid var(--line); }
+#drawbar .rail-btn:disabled { color: var(--text-4); background: none; cursor: default; }
 #chart { position: absolute; inset: 0; }
 #chart canvas { position: absolute; left: 0; top: 0; display: block; }
 #chart canvas.main,

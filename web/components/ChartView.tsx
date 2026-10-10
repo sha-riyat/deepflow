@@ -12,7 +12,7 @@ import { Chart } from '@/lib/chart/chart.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { setFontFamily } from '@/lib/theme.js';
 import { engine, getData } from '@/lib/engine';
-import { setLive, useLive, type UiPrefs } from '@/lib/store';
+import { setLive, useLive, type DrawState, type UiPrefs } from '@/lib/store';
 
 interface NavChart {
   zoom(f: number): void;
@@ -48,6 +48,7 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
     chart.onFollow = (f: boolean) => setLive({ following: f });
     chart.onValues = (v: Record<string, string>) => setValues(v);
     chart.onPaneValues = (v: Record<string, [string, string, string][]>) => setPaneVals(v);
+    chart.drawings.onState = (draw: DrawState) => setLive({ draw });
     chart.onLayout = (rects: { kind: string; y: number }[], h: number) => {
       setPanes(rects);
       setPlotH(h);

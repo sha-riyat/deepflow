@@ -1,7 +1,7 @@
 // Pont entre React et le moteur : instance unique des données, références vers le graphique et
 // les widgets impératifs (DOM, trades), et connexion au flux temps réel du collecteur.
 import { DataManager } from './chart/data.js';
-import { getLive, setLive } from './store';
+import { getLive, setLive, type DrawState } from './store';
 import type { AlertFired, Meta, Tick } from './types';
 
 type Chart = {
@@ -13,6 +13,13 @@ type Chart = {
   scale: { follow: boolean; autoScale: boolean; msPerPx: number; w: number };
   settings: Record<string, unknown>;
   title: string;
+  drawings: {
+    onState: ((s: DrawState) => void) | null;
+    setTool(tool: string | null): void;
+    escape(): boolean;
+    removeSelected(): boolean;
+    clear(): void;
+  };
 };
 
 export const engine: {
