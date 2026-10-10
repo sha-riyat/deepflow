@@ -1,5 +1,7 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
+import { rowBucket } from '@shared/auction.js';
+
 const INDEXED = ['linebreak', 'kagi', 'pnf', 'tpo'];
 const DAY = 86_400_000;
 const OI_PERIODS = [['5m', 3e5], ['15m', 9e5], ['30m', 18e5], ['1h', 36e5], ['2h', 72e5], ['4h', 144e5], ['6h', 216e5], ['12h', 432e5], ['1d', 864e5]];
@@ -12,6 +14,14 @@ export function bubbleSlot(msPerPx, px, tf = null) {
   if (tf && target >= tf) return tf * Math.max(1, Math.round(target / tf));
   const fits = SLOTS.filter((v) => !tf || tf % v === 0);
   return fits.find((v) => v >= target) ?? fits[fits.length - 1] ?? SLOTS[0];
+}
+
+// Taille des lignes des profils de volume : pourcentage du prix arrondi à un pas « rond »
+// (0,05 % ≈ 50 $ sur BTC, 1 à 2 $ sur ETH), jamais plus fin que la tranche du footprint.
+export function profileBucket(chart) {
+  const { meta } = chart;
+  const last = chart.data.bars[chart.data.bars.length - 1];
+  return rowBucket(last?.c, meta.fpBucket, chart.settings.opts.profile.row);
 }
 
 export function requestData(chart, items) {
@@ -57,10 +67,11 @@ export function requestData(chart, items) {
     const params = { tpo: tpo ? T.period : 30, ...(visible ? { mode: 'range' } : {}) };
     // Plage visible : rechargée quand la vue bouge d'un dixième de sa largeur.
     const step = visible ? Math.max(60_000, (tR - tL) / 10) : DAY;
-    const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(now / 15_000)}:${JSON.stringify(params)}`;
+    const bucket = tpo ? meta.fpBucket : profileBucket(chart);
+    const key = `${Math.floor(from / step)}:${Math.floor(to / step)}:${Math.floor(now / 15_000)}:${bucket}:${JSON.stringify(params)}`;
     if (key !== chart.requests.profiles) {
       chart.requests.profiles = key;
-      chart.data.loadProfiles(from, to, meta.fpBucket, params);
+      chart.data.loadProfiles(from, to, bucket, params);
     }
   }
   if (layers.naked && !tpo) {
