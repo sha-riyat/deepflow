@@ -2,7 +2,7 @@
 // redimensionnement par les poignées, style, suppression. Les dessins sont sauvegardés par marché et
 // par symbole dans le stockage du navigateur ; le dernier style choisi pour chaque outil est retenu.
 import {
-  DRAW_TYPES, cleanStyle, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, shapeOf, toPixel,
+  DRAW_TYPES, cleanStyle, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
 } from '@shared/drawings.js';
 
 const KEY = 'deepflow.drawings';
@@ -152,7 +152,7 @@ export class DrawingEditor {
     } else if (this.drag) {
       const g = this.drag;
       g.moved = true;
-      if (g.handle >= 0) g.d.pts[g.handle] = this.#point(p);
+      if (g.handle >= 0) g.d.pts = setHandle(g.d, g.handle, this.#point(p));
       else g.d.pts = movePoints(this.chart.scale, this.#items(), g.orig, p.x - g.from.x, p.y - g.from.y);
       this.chart.invalidate();
     }

@@ -2,7 +2,7 @@
 // étiquettes sur les axes (prix des horizontales, heure de la verticale sélectionnée).
 import { PRICE_ONLY, shapeOf, toPixel } from '@shared/drawings.js';
 import { fmt } from '../fmt.js';
-import { C, font, pill } from '../theme.js';
+import { C, alpha, font, pill } from '../theme.js';
 
 const DASH = { solid: [], dash: [6, 4], dot: [2, 3] };
 const pad = (n) => String(n).padStart(2, '0');
@@ -15,6 +15,8 @@ export function drawDrawings(ctx, editor, scale, items, priceOnly = false) {
   for (const d of shown(editor, priceOnly)) {
     const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)), view);
     const { color, width, dash } = d.style;
+    ctx.fillStyle = alpha(color, 0.12); // zones (rectangle) : fond léger de la couleur du trait
+    for (const [x0, y0, x1, y1] of shape.areas ?? []) ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
     ctx.beginPath();
     for (const [x1, y1, x2, y2] of shape.segs) {
       ctx.moveTo(x1, y1);

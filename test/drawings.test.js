@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  indexOfTime, timeOfIndex, toPixel, fromPixel, movePoints, shapeOf, hitTest, distToSegment, parseDrawings, serializeDrawings, cleanStyle,
+  indexOfTime, timeOfIndex, toPixel, fromPixel, movePoints, shapeOf, hitTest, distToSegment, parseDrawings, serializeDrawings, cleanStyle, setHandle,
 } from '../shared/drawings.js';
 
 // Échelle minimale (mêmes formules que web/lib/chart/scale.js).
@@ -79,4 +79,16 @@ test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du 
   const shapes = [shapeOf({ type: 'hray' }, [[300, 120]], view)];
   assert.equal(hitTest(shapes, 200, 120), null); // à gauche de l'origine du rayon
   assert.deepEqual(hitTest(shapes, 700, 123), { index: 0, handle: -1 });
+});
+
+test('dessins : rectangle, clic à l’intérieur et coins opposés', () => {
+  const r = shapeOf({ type: 'rect' }, [[100, 50], [300, 150]]);
+  assert.deepEqual(r.handles, [[100, 50], [300, 150], [100, 150], [300, 50]]);
+  assert.deepEqual(hitTest([r], 200, 100), { index: 0, handle: -1 }); // à l'intérieur
+  assert.equal(hitTest([r], 400, 100), null);
+  const d = { type: 'rect', pts: [{ t: 1, p: 10 }, { t: 5, p: 20 }] };
+  assert.deepEqual(setHandle(d, 2, { t: 0, p: 25 }), [{ t: 0, p: 10 }, { t: 5, p: 25 }]); // coin (t du 1er, p du 2e)
+  assert.deepEqual(setHandle(d, 3, { t: 9, p: 5 }), [{ t: 1, p: 5 }, { t: 9, p: 20 }]);
+  assert.deepEqual(setHandle({ type: 'trend', pts: d.pts }, 1, { t: 7, p: 8 }), [{ t: 1, p: 10 }, { t: 7, p: 8 }]);
+  assert.deepEqual(d.pts, [{ t: 1, p: 10 }, { t: 5, p: 20 }]); // l'original n'est pas modifié
 });

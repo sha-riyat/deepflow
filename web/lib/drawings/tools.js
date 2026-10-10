@@ -5,6 +5,7 @@ export const TOOLS = {
   hline: { label: 'Ligne horizontale', key: 'H' },
   hray: { label: 'Rayon horizontal', key: 'J' },
   vline: { label: 'Ligne verticale', key: 'V' },
+  rect: { label: 'Rectangle (zone)', key: 'R' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

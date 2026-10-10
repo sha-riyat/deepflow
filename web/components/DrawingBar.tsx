@@ -34,6 +34,12 @@ const GLYPHS: Record<string, ReactNode> = {
       <path d="M12 3v7M12 14v7" />
       <circle cx="12" cy="12" r="2" />
     </>
+  ),  rect: (
+    <>
+      <rect x="5" y="7" width="14" height="10" rx="1" />
+      <circle cx="5" cy="7" r="1.6" />
+      <circle cx="19" cy="17" r="1.6" />
+    </>
   ),
 };
 

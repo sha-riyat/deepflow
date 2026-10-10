@@ -3,7 +3,7 @@
 // il garde sa place au zoom, au défilement et au changement d'unité de temps.
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2 }; // type -> nombre de points
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
@@ -75,8 +75,9 @@ export function movePoints(scale, items, pts, dx, dy) {
 
 // ---------- Forme en pixels et test du clic ----------
 
-// Segments (tracé et clic) et poignées (points que l'on peut saisir) d'un dessin, à partir de ses
-// points convertis en pixels ; `view` = dimensions du tracé (lignes prolongées jusqu'aux bords).
+// Segments (tracé et clic), zones pleines (clic à l'intérieur) et poignées (points que l'on peut
+// saisir) d'un dessin, à partir de ses points convertis en pixels ; `view` = dimensions du tracé
+// (lignes prolongées jusqu'aux bords).
 export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
   const [x, y] = px[0];
   switch (d.type) {
@@ -88,9 +89,26 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
       return { segs: [[x, y, view.w, y]], handles: px };
     case 'vline':
       return { segs: [[x, 0, x, view.h]], handles: px };
+    case 'rect': {
+      const [x1, y1] = px[1];
+      const segs = [[x, y, x1, y], [x1, y, x1, y1], [x1, y1, x, y1], [x, y1, x, y]];
+      return { segs, areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: [px[0], px[1], [x, y1], [x1, y]] };
+    }
     default:
       return { segs: [], handles: px };
   }
+}
+
+// Points d'un dessin après avoir déplacé sa poignée `i` en `pt`. Rectangle : poignées 2 et 3 =
+// coins opposés, qui mêlent l'heure d'un point et le prix de l'autre.
+export function setHandle(d, i, pt) {
+  const pts = d.pts.map((q) => ({ ...q }));
+  if (d.type === 'rect' && i >= 2) {
+    const [a, b] = i === 2 ? [0, 1] : [1, 0];
+    pts[a].t = pt.t;
+    pts[b].p = pt.p;
+  } else pts[i] = { ...pt };
+  return pts;
 }
 
 export function distToSegment(px, py, x1, y1, x2, y2) {
@@ -109,8 +127,10 @@ export function hitTest(shapes, x, y, tol = 6, selected = -1) {
     const h = sel.handles.findIndex(([hx, hy]) => Math.hypot(x - hx, y - hy) <= tol + 2);
     if (h >= 0) return { index: selected, handle: h };
   }
+  const inside = ([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1;
   for (let i = shapes.length - 1; i >= 0; i--) {
-    if (shapes[i].segs.some((s) => distToSegment(x, y, ...s) <= tol)) return { index: i, handle: -1 };
+    const { segs, areas = [] } = shapes[i];
+    if (segs.some((s) => distToSegment(x, y, ...s) <= tol) || areas.some(inside)) return { index: i, handle: -1 };
   }
   return null;
 }
