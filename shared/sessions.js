@@ -36,8 +36,9 @@ export function timeMarkers(from, to, { ny = true, funding = true } = {}) {
   return out.filter((m) => m.t >= from && m.t <= to).sort((a, b) => a.t - b.t);
 }
 
-// Prochain repère de chaque sorte après `now` (pour la légende).
+// Prochain repère de chaque sorte strictement après `now` (pour la légende) : à l'heure pile, le
+// repère qui vient de passer ne compte plus.
 export function nextMarkers(now, opts) {
-  const list = timeMarkers(now, now + 4 * DAY, opts);
+  const list = timeMarkers(now + 1, now + 4 * DAY, opts);
   return { ny: list.find((m) => m.kind === 'ny')?.t ?? null, funding: list.find((m) => m.kind === 'funding')?.t ?? null };
 }

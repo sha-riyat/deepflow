@@ -25,4 +25,5 @@ test('repères d’une plage et prochains repères', () => {
   const next = nextMarkers(utc('2026-10-10T09:00:00')); // samedi matin
   assert.equal(next.funding, utc('2026-10-10T16:00:00'));
   assert.equal(next.ny, utc('2026-10-12T13:30:00')); // lundi
+  assert.equal(nextMarkers(utc('2026-10-09T16:00:00')).funding, utc('2026-10-10T00:00:00')); // à l'heure pile : le suivant
 });
