@@ -41,7 +41,7 @@ export function drawDrawings(ctx, editor, scale, items, { digits }, priceOnly = 
     }
     ctx.stroke();
     ctx.setLineDash([]);
-    decorate(ctx, d, shape, { digits });
+    decorate(ctx, d, shape, { digits, editing: editor.editing });
     if (d.id !== editor.sel && d !== editor.draft) continue;
     ctx.fillStyle = C.ink;
     ctx.lineWidth = 1.5;

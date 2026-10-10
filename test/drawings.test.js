@@ -106,3 +106,16 @@ test('dessins : retracement de Fibonacci (0 sur la fin du mouvement, 1 sur son d
   assert.deepEqual(f.segs[6], [100, 400, 300, 400]);
   assert.deepEqual(hitTest([f], 200, 300), { index: 0, handle: -1 }); // sur la diagonale (guide)
 });
+
+test('dessins : note (texte obligatoire et borné, boîte de clic selon la taille)', async () => {
+  const { textBox } = await import('../shared/drawings.js');
+  const note = { id: 'n', type: 'text', pts: [{ t: 1, p: 2 }], text: 'Support\nà surveiller', style: { width: 2 } };
+  const ok = parseDrawings(serializeDrawings({ k: [note, { ...note, id: 'x', text: undefined }, { ...note, id: 'y', text: 'a'.repeat(501) }] }));
+  assert.deepEqual(ok.k.map((d) => d.id), ['n']);
+  const box = textBox(note.text, 2);
+  assert.equal(box.size, 15);
+  assert.equal(box.lines.length, 2);
+  const shape = shapeOf(note, [[100, 50]]);
+  assert.deepEqual(hitTest([shape], 110, 60), { index: 0, handle: -1 });
+  assert.equal(hitTest([shape], 90, 60), null);
+});

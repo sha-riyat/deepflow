@@ -5,12 +5,22 @@
 import { FIB_LEVELS } from './measures.js';
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1 }; // type -> nombre de points
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
 export const DRAW_WIDTHS = [1, 1.5, 2, 3];
 export const DRAW_DASHES = ['solid', 'dash', 'dot'];
+export const TEXT_MAX = 500;
+
+// Notes : l'épaisseur choisie donne la taille du texte ; boîte estimée (sans canvas) pour le clic.
+export const textSize = (width) => ({ 1: 12, 1.5: 13, 2: 15, 3: 18 })[width] ?? 13;
+
+export function textBox(text, width) {
+  const size = textSize(width);
+  const lines = String(text || ' ').split('\n');
+  return { size, lines, w: Math.max(...lines.map((l) => l.length)) * size * 0.6 + 10, h: lines.length * (size + 6) };
+}
 
 // Style complété et vérifié : une valeur inconnue (stockage abîmé) reprend la valeur par défaut.
 export function cleanStyle(style) {
@@ -96,6 +106,10 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
       const segs = [[x, y, x1, y], [x1, y, x1, y1], [x1, y1, x, y1], [x, y1, x, y]];
       return { segs, areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: [px[0], px[1], [x, y1], [x1, y]] };
     }
+    case 'text': {
+      const box = textBox(d.text, d.style?.width);
+      return { segs: [], areas: [[x, y, x + box.w, y + box.h]], handles: px };
+    }
     case 'fib': {
       // Niveaux de l'extrémité gauche à l'extrémité droite ; le prix est linéaire en pixels.
       const [x1, y1] = px[1];
@@ -151,7 +165,8 @@ const validPoint = (pt) => pt && Number.isFinite(pt.t) && Number.isFinite(pt.p);
 
 export function validDrawing(d) {
   return Boolean(d) && typeof d.id === 'string' && d.type in DRAW_TYPES && Array.isArray(d.pts)
-    && d.pts.length === DRAW_TYPES[d.type] && d.pts.every(validPoint);
+    && d.pts.length === DRAW_TYPES[d.type] && d.pts.every(validPoint)
+    && (d.type !== 'text' || (typeof d.text === 'string' && d.text.length <= TEXT_MAX));
 }
 
 // Lecture tolérante : un texte illisible ou un dessin invalide est ignoré, le reste est gardé.

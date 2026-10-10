@@ -24,6 +24,7 @@ export function attachInteractions(chart) {
     const p = pos(e);
     const z = zone(p.x, p.y);
     if (e.button === 0 && z === 'plot' && chart.drawings.down(p)) {
+      e.preventDefault(); // garde le focus (saisie d'une note) et évite de sélectionner du texte
       drag = { ...p, zone: 'draw' };
       return;
     }
@@ -84,7 +85,7 @@ export function attachInteractions(chart) {
 
   el.addEventListener('dblclick', (e) => {
     const p = pos(e);
-    if (chart.drawings.busy()) return;
+    if (chart.drawings.dblclick(p) || chart.drawings.busy()) return;
     const s = chart.scale;
     if (zone(p.x, p.y) === 'price') s.autoScale = true;
     else {

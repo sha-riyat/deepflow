@@ -7,6 +7,7 @@ export const TOOLS = {
   vline: { label: 'Ligne verticale', key: 'V' },
   rect: { label: 'Rectangle (zone)', key: 'R' },
   fib: { label: 'Retracement de Fibonacci', key: 'F' },
+  text: { label: 'Texte / note', key: 'N' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

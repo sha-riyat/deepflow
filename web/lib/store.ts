@@ -28,8 +28,18 @@ export interface DrawStyle {
 export interface DrawState {
   tool: string | null;
   sel: boolean;
+  type: string | null; // type du dessin sélectionné
   style: DrawStyle | null;
   count: number;
+  edit: NoteEdit | null; // note en cours de saisie
+}
+
+export interface NoteEdit {
+  id: string;
+  at: [number, number]; // position (pixels du tracé)
+  text: string;
+  color: string;
+  size: number;
 }
 
 let state: Live = {
@@ -43,7 +53,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
-  draw: { tool: null, sel: false, style: null, count: 0 },
+  draw: { tool: null, sel: false, type: null, style: null, count: 0, edit: null },
 };
 const listeners = new Set<() => void>();
 

@@ -56,10 +56,25 @@
 
 #drawstyle .popover { min-width: 150px; }
 #drawstyle .swatch { display: block; width: 16px; height: 16px; border-radius: 4px; }
+.ds-size { min-width: 18px; font-size: 12px; text-align: center; }
 .ds-sep { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
 .swatches { display: grid; grid-template-columns: repeat(4, 22px); gap: 6px; padding: 4px; }
 .swatches button { width: 22px; height: 22px; padding: 0; border: 2px solid transparent; border-radius: 6px; cursor: pointer; }
 .swatches button.on { border-color: var(--text); }
+
+/* Saisie d'une note sur le graphique */
+.note-edit {
+  position: absolute;
+  z-index: 8;
+  min-width: 160px;
+  padding: 2px 5px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: rgba(11, 11, 11, 0.9);
+  font: 500 13px/1.38 var(--font);
+  resize: none;
+  outline: none;
+}
 #chart { position: absolute; inset: 0; }
 #chart canvas { position: absolute; left: 0; top: 0; display: block; }
 #chart canvas.main,

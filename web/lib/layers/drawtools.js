@@ -1,5 +1,6 @@
 // Habillage propre à chaque outil de dessin (étiquettes, zones), après le tracé commun de
-// drawings.js : niveaux et prix du Fibonacci.
+// drawings.js : niveaux et prix du Fibonacci, notes.
+import { textBox } from '@shared/drawings.js';
 import { fibLevels } from '@shared/measures.js';
 import { fmt } from '../fmt.js';
 import { alpha, font } from '../theme.js';
@@ -36,7 +37,16 @@ function fib(ctx, d, shape, { digits }) {
   });
 }
 
-const DECOR = { fib };
+// Note : une ligne de texte par ligne saisie, à partir du point (coin haut gauche). Masquée
+// pendant sa saisie (la zone de texte HTML la remplace).
+function text(ctx, d, shape, { editing }) {
+  if (d.id === editing) return;
+  const [x, y] = shape.handles[0];
+  const { size, lines } = textBox(d.text, d.style.width);
+  lines.forEach((line, i) => label(ctx, line, x, y + (i + 1) * (size + 6), d.style.color, { size, weight: 500 }));
+}
+
+const DECOR = { fib, text };
 
 export function decorate(ctx, d, shape, opts) {
   DECOR[d.type]?.(ctx, d, shape, opts);

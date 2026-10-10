@@ -2,7 +2,7 @@
 // redimensionnement par les poignées, style, suppression. Les dessins sont sauvegardés par marché et
 // par symbole dans le stockage du navigateur ; le dernier style choisi pour chaque outil est retenu.
 import {
-  DRAW_TYPES, cleanStyle, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
+  DRAW_TYPES, TEXT_MAX, cleanStyle, textSize, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
 } from '@shared/drawings.js';
 
 const KEY = 'deepflow.drawings';
@@ -38,7 +38,8 @@ export class DrawingEditor {
     this.draft = null; // dessin en cours de création
     this.downAt = null;
     this.drag = null;
-    this.onState = null; // (état résumé) -> barres de dessin et de style
+    this.editing = null; // identifiant de la note en cours de saisie
+    this.onState = null; // (état résumé) -> barres de dessin et de style, saisie des notes
     this.styles = readStyles();
   }
 
@@ -52,6 +53,7 @@ export class DrawingEditor {
     this.sel = null;
     this.draft = null;
     this.drag = null;
+    this.editing = null;
     this.#changed();
   }
 
@@ -69,8 +71,9 @@ export class DrawingEditor {
 
   // Échap : annule le tracé en cours, puis l'outil, puis la sélection. Faux s'il n'y avait rien.
   escape() {
-    if (!this.draft && !this.tool && !this.sel) return false;
-    if (this.draft || this.tool) this.setTool(null);
+    if (!this.draft && !this.tool && !this.sel && !this.editing) return false;
+    if (this.editing) this.setText(null);
+    else if (this.draft || this.tool) this.setTool(null);
     else {
       this.sel = null;
       this.#changed();
@@ -90,6 +93,30 @@ export class DrawingEditor {
       // stockage indisponible
     }
     this.#save();
+  }
+
+  // Fin de saisie d'une note : texte validé, ou null pour annuler. Une note vide est retirée.
+  setText(text) {
+    const d = this.list.find((x) => x.id === this.editing);
+    this.editing = null;
+    if (!d) return this.#changed();
+    if (text !== null) d.text = text.slice(0, TEXT_MAX);
+    if (!d.text.trim()) {
+      this.list = this.list.filter((x) => x !== d);
+      this.sel = null;
+    }
+    this.#save();
+  }
+
+  // Double-clic : ouvre la saisie d'une note. Vrai si l'événement est consommé.
+  dblclick(p) {
+    const hit = this.enabled() && !this.tool && this.#hit(p);
+    const d = hit && this.list[hit.index];
+    if (d?.type !== 'text') return false;
+    this.sel = d.id;
+    this.editing = d.id;
+    this.#changed();
+    return true;
   }
 
   removeSelected() {
@@ -123,6 +150,7 @@ export class DrawingEditor {
     if (this.tool) {
       const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: cleanStyle(this.styles[this.tool]) };
+      if (this.tool === 'text') this.draft.text = '';
       if (DRAW_TYPES[this.tool] === 1) this.#finish(); // un seul point : posé dès le clic
       else {
         this.downAt = p;
@@ -203,6 +231,7 @@ export class DrawingEditor {
   #finish() {
     this.list = [...this.list, this.draft];
     this.sel = this.draft.id;
+    if (this.draft.type === 'text') this.editing = this.draft.id; // saisie du texte aussitôt
     this.draft = null;
     this.tool = null; // retour au curseur, comme TradingView
     this.#save();
@@ -224,6 +253,8 @@ export class DrawingEditor {
   #changed() {
     this.chart.invalidate();
     const sel = this.list.find((d) => d.id === this.sel);
-    this.onState?.({ tool: this.tool, sel: Boolean(sel), style: sel?.style ?? null, count: this.list.length });
+    const note = this.list.find((d) => d.id === this.editing);
+    const edit = note ? { id: note.id, at: this.#px(note.pts[0]), text: note.text, color: note.style.color, size: textSize(note.style.width) } : null;
+    this.onState?.({ tool: this.tool, sel: Boolean(sel), type: sel?.type ?? null, style: sel?.style ?? null, count: this.list.length, edit });
   }
 }

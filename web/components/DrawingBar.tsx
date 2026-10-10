@@ -45,7 +45,7 @@ const GLYPHS: Record<string, ReactNode> = {
       <path d="M4 5h16M4 10h16M4 14h16M4 19h16" />
       <path d="M6 19 18 5" strokeDasharray="2 2" />
     </>
-  ),
+  ),  text: <path d="M5 6V4h14v2M12 4v16M9 20h6" />,
 };
 
 function Glyph({ id }: { id: string }) {

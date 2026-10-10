@@ -17,6 +17,7 @@ type Chart = {
     onState: ((s: DrawState) => void) | null;
     setTool(tool: string | null): void;
     setStyle(patch: Partial<DrawStyle>): void;
+    setText(text: string | null): void;
     escape(): boolean;
     removeSelected(): boolean;
     clear(): void;

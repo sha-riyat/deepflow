@@ -9,6 +9,7 @@ import type { IconSvgElement } from '@hugeicons/react';
 import { Icon } from './ui';
 import { Legend, type Bar } from './Legend';
 import { DrawingStyle } from './DrawingStyle';
+import { NoteEditor } from './NoteEditor';
 import { Chart } from '@/lib/chart/chart.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { setFontFamily } from '@/lib/theme.js';
@@ -78,6 +79,7 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
       <div id="chart" ref={host} />
       <Legend prefs={prefs} update={update} bar={bar} values={values} />
       <DrawingStyle />
+      <NoteEditor />
       <div id="pane-legends">
         {panes.map((p) => (
           <div key={`lg-${p.kind}`} className="pane-lg" style={{ top: p.y + 5 }}>
