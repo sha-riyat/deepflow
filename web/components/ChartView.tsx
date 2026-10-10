@@ -48,12 +48,13 @@ interface Props {
   linkMode: string;
   onLink: (link: string | null) => void;
   onLinkMode: (mode: string) => void;
+  onDetach: () => void; // ouvre une copie du graphique dans une nouvelle fenêtre
 }
 
 const LINK_NAMES: Record<string, string> = { blue: 'bleu', orange: 'orange', green: 'vert', purple: 'violet' };
 
 // Pastille de lien (en haut à droite du graphique) : groupe de couleur et ce qui y est partagé.
-function LinkMenu({ link, mode, onLink, onMode }: { link: string | null; mode: string; onLink: (l: string | null) => void; onMode: (m: string) => void }) {
+function LinkMenu({ link, mode, onLink, onMode, onDetach }: { link: string | null; mode: string; onLink: (l: string | null) => void; onMode: (m: string) => void; onDetach: () => void }) {
   return (
     <div className="link-menu">
       <MenuButton caret={false} align="right" title={link ? 'Graphique lié (même couleur : symbole / intervalle partagés)' : 'Lier ce graphique à d’autres'}
@@ -74,6 +75,10 @@ function LinkMenu({ link, mode, onLink, onMode }: { link: string | null; mode: s
             {Object.entries(LINK_MODES).map(([k, label]) => (
               <button key={k} type="button" className={`pop-item${mode === k ? ' on' : ''}`} onClick={() => onMode(k)}>{label}</button>
             ))}
+            <div className="pop-sep" />
+            <button type="button" className="pop-item" title="Copie de ce graphique, avec son lien (autre écran)" onClick={() => (onDetach(), close())}>
+              Ouvrir dans une nouvelle fenêtre
+            </button>
           </>
         )}
       </MenuButton>
@@ -81,7 +86,7 @@ function LinkMenu({ link, mode, onLink, onMode }: { link: string | null; mode: s
   );
 }
 
-export function ChartView({ spec, source, active, compact, onActivate, update, linkMode, onLink, onLinkMode }: Props) {
+export function ChartView({ spec, source, active, compact, onActivate, update, linkMode, onLink, onLinkMode, onDetach }: Props) {
   const pane = paneOf(spec.id);
   const prefs = spec.prefs;
   const host = useRef<HTMLDivElement>(null);
@@ -146,7 +151,7 @@ export function ChartView({ spec, source, active, compact, onActivate, update, l
     >
       <div className="chart" ref={host} />
       <Legend pane={pane} prefs={prefs} update={update} bar={bar} values={values} compact={compact} />
-      <LinkMenu link={spec.link} mode={linkMode} onLink={onLink} onMode={onLinkMode} />
+      <LinkMenu link={spec.link} mode={linkMode} onLink={onLink} onMode={onLinkMode} onDetach={onDetach} />
       {active && <DrawingStyle />}
       {active && <NoteEditor />}
       <div className="pane-legends">

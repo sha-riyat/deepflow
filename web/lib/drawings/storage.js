@@ -38,8 +38,8 @@ export function loadSet(key) {
   return parseDrawings(read(KEY))[key] ?? [];
 }
 
-// Éditeurs à prévenir quand un jeu change : plusieurs graphiques du même symbole partagent ses
-// dessins (`from` : l'éditeur qui enregistre, déjà à jour).
+// Éditeurs à prévenir quand un jeu change (`fn(clé)`, clé nulle : tous) : plusieurs graphiques du
+// même symbole partagent ses dessins (`from` : l'éditeur qui enregistre, déjà à jour).
 const watchers = new Set();
 
 export function saveSet(key, list, from = null) {
@@ -47,6 +47,13 @@ export function saveSet(key, list, from = null) {
   all[key] = list;
   write(KEY, serializeDrawings(all));
   for (const w of watchers) if (w.from !== from) w.fn(key);
+}
+
+// Dessins modifiés dans une autre fenêtre (voir windows.ts) : tous les jeux sont relus.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) for (const w of watchers) w.fn(null);
+  });
 }
 
 export function watchSets(fn, from) {

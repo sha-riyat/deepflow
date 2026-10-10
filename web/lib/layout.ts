@@ -1,7 +1,8 @@
 // Mise en page de l'espace de travail, mémorisée dans le navigateur : grille, graphiques (chacun
-// avec sa session, son lien de couleur et ses réglages), graphique actif, rail des panneaux. Les
-// anciennes préférences (un seul graphique) sont reprises automatiquement.
+// avec sa session, son lien de couleur et ses réglages), graphique actif, rail des panneaux. Une par
+// fenêtre (voir windows.ts). Les anciennes préférences (un seul graphique) sont reprises.
 import { DEFAULT_PREFS, normalizePrefs, type UiPrefs } from './store';
+import { windowId } from './windows';
 
 // Grilles : nombre de graphiques et disposition (voir .charts dans chrome.css).
 export const GRIDS: Record<string, { n: number; label: string }> = {
@@ -38,6 +39,7 @@ export interface Layout {
 }
 
 const KEY = 'deepflow.layout.v1';
+const keyOf = (w: string) => (w ? `${KEY}:${w}` : KEY); // fenêtre principale, ou fenêtre détachée
 const OLD_KEY = 'deepflow.ui.v2'; // préférences d'avant les grilles
 export const DEFAULT_RAIL: Rail = { open: ['flow', 'dom'], width: 360, split: 0.55 };
 
@@ -66,9 +68,9 @@ export function normalizeLayout(raw: Partial<Layout> | null | undefined): Layout
 
 export function loadLayout(): Layout {
   try {
-    const saved = localStorage.getItem(KEY);
+    const saved = localStorage.getItem(keyOf(windowId));
     if (saved) return normalizeLayout(JSON.parse(saved));
-    const old = JSON.parse(localStorage.getItem(OLD_KEY) ?? 'null');
+    const old = windowId ? null : JSON.parse(localStorage.getItem(OLD_KEY) ?? 'null');
     if (old) return normalizeLayout({ grid: '1', panes: [{ id: newId(), key: old.key ?? '', link: null, prefs: old }], rail: old.rail });
   } catch {
     // stockage illisible : mise en page par défaut
@@ -76,9 +78,9 @@ export function loadLayout(): Layout {
   return normalizeLayout(null);
 }
 
-export function saveLayout(layout: Layout): void {
+export function saveLayout(layout: Layout, w = windowId): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(layout));
+    localStorage.setItem(keyOf(w), JSON.stringify(layout));
   } catch {
     // stockage indisponible (navigation privée) : mise en page non mémorisée
   }

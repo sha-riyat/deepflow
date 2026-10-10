@@ -5,6 +5,7 @@ import { DataManager } from './chart/data.js';
 import { Pane, type ChartLike, type PaneLive } from './pane';
 import { setLive } from './store';
 import { stream } from './stream';
+import { onWindowMessage, post } from './windows';
 import type { AlertFired, Tick } from './types';
 
 class Engine {
@@ -61,13 +62,17 @@ export function activate(pane: Pane) {
   engine.tape?.clear();
 }
 
-// Réticule synchronisé : l'heure sous la souris d'un graphique s'affiche sur les autres.
-export function syncCrosshair(from: Pane, t: number | null) {
+// Réticule synchronisé : l'heure sous la souris d'un graphique s'affiche sur les autres, ceux de
+// cette fenêtre comme ceux des fenêtres détachées.
+export function syncCrosshair(from: Pane | null, t: number | null) {
   for (const pane of engine.panes.values()) {
     if (pane === from || !pane.chart) continue;
     (pane.chart as ChartLike & { syncT: number | null }).syncT = t;
   }
+  if (from) post({ type: 'cross', t });
 }
+
+onWindowMessage((m) => m.type === 'cross' && syncCrosshair(null, m.t));
 
 // Données du graphique actif.
 const idle = new DataManager(() => {});

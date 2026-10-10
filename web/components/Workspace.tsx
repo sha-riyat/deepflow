@@ -15,9 +15,10 @@ import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { activate, dropPane, engine, paneOf } from '@/lib/engine';
 import { getLive, type UiPrefs } from '@/lib/store';
-import { GRIDS, loadLayout, newId, saveLayout, type Layout, type Rail as RailState } from '@/lib/layout';
+import { DEFAULT_RAIL, GRIDS, loadLayout, newId, normalizeLayout, saveLayout, type Layout, type PaneSpec, type Rail as RailState } from '@/lib/layout';
 import { beep } from '@/lib/sound';
 import { toolForKey } from '@/lib/drawings/tools.js';
+import { onWindowMessage, openWindow, post } from '@/lib/windows';
 import type { FlowState } from '@/lib/types';
 
 type Kind = 'series' | 'style' | 'view' | 'layout';
@@ -57,11 +58,13 @@ export default function Workspace() {
   }, []);
 
   // Réglages d'un graphique : mémorisés, puis appliqués à son moteur. Un changement d'intervalle
-  // gagne les graphiques liés.
-  const updatePane = useCallback((id: string, patch: Partial<UiPrefs>, kind: Kind) => {
+  // gagne les graphiques liés (ceux des autres fenêtres aussi, sauf s'il en vient : `remote`).
+  const updatePane = useCallback((id: string, patch: Partial<UiPrefs>, kind: Kind, remote = false) => {
     const l = layoutRef.current;
     const series = kind === 'series' && 'param' in patch ? { type: patch.type, param: patch.param } : null;
     const group = series ? linked(l, id, 'interval') : new Set([id]);
+    const link = l.panes.find((p) => p.id === id)?.link;
+    if (series && link && !remote && l.linkMode !== 'symbol') post({ type: 'link', link, series: series as { type: string; param: number } });
     const panes = l.panes.map((p) => (p.id === id ? { ...p, prefs: { ...p.prefs, ...patch } } : group.has(p.id) ? { ...p, prefs: { ...p.prefs, ...series } } : p));
     commit({ ...l, panes });
     for (const spec of panes.filter((p) => group.has(p.id))) {
@@ -77,12 +80,26 @@ export default function Workspace() {
   // Barre du haut, barre d'état, clavier : graphique actif.
   const update = useCallback((patch: Partial<UiPrefs>, kind: Kind) => updatePane(layoutRef.current.active, patch, kind), [updatePane]);
 
-  // Session (symbole) d'un graphique, et de ses graphiques liés.
-  const setKey = useCallback((id: string, key: string) => {
+  // Session (symbole) d'un graphique, et de ses graphiques liés (ici et dans les autres fenêtres).
+  const setKey = useCallback((id: string, key: string, remote = false) => {
     const l = layoutRef.current;
     const group = linked(l, id, 'symbol');
+    const link = l.panes.find((p) => p.id === id)?.link;
+    if (link && !remote && l.linkMode !== 'interval') post({ type: 'link', link, key });
     commit({ ...l, panes: l.panes.map((p) => (group.has(p.id) ? { ...p, key } : p)) });
   }, [commit]);
+
+  // Lien venu d'une autre fenêtre : appliqué au premier graphique de cette couleur (et donc à son
+  // groupe), selon ce que partagent les liens de cette fenêtre.
+  useEffect(() => onWindowMessage((m) => {
+    if (m.type !== 'link') return;
+    const l = layoutRef.current;
+    const spec = l.panes.find((p) => p.link === m.link);
+    if (!spec) return;
+    if (m.key && l.linkMode !== 'interval' && m.key !== spec.key) setKey(spec.id, m.key, true);
+    const s = m.series;
+    if (s && l.linkMode !== 'symbol' && (s.type !== spec.prefs.type || s.param !== spec.prefs.param)) updatePane(spec.id, s as Partial<UiPrefs>, 'series', true);
+  }), [setKey, updatePane]);
 
   // Lien d'un graphique : en rejoignant un groupe, il prend le symbole et l'intervalle du groupe.
   const setLink = useCallback((id: string, link: string | null) => {
@@ -141,6 +158,13 @@ export default function Workspace() {
     const active = panes.slice(0, n).some((p) => p.id === l.active) ? l.active : panes[0].id;
     commit({ ...l, grid, panes, active });
   }, [commit]);
+
+  // Fenêtre détachée : copie du graphique (session, réglages, lien), sans panneaux ouverts.
+  const detach = useCallback((spec: PaneSpec) => {
+    const { linkMode } = layoutRef.current;
+    const pane = { ...spec, id: newId() };
+    openWindow((w) => saveLayout(normalizeLayout({ grid: '1', linkMode, panes: [pane], active: pane.id, rail: { ...DEFAULT_RAIL, open: [] } }), w));
+  }, []);
 
   // Graphique actif : le plus récent cliqué (ou le premier visible).
   useEffect(() => activate(paneOf(activeSpec.id)), [activeSpec.id]);
@@ -244,7 +268,8 @@ export default function Workspace() {
               compact={visible.length > 1 && spec.id !== activeSpec.id}
               onActivate={() => spec.id !== layoutRef.current.active && commit({ ...layoutRef.current, active: spec.id })}
               update={(patch, kind) => updatePane(spec.id, patch, kind)}
-              linkMode={layout.linkMode} onLink={(link) => setLink(spec.id, link)} onLinkMode={setLinkMode} />
+              linkMode={layout.linkMode} onLink={(link) => setLink(spec.id, link)} onLinkMode={setLinkMode}
+              onDetach={() => detach(spec)} />
           ))}
         </div>
         <Panels rail={layout.rail} setRail={setRail} onToggle={toggle} render={render} />

@@ -26,7 +26,7 @@ export class DrawingEditor {
     this.styles = loadStyles();
     this.calc = loadCalc();
     this.magnet = loadMagnet(); // points collés aux prix OHLC des bougies
-    this.unwatch = watchSets((key) => key === this.key && this.#reload(), this);
+    this.unwatch = watchSets((key) => (key === null || key === this.key) && this.key && this.#reload(), this);
   }
 
   destroy() {
