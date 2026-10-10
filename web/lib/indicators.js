@@ -30,7 +30,7 @@ export const OPTIONS = {
     scale: { label: 'Échelle des tailles', choices: [['sqrt', 'Racine'], ['linear', 'Linéaire'], ['log', 'Logarithmique']] },
   },
   big: {
-    min: { label: 'Seuil', choices: [[0, 'Auto (0,5 % les plus gros)'], [100_000, '≥ 100 k $'], [500_000, '≥ 500 k $'], [1_000_000, '≥ 1 M $']] },
+    min: { label: 'Seuil', choices: [[-1, 'Selon l’actif (BTC 50 k $, autres 25 k $)'], [0, 'Auto (0,5 % les plus gros)'], [25_000, '≥ 25 k $'], [50_000, '≥ 50 k $'], [100_000, '≥ 100 k $'], [500_000, '≥ 500 k $'], [1_000_000, '≥ 1 M $']] },
     limit: { label: 'Nombre affiché', choices: [[25, '25 plus gros'], [10, '10 plus gros'], [50, '50 plus gros'], [200, '200']] },
     labels: { label: 'Étiquettes', choices: [['big', 'Les plus gros'], ['all', 'Toutes'], ['none', 'Aucune']] },
   },

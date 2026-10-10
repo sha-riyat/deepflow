@@ -1,6 +1,7 @@
 // Valeurs courantes des indicateurs, affichées dans la légende à côté de leur nom.
 import { compact as money, fmt, qty } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
+import { bigMin } from './requests.js';
 import { vwapStart } from '../layers/vwap.js';
 import { nakedList, weeklySessions } from '../layers/volprofile.js';
 
@@ -41,7 +42,8 @@ export function indicatorValues(chart, items) {
     out.naked = near ? `${list.length} · le plus proche ${fmt(near.price)}` : list.length ? String(list.length) : data.nakedSessions.length ? 'aucun' : 'chargement…';
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
-  if (L.big) out.big = opts.big.min ? `≥ ${money(opts.big.min)} $` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';
+  const min = bigMin(chart);
+  if (L.big) out.big = min ? `≥ ${money(min)} $` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';
   if (L.liq) {
     if (chart.meta?.market !== 'futures') out.liq = 'futures uniquement';
     else {

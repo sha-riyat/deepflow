@@ -24,6 +24,14 @@ export function profileBucket(chart) {
   return rowBucket(last?.c, meta.fpBucket, chart.settings.opts.profile.row);
 }
 
+// Seuil des gros prints en devise de cotation : « selon l'actif » = valeurs de départ du cours
+// (50 k $ sur BTC, 25 k $ ailleurs, à calibrer pour ne voir que quelques bulles par heure).
+export function bigMin(chart) {
+  const v = chart.settings.opts.big.min;
+  if (v !== -1) return v;
+  return chart.meta?.symbol?.startsWith('BTC') ? 50_000 : 25_000;
+}
+
 export function requestData(chart, items) {
   const now = Date.now();
   if (now - chart.requests.t < 250) return;
@@ -48,7 +56,7 @@ export function requestData(chart, items) {
   if ((layers.bubbles || layers.big) && !tpo) {
     const span = Math.max(1000, tR - tL);
     const slot = bubbleSlot(span / s.w, chart.settings.opts.bubbles.density, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
-    const min = chart.settings.opts.big.min;
+    const min = bigMin(chart);
     const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}:${min}`;
     if (key !== chart.requests.bubbles && span <= 86_400_000) {
       chart.requests.bubbles = key;
