@@ -5,7 +5,7 @@
 import { FIB_LEVELS } from './measures.js';
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2 }; // type -> nombre de points
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
 export const DRAW_COLORS = ['#479ffa', '#ffa16c', '#4ebe96', '#e0685f', '#f5c84c', '#a78bfa', '#e6e6e6', '#868f97'];
@@ -105,6 +105,12 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
       const [x1, y1] = px[1];
       const segs = [[x, y, x1, y], [x1, y, x1, y1], [x1, y1, x, y1], [x, y1, x, y]];
       return { segs, areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: [px[0], px[1], [x, y1], [x1, y]] };
+    }
+    case 'ruler': {
+      // Zone entre les deux points, flèches au milieu (verticale = prix, horizontale = temps).
+      const [x1, y1] = px[1];
+      const [mx, my] = [(x + x1) / 2, (y + y1) / 2];
+      return { segs: [[mx, y, mx, y1], [x, my, x1, my]], areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: px };
     }
     case 'text': {
       const box = textBox(d.text, d.style?.width);

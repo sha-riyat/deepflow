@@ -119,3 +119,14 @@ test('dessins : note (texte obligatoire et borné, boîte de clic selon la taill
   assert.deepEqual(hitTest([shape], 110, 60), { index: 0, handle: -1 });
   assert.equal(hitTest([shape], 90, 60), null);
 });
+
+test('dessins : règle (écart, %, bougies, durée)', async () => {
+  const { rulerStats, formatDuration } = await import('../shared/measures.js');
+  const st = rulerStats({ t: 0, p: 60_000 }, { t: 15 * 60_000, p: 60_300 }, { tf: 60_000 });
+  assert.equal(st.dp, 300);
+  assert.equal(st.pct, 0.5);
+  assert.equal(st.bars, 15);
+  assert.equal(rulerStats({ t: 500, p: 10 }, { t: 2500, p: 9 }, { columns: (t) => indexOfTime(bars, t) }).bars, 1); // milieu à milieu : 1 colonne
+  assert.equal(rulerStats({ t: 0, p: 10 }, { t: 1, p: 9 }).bars, null);
+  assert.deepEqual([45e3, 12 * 6e4, 135 * 6e4, 120 * 6e4, (3 * 24 + 4) * 36e5, 2 * 864e5].map(formatDuration), ['45 s', '12 min', '2 h 15', '2 h', '3 j 4 h', '2 j']);
+});

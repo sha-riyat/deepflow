@@ -276,7 +276,8 @@ export class Chart {
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
-    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits() }, indexed);
+    const tf = this.spec.type === 'time' ? this.spec.param : null;
+    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf }, indexed);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));

@@ -46,6 +46,12 @@ const GLYPHS: Record<string, ReactNode> = {
       <path d="M6 19 18 5" strokeDasharray="2 2" />
     </>
   ),  text: <path d="M5 6V4h14v2M12 4v16M9 20h6" />,
+  ruler: (
+    <>
+      <rect x="3" y="8" width="18" height="8" rx="1" />
+      <path d="M7 8v3M11 8v4M15 8v3M19 8v4" />
+    </>
+  ),
 };
 
 function Glyph({ id }: { id: string }) {

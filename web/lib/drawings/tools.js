@@ -8,6 +8,7 @@ export const TOOLS = {
   rect: { label: 'Rectangle (zone)', key: 'R' },
   fib: { label: 'Retracement de Fibonacci', key: 'F' },
   text: { label: 'Texte / note', key: 'N' },
+  ruler: { label: 'Règle de mesure', key: 'M' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

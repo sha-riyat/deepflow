@@ -1,5 +1,6 @@
 'use client';
-// Barre flottante du dessin sélectionné (en haut du graphique) : couleur, épaisseur, trait, suppression.
+// Barre flottante du dessin sélectionné (en haut du graphique) : couleur, épaisseur (taille du
+// texte pour une note), trait, suppression. La règle n'a pas de style : sa couleur suit le sens.
 import { Delete02Icon } from '@hugeicons/core-free-icons';
 import { Icon, MenuButton } from './ui';
 import { engine } from '@/lib/engine';
@@ -18,14 +19,9 @@ function Stroke({ width, dash }: { width: number; dash: string }) {
   );
 }
 
-export function DrawingStyle() {
-  const draw = useLive((s) => s.draw);
-  const style = draw.style;
-  if (!draw.sel || !style) return null;
-  const set = (patch: Partial<Style>) => engine.chart?.drawings.setStyle(patch);
-  const note = draw.type === 'text';
+function StyleMenus({ style, note, set }: { style: Style; note: boolean; set: (patch: Partial<Style>) => void }) {
   return (
-    <div id="drawstyle" onMouseDown={(e) => e.stopPropagation()}>
+    <>
       <MenuButton title="Couleur" caret={false} label={<i className="swatch" style={{ background: style.color }} />}>
         {(close) => (
           <div className="swatches">
@@ -45,15 +41,28 @@ export function DrawingStyle() {
           </button>
         ))}
       </MenuButton>
-      {!note && <MenuButton title="Trait" caret={false} label={<Stroke width={1.5} dash={style.dash} />}>
-        {(close) => DRAW_DASHES.map((d) => (
-          <button key={d} type="button" className={`pop-item${d === style.dash ? ' on' : ''}`} onClick={() => (set({ dash: d }), close())}>
-            <Stroke width={1.5} dash={d} />
-            <span>{DASH_LABELS[d]}</span>
-          </button>
-        ))}
-      </MenuButton>}
+      {!note && (
+        <MenuButton title="Trait" caret={false} label={<Stroke width={1.5} dash={style.dash} />}>
+          {(close) => DRAW_DASHES.map((d) => (
+            <button key={d} type="button" className={`pop-item${d === style.dash ? ' on' : ''}`} onClick={() => (set({ dash: d }), close())}>
+              <Stroke width={1.5} dash={d} />
+              <span>{DASH_LABELS[d]}</span>
+            </button>
+          ))}
+        </MenuButton>
+      )}
       <span className="ds-sep" />
+    </>
+  );
+}
+
+export function DrawingStyle() {
+  const draw = useLive((s) => s.draw);
+  if (!draw.sel || !draw.style) return null;
+  const set = (patch: Partial<Style>) => engine.chart?.drawings.setStyle(patch);
+  return (
+    <div id="drawstyle" onMouseDown={(e) => e.stopPropagation()}>
+      {draw.type !== 'ruler' && <StyleMenus style={draw.style} note={draw.type === 'text'} set={set} />}
       <button type="button" className="tb-btn icon" title="Supprimer (Suppr)" onClick={() => engine.chart?.drawings.removeSelected()}>
         <Icon icon={Delete02Icon} size={16} />
       </button>
