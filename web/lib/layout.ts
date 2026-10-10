@@ -12,6 +12,10 @@ export const GRIDS: Record<string, { n: number; label: string }> = {
   '4': { n: 4, label: '4 (2 × 2)' },
 };
 
+// Liens : les graphiques d'une même couleur partagent leur symbole, leur intervalle, ou les deux.
+export const LINKS: Record<string, string> = { blue: '#479ffa', orange: '#ffa16c', green: '#4ebe96', purple: '#a78bfa' };
+export const LINK_MODES: Record<string, string> = { symbol: 'Symbole', interval: 'Intervalle', both: 'Symbole et intervalle' };
+
 export interface PaneSpec {
   id: string;
   key: string; // session suivie en direct (« futures:BTCUSDT » ; vide : celle du collecteur)
@@ -27,6 +31,7 @@ export interface Rail {
 
 export interface Layout {
   grid: string;
+  linkMode: string; // ce que partagent les graphiques liés (voir LINK_MODES)
   panes: PaneSpec[];
   active: string;
   rail: Rail;
@@ -50,12 +55,13 @@ export function normalizeLayout(raw: Partial<Layout> | null | undefined): Layout
   const grid = raw?.grid && raw.grid in GRIDS ? raw.grid : '1';
   const panes = (Array.isArray(raw?.panes) ? raw.panes : [])
     .filter((p): p is PaneSpec => Boolean(p) && typeof p.id === 'string')
-    .map((p) => ({ id: p.id, key: typeof p.key === 'string' ? p.key : '', link: typeof p.link === 'string' ? p.link : null, prefs: normalizePrefs(p.prefs) }));
+    .map((p) => ({ id: p.id, key: typeof p.key === 'string' ? p.key : '', link: p.link && p.link in LINKS ? p.link : null, prefs: normalizePrefs(p.prefs) }));
   if (!panes.length) panes.push(newPane());
   const rail = { ...DEFAULT_RAIL, ...raw?.rail };
   rail.open = (Array.isArray(rail.open) ? rail.open : []).map((id: string) => (id in RENAMED ? RENAMED[id] : id)).filter((id): id is string => Boolean(id));
   const active = panes.some((p) => p.id === raw?.active) ? (raw?.active as string) : panes[0].id;
-  return { grid, panes, active, rail };
+  const linkMode = raw?.linkMode && raw.linkMode in LINK_MODES ? raw.linkMode : 'symbol';
+  return { grid, linkMode, panes, active, rail };
 }
 
 export function loadLayout(): Layout {

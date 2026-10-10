@@ -1,7 +1,7 @@
 // Graphique unifié : un seul système de coordonnées pour la heatmap, les bougies, le footprint,
 // les profils, les marques et les panneaux. Dessine à la demande et pilote le chargement des données.
 import { Scale } from './scale.js';
-import { drawPriceAxis, drawTimeAxis, drawCrosshair, drawPaneCrosshair } from './axes.js';
+import { drawPriceAxis, drawTimeAxis, drawCrosshair, drawPaneCrosshair, drawSyncLine } from './axes.js';
 import { drawPane, paneValues } from './panes.js';
 import { attachInteractions } from './interact.js';
 import { requestData } from './requests.js';
@@ -65,6 +65,8 @@ export class Chart {
     this.paneScales = [];
     this.onFollow = null; // (suivi du direct actif ?) -> bouton « Direct »
     this.onLayout = null; // (positions des panneaux, hauteur du tracé) -> commandes HTML
+    this.onCrosshair = null; // (heure sous la souris, ou null) -> réticule des autres graphiques
+    this.syncT = null; // heure du réticule d'un autre graphique (trait vertical)
     this.onValues = null; // (valeurs courantes des indicateurs) -> légende HTML
     this.lastHover = undefined;
     this.lastFollow = undefined;
@@ -326,7 +328,7 @@ export class Chart {
       drawCrosshair(ctx, s, { x: m.x, y: m.y, totalH: this.H, timeTop: this.timeTop, axisW: AXIS_W, item });
       const pane = this.paneScales.find((p) => m.y > p.top && m.y < p.top + p.h);
       if (pane?.valueAt) drawPaneCrosshair(ctx, s, m.y, pane.format(pane.valueAt(m.y)));
-    }
+    } else if (this.syncT !== null) drawSyncLine(ctx, s, items, this.syncT, this.timeTop);
     this.#reportPanes(items, item);
   }
 

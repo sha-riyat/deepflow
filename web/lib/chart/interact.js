@@ -5,6 +5,8 @@
 //  - molette : zoom horizontal autour du curseur ; Maj + molette : zoom vertical ;
 //  - double-clic dans le graphique : retour au direct ;
 //  - dessins (lib/drawings/editor.js) : prioritaires dans le tracé principal sur le déplacement.
+import { fromPixel } from '@shared/drawings.js';
+
 export function attachInteractions(chart) {
   const el = chart.crossCanvas;
   let drag = null;
@@ -41,6 +43,8 @@ export function attachInteractions(chart) {
   el.addEventListener('mousemove', (e) => {
     const p = pos(e);
     chart.mouse = p;
+    // Heure sous la souris, pour le réticule synchronisé des autres graphiques.
+    chart.onCrosshair?.(zone(p.x, p.y) === 'plot' || zone(p.x, p.y) === 'pane' ? fromPixel(chart.scale, chart.view, p.x, p.y).t : null);
     if (!drag || drag.zone === 'draw') {
       chart.drawings.move(p);
       el.style.cursor = (zone(p.x, p.y) === 'plot' && chart.drawings.cursor(p)) || 'crosshair';
@@ -65,6 +69,7 @@ export function attachInteractions(chart) {
 
   el.addEventListener('mouseleave', () => {
     chart.mouse = null;
+    chart.onCrosshair?.(null);
   });
 
   el.addEventListener(

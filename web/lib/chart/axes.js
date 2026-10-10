@@ -93,6 +93,20 @@ export function drawCrosshair(ctx, scale, { x, y, totalH, timeTop, axisW, item }
   }
 }
 
+// Réticule d'un autre graphique (synchronisé) : trait vertical à la même heure.
+export function drawSyncLine(ctx, scale, items, t, timeTop) {
+  const x = Math.round(scale.xAt(t, items)) + 0.5;
+  if (!(x >= 0 && x <= scale.w)) return;
+  ctx.strokeStyle = alpha('#479ffa', 0.55);
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, timeTop);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 export function drawLegend(ctx, { title, item, status }) {
   ctx.font = font(12, 600);
   ctx.textBaseline = 'top';

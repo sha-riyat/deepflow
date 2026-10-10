@@ -23,6 +23,13 @@ import type { FlowState } from '@/lib/types';
 type Kind = 'series' | 'style' | 'view' | 'layout';
 interface Toast { id: number; title: string; text: string }
 
+// Graphiques liés à `id` (même couleur), lui compris, pour ce qui est partagé (`what`).
+function linked(l: Layout, id: string, what: 'symbol' | 'interval'): Set<string> {
+  const spec = l.panes.find((p) => p.id === id);
+  const shares = l.linkMode === 'both' || l.linkMode === what;
+  return new Set(spec?.link && shares ? l.panes.filter((p) => p.link === spec.link).map((p) => p.id) : [id]);
+}
+
 export default function Workspace() {
   const [layout, setLayout] = useState<Layout>(loadLayout);
   const [search, setSearch] = useState<string | null>(null);
@@ -49,26 +56,55 @@ export default function Workspace() {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 8000);
   }, []);
 
-  // Réglages d'un graphique : mémorisés, puis appliqués à son moteur.
+  // Réglages d'un graphique : mémorisés, puis appliqués à son moteur. Un changement d'intervalle
+  // gagne les graphiques liés.
   const updatePane = useCallback((id: string, patch: Partial<UiPrefs>, kind: Kind) => {
     const l = layoutRef.current;
-    const panes = l.panes.map((p) => (p.id === id ? { ...p, prefs: { ...p.prefs, ...patch } } : p));
+    const series = kind === 'series' && 'param' in patch ? { type: patch.type, param: patch.param } : null;
+    const group = series ? linked(l, id, 'interval') : new Set([id]);
+    const panes = l.panes.map((p) => (p.id === id ? { ...p, prefs: { ...p.prefs, ...patch } } : group.has(p.id) ? { ...p, prefs: { ...p.prefs, ...series } } : p));
     commit({ ...l, panes });
-    const pane = paneOf(id);
-    pane.apply(panes.find((p) => p.id === id)!.prefs);
-    if (kind === 'series') pane.reload();
-    else if (kind === 'style') pane.chart?.resetView();
-    else if (kind === 'layout') pane.chart?.resize();
-    pane.chart?.invalidate();
+    for (const spec of panes.filter((p) => group.has(p.id))) {
+      const pane = paneOf(spec.id);
+      pane.apply(spec.prefs);
+      if (kind === 'series') pane.reload();
+      else if (kind === 'style') pane.chart?.resetView();
+      else if (kind === 'layout') pane.chart?.resize();
+      pane.chart?.invalidate();
+    }
   }, [commit]);
 
   // Barre du haut, barre d'état, clavier : graphique actif.
   const update = useCallback((patch: Partial<UiPrefs>, kind: Kind) => updatePane(layoutRef.current.active, patch, kind), [updatePane]);
 
+  // Session (symbole) d'un graphique, et de ses graphiques liés.
   const setKey = useCallback((id: string, key: string) => {
     const l = layoutRef.current;
-    commit({ ...l, panes: l.panes.map((p) => (p.id === id ? { ...p, key } : p)) });
+    const group = linked(l, id, 'symbol');
+    commit({ ...l, panes: l.panes.map((p) => (group.has(p.id) ? { ...p, key } : p)) });
   }, [commit]);
+
+  // Lien d'un graphique : en rejoignant un groupe, il prend le symbole et l'intervalle du groupe.
+  const setLink = useCallback((id: string, link: string | null) => {
+    const l = layoutRef.current;
+    const lead = link ? l.panes.find((p) => p.link === link && p.id !== id) : null;
+    const sym = lead && l.linkMode !== 'interval';
+    const tf = lead && l.linkMode !== 'symbol';
+    const panes = l.panes.map((p) => (p.id !== id ? p : {
+      ...p,
+      link,
+      key: sym ? lead.key : p.key,
+      prefs: tf ? { ...p.prefs, type: lead.prefs.type, param: lead.prefs.param } : p.prefs,
+    }));
+    commit({ ...l, panes });
+    if (tf) {
+      const pane = paneOf(id);
+      pane.apply(panes.find((p) => p.id === id)!.prefs);
+      pane.reload();
+    }
+  }, [commit]);
+
+  const setLinkMode = useCallback((linkMode: string) => commit({ ...layoutRef.current, linkMode }), [commit]);
 
   const setRail = useCallback((rail: RailState) => commit({ ...layoutRef.current, rail }), [commit]);
 
@@ -207,7 +243,8 @@ export default function Workspace() {
             <ChartView key={spec.id} spec={spec} source={sourceOf(spec.id, spec.key)} active={spec.id === activeSpec.id}
               compact={visible.length > 1 && spec.id !== activeSpec.id}
               onActivate={() => spec.id !== layoutRef.current.active && commit({ ...layoutRef.current, active: spec.id })}
-              update={(patch, kind) => updatePane(spec.id, patch, kind)} />
+              update={(patch, kind) => updatePane(spec.id, patch, kind)}
+              linkMode={layout.linkMode} onLink={(link) => setLink(spec.id, link)} onLinkMode={setLinkMode} />
           ))}
         </div>
         <Panels rail={layout.rail} setRail={setRail} onToggle={toggle} render={render} />

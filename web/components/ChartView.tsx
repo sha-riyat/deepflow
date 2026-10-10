@@ -7,17 +7,17 @@ import {
   ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, MinusSignIcon, PlusSignIcon, RefreshCwIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
-import { Icon } from './ui';
+import { Icon, MenuButton } from './ui';
 import { Legend, type Bar } from './Legend';
 import { DrawingStyle } from './DrawingStyle';
 import { NoteEditor } from './NoteEditor';
 import { Chart } from '@/lib/chart/chart.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { setFontFamily } from '@/lib/theme.js';
-import { paneOf } from '@/lib/engine';
+import { paneOf, syncCrosshair } from '@/lib/engine';
 import { usePane } from '@/lib/pane';
 import { useLive, type DrawState, type UiPrefs } from '@/lib/store';
-import type { PaneSpec } from '@/lib/layout';
+import { LINKS, LINK_MODES, type PaneSpec } from '@/lib/layout';
 
 interface NavChart {
   zoom(f: number): void;
@@ -45,9 +45,43 @@ interface Props {
   active: boolean;
   onActivate: () => void;
   update: Update;
+  linkMode: string;
+  onLink: (link: string | null) => void;
+  onLinkMode: (mode: string) => void;
 }
 
-export function ChartView({ spec, source, active, compact, onActivate, update }: Props) {
+const LINK_NAMES: Record<string, string> = { blue: 'bleu', orange: 'orange', green: 'vert', purple: 'violet' };
+
+// Pastille de lien (en haut à droite du graphique) : groupe de couleur et ce qui y est partagé.
+function LinkMenu({ link, mode, onLink, onMode }: { link: string | null; mode: string; onLink: (l: string | null) => void; onMode: (m: string) => void }) {
+  return (
+    <div className="link-menu">
+      <MenuButton caret={false} align="right" title={link ? 'Graphique lié (même couleur : symbole / intervalle partagés)' : 'Lier ce graphique à d’autres'}
+        label={<i className={`link-dot${link ? '' : ' off'}`} style={link ? { background: LINKS[link] } : undefined} />}>
+        {(close) => (
+          <>
+            <div className="pop-title">Lien</div>
+            <button type="button" className={`pop-item${link ? '' : ' on'}`} onClick={() => (onLink(null), close())}>
+              <i className="link-dot off" /><span>Aucun (indépendant)</span>
+            </button>
+            {Object.entries(LINKS).map(([k, color]) => (
+              <button key={k} type="button" className={`pop-item${link === k ? ' on' : ''}`} onClick={() => (onLink(k), close())}>
+                <i className="link-dot" style={{ background: color }} /><span>Groupe {LINK_NAMES[k]}</span>
+              </button>
+            ))}
+            <div className="pop-sep" />
+            <div className="pop-title">Partagé dans un groupe</div>
+            {Object.entries(LINK_MODES).map(([k, label]) => (
+              <button key={k} type="button" className={`pop-item${mode === k ? ' on' : ''}`} onClick={() => onMode(k)}>{label}</button>
+            ))}
+          </>
+        )}
+      </MenuButton>
+    </div>
+  );
+}
+
+export function ChartView({ spec, source, active, compact, onActivate, update, linkMode, onLink, onLinkMode }: Props) {
   const pane = paneOf(spec.id);
   const prefs = spec.prefs;
   const host = useRef<HTMLDivElement>(null);
@@ -69,6 +103,7 @@ export function ChartView({ spec, source, active, compact, onActivate, update }:
     chart.onValues = (v: Record<string, string>) => setValues(v);
     chart.onPaneValues = (v: Record<string, [string, string, string][]>) => setPaneVals(v);
     chart.drawings.onState = (draw: DrawState) => pane.set({ draw });
+    chart.onCrosshair = (t: number | null) => syncCrosshair(pane, t);
     chart.onLayout = (rects: { kind: string; y: number }[], h: number) => {
       setPanes(rects);
       setPlotH(h);
@@ -111,6 +146,7 @@ export function ChartView({ spec, source, active, compact, onActivate, update }:
     >
       <div className="chart" ref={host} />
       <Legend pane={pane} prefs={prefs} update={update} bar={bar} values={values} compact={compact} />
+      <LinkMenu link={spec.link} mode={linkMode} onLink={onLink} onMode={onLinkMode} />
       {active && <DrawingStyle />}
       {active && <NoteEditor />}
       <div className="pane-legends">

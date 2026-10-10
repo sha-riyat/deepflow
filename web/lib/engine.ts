@@ -61,6 +61,14 @@ export function activate(pane: Pane) {
   engine.tape?.clear();
 }
 
+// Réticule synchronisé : l'heure sous la souris d'un graphique s'affiche sur les autres.
+export function syncCrosshair(from: Pane, t: number | null) {
+  for (const pane of engine.panes.values()) {
+    if (pane === from || !pane.chart) continue;
+    (pane.chart as ChartLike & { syncT: number | null }).syncT = t;
+  }
+}
+
 // Données du graphique actif.
 const idle = new DataManager(() => {});
 export function getData(): DataManager {
