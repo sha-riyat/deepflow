@@ -14,7 +14,8 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 ## État au moment de la reprise
 
 - Branche : `outils-videos` (partie de `main` à jour, phases 1 à 5 fusionnées).
-- Commencé, non vérifié à l'écran : lot 1 (statistiques par bougie), voir plus bas. Tests unitaires et typage OK.
+- Lot 1 (statistiques par bougie) : vérifié à l'écran avec des données Binance réelles (valeurs identiques aux klines
+  officielles : volume, achats, delta %), en attente de validation et de commits, voir plus bas.
 - Données de test hors ligne : `outils/gen-enregistrement.mjs` (enregistrement fictif) et
   `outils/playwright-aide.mjs` (scénarios Playwright). Binance, Bybit et OKX étaient bloqués dans l'environnement
   cloud ; en local, tout se teste en vrai.
@@ -23,8 +24,8 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 
 | Lot | Contenu | Utilité débutant | Effort |
 |---|---|---|---|
-| 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (en cours) |
-| 2 | Gros trades façon Deep Trades | forte | moyen |
+| 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (vérifié, à valider) |
+| 2 | Gros trades façon Deep Trades | forte | moyen (fait, à valider ; points 1, 2, 3, 5, 6 ; le point 4 reporté) |
 | 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen |
 | 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
@@ -43,7 +44,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 Sources : 13 (CVD), 10, 22, 18, 21. Les vidéos lisent sous chaque bougie volume, delta, delta % et jugent une cassure
 au volume relatif (« 300 → 169 → 1 200 », « volume au-dessus de la moyenne »).
 
-- **Fait (non commité, à vérifier à l'écran)** :
+- **Fait et vérifié à l'écran** :
   - `shared/barstats.js` : `deltaPct(b)`, `relativeVolume(items, i, n = 20)` (volume / moyenne des n précédentes,
     null s'il y en a moins de 5), `avgSize(b)` (volume / nombre de trades agrégés = taille moyenne d'un ordre
     agresseur), `INITIATIVE_PCT = 10`.
@@ -52,8 +53,10 @@ au volume relatif (« 300 → 169 → 1 200 », « volume au-dessus de la moyenn
     Ventes, Trades, Taille moy. ; delta % en couleur pleine seulement au-delà de 10 % (sinon gris), Vol. × ≥ 2 en
     orange ; légende du panneau : Delta %, Vol. ×, Trades.
   - `web/lib/chart/panes.js` : utilise `drawStats` et `statsValues` du nouveau module.
-- À faire : vérifier visuellement (panneau Statistiques, 5 min) ; harmoniser la fiche d'aide « Statistiques par
-  bougie » (`web/lib/help/panes.js` dit « plus de 30 % » : mettre « 10 % = initiative, au-delà de 30 % = domination »).
+- Corrigé à la vérification : la légende HTML du panneau recouvrait la première ligne (Delta) ; `drawStats` réserve
+  maintenant une bande de 18 px en haut quand le panneau fait au moins 64 px (5 lignes visibles dans un panneau de
+  hauteur standard : Delta, Volume, Delta %, Vol. ×, Achats ; Trades et Taille moy. dans un panneau plus haut).
+- Fiche d'aide « Statistiques par bougie » harmonisée (10 % = initiative, au-delà de 30 % = domination, pièges).
 - Option possible : seuil d'initiative réglable (les panneaux n'ont pas encore de réglages : prévoir `opts.stats`).
 - Commit : « Ajoute le delta en % coloré, le volume relatif et la taille moyenne au panneau Statistiques ».
 
@@ -79,6 +82,15 @@ contrats) ; filtre réglable par session (20 à Londres, 30 à New York, 40 en d
 6. **Raccourci** pour masquer / afficher bulles et gros prints (vidéo 14) : Maj + B, Maj + G dans
    `Workspace.tsx` (les lettres seules ouvrent la recherche de symbole).
 Fiche d'aide : « Deep Trades : lire les gros ordres » (absorption = gros ordres répétés sans résultat).
+
+**Avancement (vérifié à l'écran avec des données Binance réelles)** : points 1 (`shared/bigprints.js`, `groupBigPrints`,
+« ×n » dans l'étiquette), 2 (`printFollow`, anneau creux = absorbé ; l'avancée minimale est une fraction de l'amplitude
+moyenne d'une bougie, pour suivre l'unité de temps), 3 (seuil de base
+multiplié par session : Asie ×0,5, Londres ×1, New York ×2, `sessionAt` dans `shared/sessions.js`), 5 (ligne « Gros Δ »
+du panneau Statistiques, `bigDeltas`) et 6 (un seul raccourci, Maj + G : bulles et gros prints ensemble). Rendu revu d'après les captures des vidéos 00 et 14 (cercles pleins lumineux,
+sans texte sauf les 5 plus gros, un seul calque lisible : bulles de volume et gros prints ne s'affichent pas ensemble).
+Point 4 (petits
+ordres en points gris, jaunes sous le seuil dans la vidéo 14) reporté : il obligerait le serveur à envoyer des milliers d'ordres de plus pour un gain de lecture faible.
 
 ## Lot 3 — Profil à plage fixe enrichi, fusion de profils
 
