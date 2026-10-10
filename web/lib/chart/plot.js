@@ -5,10 +5,12 @@ import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofi
 import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
 import { drawKeyLevels } from '../layers/keylevels.js';
 import { drawTimeMarkers } from '../layers/times.js';
+import { MAX_SESSION_TF, drawMarketSessions } from '../layers/marketsessions.js';
 import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView } from '../layers/tpo.js';
 import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
+import { clockNow } from '../clock.js';
 
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
 export const INDEXED = [...DERIVED, 'tpo']; // vues sans échelle de temps continue
@@ -23,6 +25,7 @@ export function drawBehind(chart, ctx, items, geo) {
   if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items);
   if (L.open && !tpo) drawDayOpen(ctx, data.dailySessions, s, items);
   if (L.keys && !tpo) drawKeyLevels(ctx, data.keyLevels, s, items, O.keys);
+  if (L.sessions && s.mode === 'time' && chart.spec.param <= MAX_SESSION_TF) drawMarketSessions(ctx, s, items, data.bars, clockNow(), O.sessions);
   if (L.times && !INDEXED.includes(st.style)) drawTimeMarkers(ctx, s, items, { show: O.times.show, futures: chart.meta.market === 'futures' });
   if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(data.dailySessions, data.bars), s, items);
   // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).

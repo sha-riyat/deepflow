@@ -18,6 +18,7 @@ export const LAYERS = {
   prev: { label: 'Value area de la veille', sub: 'VAH, VAL et POC d’hier sur la journée, état d’acceptation ou de rejet', group: 'levels', color: '#479ffa' },
   open: { label: 'Ouverture du jour', sub: 'Premier prix de la session UTC, dans ou hors de la valeur de la veille', group: 'levels', color: '#e6e6e6' },
   keys: { label: 'Niveaux clés', sub: 'Ouvertures de la semaine et du mois, plus hauts et plus bas de la veille, de la semaine et du mois précédents', group: 'levels', color: '#a78bfa' },
+  sessions: { label: 'Sessions Asie / Londres / NY', sub: 'Range de chaque session (heures de bureau locales, heure d’été comprise), du lundi au vendredi', group: 'levels', color: '#e8c35a' },
   times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'levels', color: '#ffa16c' },
   naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
   vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour, de la semaine ou du mois (UTC) et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
@@ -56,6 +57,10 @@ export const OPTIONS = {
   },
   keys: {
     show: { label: 'Afficher', choices: [['all', 'Ouvertures et hauts / bas'], ['opens', 'Ouvertures (semaine, mois)'], ['prev', 'Hauts / bas précédents']] },
+  },
+  sessions: {
+    show: { label: 'Afficher', choices: [['all', 'Asie, Londres et New York'], ['asia', 'Asie'], ['london', 'Londres'], ['ny', 'New York']] },
+    extend: { label: 'Plus haut et plus bas', choices: [[1, 'Prolongés jusqu’à la fin du jour'], [0, 'Dans la session seulement']] },
   },
   vwap: {
     period: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine (lundi)'], ['month', 'Mois']] },

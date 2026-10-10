@@ -6,11 +6,13 @@ import { cvdDivergences, sessionCvd } from '@shared/cvd.js';
 import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
+import { MAX_SESSION_TF, SESSION_STYLE, rangesOf } from '../layers/marketsessions.js';
 import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
 import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
 import { clockNow } from '../clock.js';
 
+const DAY = 86_400_000;
 
 export function indicatorValues(chart, items) {
   const { layers: L, opts, style } = chart.settings;
@@ -55,6 +57,15 @@ export function indicatorValues(chart, items) {
     const k = data.keyLevels;
     const parts = k && [k.weekOpen !== null && `Ouv. S ${fmt(k.weekOpen)}`, k.monthOpen !== null && `Ouv. M ${fmt(k.monthOpen)}`, k.prevDay && `J-1 ${fmt(k.prevDay.lo)} – ${fmt(k.prevDay.hi)}`];
     out.keys = k ? parts.filter(Boolean).join(' · ') : 'chargement…';
+  }
+  if (L.sessions) {
+    // Session en cours, sinon la dernière terminée, avec son range.
+    const now = clockNow();
+    const tf = chart.spec.type === 'time' ? chart.spec.param : Infinity;
+    const list = rangesOf(data.bars, now - DAY, now, opts.sessions.show, now);
+    const cur = list.filter((x) => !x.done).pop() ?? list[list.length - 1];
+    const [name] = cur ? SESSION_STYLE[cur.kind] : [];
+    out.sessions = tf > MAX_SESSION_TF ? 'intervalle d’1 h au plus' : cur ? `${name}${cur.done ? ' (terminée)' : ' en cours'} · ${fmt(cur.lo)} – ${fmt(cur.hi)}` : 'aucune session en vue';
   }
   if (L.heat && chart.meta?.archive) out.heat = 'indisponible en replay (carnet non archivé par Binance)';
   if (L.times) {

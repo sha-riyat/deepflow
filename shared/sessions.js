@@ -1,6 +1,7 @@
 // Repères horaires des marchés crypto, en UTC : ouverture de la Bourse de New York (9 h 30 à New
 // York, du lundi au vendredi, heure d'été américaine comprise ; jours fériés non gérés) et heures
-// de financement des perpétuels Binance (toutes les 8 h : 0 h, 8 h et 16 h UTC).
+// de financement des perpétuels Binance (toutes les 8 h : 0 h, 8 h et 16 h UTC) ; périodes jour /
+// semaine / mois ; sessions Asie, Londres et New York.
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
 export const FUNDING_HOURS = [0, 8, 16];
@@ -66,4 +67,60 @@ export function timeMarkers(from, to, { ny = true, funding = true } = {}) {
 export function nextMarkers(now, opts) {
   const list = timeMarkers(now + 1, now + 4 * DAY, opts);
   return { ny: list.find((m) => m.kind === 'ny')?.t ?? null, funding: list.find((m) => m.kind === 'funding')?.t ?? null };
+}
+
+// Heure d'été britannique pour le jour UTC `day` : du dernier dimanche de mars au dernier dimanche
+// d'octobre (changement à 01:00 UTC, compté à partir du jour même).
+function lastSunday(year, month) {
+  const last = new Date(Date.UTC(year, month + 1, 0));
+  return Date.UTC(year, month, last.getUTCDate() - last.getUTCDay());
+}
+
+export function ukDst(day) {
+  const y = new Date(day).getUTCFullYear();
+  return day >= lastSunday(y, 2) && day < lastSunday(y, 9);
+}
+
+// Sessions des marchés traditionnels, heures de bureau locales (convention du forex) : Asie
+// (Tokyo 9 h – 18 h, pas d'heure d'été), Londres (8 h – 17 h) et New York (8 h – 17 h), du lundi
+// au vendredi. Le crypto ne ferme jamais, mais la liquidité suit ces horaires.
+export const MARKET_SESSIONS = ['asia', 'london', 'ny'];
+
+export function sessionHours(day, kind) {
+  if (kind === 'asia') return [0, 9];
+  if (kind === 'london') return ukDst(day) ? [7, 16] : [8, 17];
+  return usDst(day) ? [12, 21] : [13, 22];
+}
+
+// Sessions qui touchent [from, to] : { kind, t0, t1 }, triées par début.
+export function marketSessions(from, to, kinds = MARKET_SESSIONS) {
+  const out = [];
+  for (let d = Math.floor(from / DAY) * DAY; d <= to; d += DAY) {
+    const wd = new Date(d).getUTCDay();
+    if (wd === 0 || wd === 6) continue;
+    for (const kind of kinds) {
+      const [h0, h1] = sessionHours(d, kind);
+      const t0 = d + h0 * HOUR;
+      const t1 = d + h1 * HOUR;
+      if (t1 > from && t0 <= to) out.push({ kind, t0, t1 });
+    }
+  }
+  return out.sort((a, b) => a.t0 - b.t0);
+}
+
+// Plus haut et plus bas de chaque session d'après les bougies qui y commencent ; sessions sans
+// bougie écartées. `done` : session terminée à `now`.
+export function sessionRanges(bars, list, now) {
+  const out = [];
+  for (const s of list) {
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (const b of bars) {
+      if (b.t0 < s.t0 || b.t0 >= s.t1) continue;
+      if (b.h > hi) hi = b.h;
+      if (b.l < lo) lo = b.l;
+    }
+    if (hi >= lo) out.push({ ...s, hi, lo, done: now >= s.t1 });
+  }
+  return out;
 }

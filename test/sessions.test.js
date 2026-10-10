@@ -1,7 +1,9 @@
 // Tests des repères horaires : ouverture de New York (heure d'été), heures de financement, périodes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nextMarkers, nyOpen, periodEnd, periodStart, timeMarkers, usDst } from '../shared/sessions.js';
+import {
+  marketSessions, nextMarkers, nyOpen, periodEnd, periodStart, sessionRanges, timeMarkers, ukDst, usDst,
+} from '../shared/sessions.js';
 
 const utc = (s) => Date.parse(`${s}Z`);
 
@@ -38,4 +40,29 @@ test('périodes UTC : jour, semaine (lundi), mois', () => {
   assert.equal(periodEnd(t), utc('2026-10-11T00:00:00'));
   assert.equal(periodEnd(t, 'week'), utc('2026-10-12T00:00:00'));
   assert.equal(periodEnd(utc('2026-12-31T10:00:00'), 'month'), utc('2027-01-01T00:00:00'));
+});
+
+test('sessions Asie / Londres / New York : heures d’été, week-end exclu', () => {
+  // 2026 : heure d'été britannique du 29 mars au 25 octobre, américaine du 8 mars au 1er novembre.
+  assert.equal(ukDst(utc('2026-03-28T00:00:00')), false);
+  assert.equal(ukDst(utc('2026-03-29T00:00:00')), true);
+  assert.equal(ukDst(utc('2026-10-25T00:00:00')), false);
+  const h = (s) => [s.kind, new Date(s.t0).toISOString().slice(11, 16), new Date(s.t1).toISOString().slice(11, 16)];
+  const july = marketSessions(utc('2026-07-01T00:00:00'), utc('2026-07-01T23:59:00')); // mercredi
+  assert.deepEqual(july.map(h), [['asia', '00:00', '09:00'], ['london', '07:00', '16:00'], ['ny', '12:00', '21:00']]);
+  // Entre les deux changements d'heure (27 octobre) : Londres à l'heure d'hiver, New York encore en été.
+  const gap = marketSessions(utc('2026-10-27T00:00:00'), utc('2026-10-27T23:59:00'));
+  assert.deepEqual(gap.map(h).slice(1), [['london', '08:00', '17:00'], ['ny', '12:00', '21:00']]);
+  assert.deepEqual(marketSessions(utc('2026-10-10T00:00:00'), utc('2026-10-11T23:00:00')), []); // samedi, dimanche
+  assert.deepEqual(marketSessions(utc('2026-07-01T10:00:00'), utc('2026-07-01T11:00:00'), ['london', 'asia']).map((s) => s.kind), ['london']);
+});
+
+test('sessions : plus haut et plus bas d’après les bougies qui y commencent', () => {
+  const H = 3_600_000;
+  const d = utc('2026-07-01T00:00:00');
+  const bars = Array.from({ length: 24 }, (_, i) => ({ t0: d + i * H, h: 100 + i, l: 50 - i }));
+  const list = marketSessions(d, d + 23 * H);
+  const r = sessionRanges(bars, list, d + 15 * H);
+  assert.deepEqual(r.map((s) => [s.kind, s.hi, s.lo, s.done]), [['asia', 108, 42, true], ['london', 115, 35, false], ['ny', 120, 30, false]]);
+  assert.deepEqual(sessionRanges([], list, d), []);
 });
