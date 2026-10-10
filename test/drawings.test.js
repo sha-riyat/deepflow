@@ -78,6 +78,11 @@ test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () 
   assert.equal(cleanStyle({ extend: true }).extend, true);
   assert.equal('extend' in cleanStyle({ extend: false }), false);
   assert.equal('extend' in cleanStyle({ extend: 'oui' }), false);
+  // Pics / creux et totaux : affichés par défaut, le style ne garde que le choix de les masquer.
+  assert.equal(cleanStyle({ nodes: false, totals: false }).nodes, false);
+  assert.equal(cleanStyle({ nodes: false, totals: false }).totals, false);
+  assert.equal('nodes' in cleanStyle({ nodes: true }), false);
+  assert.equal('totals' in cleanStyle({}), false);
 });
 
 test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du tracé', () => {

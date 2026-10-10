@@ -33,6 +33,8 @@ export function cleanStyle(style) {
     dash: DRAW_DASHES.includes(s.dash) ? s.dash : DEFAULT_STYLE.dash,
     ...(PROFILE_KINDS.includes(s.kind) ? { kind: s.kind } : {}), // profil à plage fixe : sans valeur = volume
     ...(s.extend === true ? { extend: true } : {}), // profil à plage fixe : niveaux prolongés vers la droite
+    ...(s.nodes === false ? { nodes: false } : {}), // profil à plage fixe : pics et creux masqués
+    ...(s.totals === false ? { totals: false } : {}), // profil à plage fixe : étiquette de totaux masquée
   };
 }
 

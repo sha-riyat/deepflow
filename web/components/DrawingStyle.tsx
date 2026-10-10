@@ -3,11 +3,11 @@
 // texte pour une note), trait, suppression. La règle n'a pas de style : sa couleur suit le sens ;
 // la position propose son capital et son risque.
 import { useEffect, useRef, useState } from 'react';
-import { Delete02Icon } from '@hugeicons/core-free-icons';
-import { Icon, MenuButton } from './ui';
+import { Delete02Icon, Settings02Icon } from '@hugeicons/core-free-icons';
+import { Icon, MenuButton, OptionRows, type OptDefs } from './ui';
 import { engine } from '@/lib/engine';
 import { useLive, type DrawStyle as Style, type PositionCalc } from '@/lib/store';
-import { DRAW_COLORS, DRAW_DASHES, DRAW_WIDTHS, POSITIONS, PROFILE_KINDS, textSize } from '@shared/drawings.js';
+import { DEFAULT_STYLE, DRAW_COLORS, DRAW_DASHES, DRAW_WIDTHS, POSITIONS, PROFILE_KINDS, textSize } from '@shared/drawings.js';
 
 const KIND_LABELS: Record<string, string> = { volume: 'Volume', bidask: 'Achats / ventes', delta: 'Delta' };
 const DASH_LABELS: Record<string, string> = { solid: 'Plein', dash: 'Tirets', dot: 'Pointillés' };
@@ -121,6 +121,55 @@ function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
   );
 }
 
+const TOOL_NAMES: Record<string, string> = {
+  trend: 'Ligne de tendance', hline: 'Ligne horizontale', hray: 'Rayon horizontal', vline: 'Ligne verticale', rect: 'Rectangle',
+  fib: 'Retracement de Fibonacci', text: 'Texte / note', ruler: 'Règle de mesure', long: 'Position longue', short: 'Position courte',
+  avwap: 'VWAP ancré', vp: 'Volume Profile à plage fixe',
+};
+
+// Fenêtre de réglages d'un dessin (roue dentée) : tous ses réglages au même endroit, communs (couleur,
+// épaisseur, trait) puis propres à l'outil (profil : type, prolongement, pics et creux, totaux ;
+// position : capital, risque, frais).
+function SettingsPanel({ id, type, style, calc, set }: { id: string | null; type: string; style: Style; calc: PositionCalc | null; set: (patch: Partial<Style>) => void }) {
+  const isNote = type === 'text';
+  const styled = type !== 'ruler' && !POSITIONS.includes(type);
+  const defs: OptDefs = {};
+  if (styled) defs.width = { label: isNote ? 'Taille du texte' : 'Épaisseur', choices: DRAW_WIDTHS.map((v) => [v, isNote ? `${textSize(v)} px` : `${String(v).replace('.', ',')} px`]) };
+  if (styled && !isNote) defs.dash = { label: 'Trait', choices: DRAW_DASHES.map((v) => [v, DASH_LABELS[v]]) };
+  if (type === 'vp') {
+    defs.kind = { label: 'Type de profil', choices: PROFILE_KINDS.map((v) => [v, KIND_LABELS[v]]) };
+    defs.extend = { label: 'Niveaux prolongés vers la droite', choices: [['off', 'Non'], ['on', 'Oui']] };
+    defs.nodes = { label: 'Pics et creux de volume (HVN / LVN)', choices: [['on', 'Affichés'], ['off', 'Masqués']] };
+    defs.totals = { label: 'Étiquette de totaux', choices: [['on', 'Affichée'], ['off', 'Masquée']] };
+  }
+  const values: Record<string, number | string> = {
+    width: style.width, dash: style.dash, kind: style.kind ?? 'volume',
+    extend: style.extend ? 'on' : 'off', nodes: style.nodes === false ? 'off' : 'on', totals: style.totals === false ? 'off' : 'on',
+  };
+  const change = (key: string, v: number | string) => set({ [key]: ['extend', 'nodes', 'totals'].includes(key) ? v === 'on' : v } as Partial<Style>);
+  const reset = () => set({ color: DEFAULT_STYLE.color, width: DEFAULT_STYLE.width, dash: DEFAULT_STYLE.dash, kind: undefined, extend: undefined, nodes: undefined, totals: undefined });
+  return (
+    <div className="ds-panel">
+      <div className="pop-title">Réglages · {TOOL_NAMES[type] ?? type}</div>
+      {styled && (
+        <div className="lg-opt">
+          <span>Couleur</span>
+          <div className="swatches">
+            {DRAW_COLORS.map((c) => (
+              <button key={c} type="button" className={c === style.color ? 'on' : ''} title={c} style={{ background: c }} onClick={() => set({ color: c })} />
+            ))}
+          </div>
+        </div>
+      )}
+      <OptionRows defs={defs} values={values} onChange={change} />
+      {id && calc && POSITIONS.includes(type) && <div className="ds-fields"><PositionFields key={`${id}${JSON.stringify(calc)}`} id={id} calc={calc} /></div>}
+      {type === 'ruler' && <p className="note">La couleur de la règle suit le sens du mouvement : verte si le prix monte, rouge s’il baisse.</p>}
+      {POSITIONS.includes(type) && <p className="note">Les zones de stop et de cible gardent leurs couleurs ; le calcul est affiché seulement, aucun ordre n’est passé.</p>}
+      {styled && <button type="button" className="pop-item" onClick={reset}><span>Rétablir le style par défaut</span></button>}
+    </div>
+  );
+}
+
 export function DrawingStyle() {
   const draw = useLive((s) => s.draw);
   if (!draw.sel || !draw.style) return null;
@@ -129,6 +178,9 @@ export function DrawingStyle() {
     <div id="drawstyle" onMouseDown={(e) => e.stopPropagation()}>
       {draw.id && draw.calc && POSITIONS.includes(draw.type ?? '') && <PositionFields key={`${draw.id}${JSON.stringify(draw.calc)}`} id={draw.id} calc={draw.calc} />}
       {draw.type !== 'ruler' && !POSITIONS.includes(draw.type ?? '') && <StyleMenus style={draw.style} note={draw.type === 'text'} profile={draw.type === 'vp'} set={set} />}
+      <MenuButton icon={Settings02Icon} caret={false} align="right" title="Réglages du dessin">
+        {() => <SettingsPanel id={draw.id} type={draw.type ?? ''} style={draw.style as Style} calc={draw.calc} set={set} />}
+      </MenuButton>
       <button type="button" className="tb-btn icon" title="Supprimer (Suppr)" onClick={() => engine.chart?.drawings.removeSelected()}>
         <Icon icon={Delete02Icon} size={16} />
       </button>

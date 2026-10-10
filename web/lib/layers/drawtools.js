@@ -167,7 +167,7 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
     if (ext) label(ctx, `${name} ${fmt(price, digits)}`, scale.w - 4, y + 8.5, color, { size: 10, align: 'right' });
     else label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
   }
-  const nodes = drawNodes(ctx, s, scale, x0, x1, { labels: true });
+  const nodes = d.style.nodes === false ? undefined : drawNodes(ctx, s, scale, x0, x1, { labels: true });
   const t = profileTotals(s);
   const [from, to] = [d.pts[0].t, d.pts[1].t].sort((a, b) => a - b);
   const n = items.filter((b) => b.t1 > from && b.t0 < to).length;
@@ -179,10 +179,11 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   // Sous la zone, et sous l'étiquette « VAL » (qui descend de 8 px sous la ligne) quand le VAL est près du bas.
   const below = Math.max(y1 + 16, scale.yOfPrice(s.val * s.bucket) + 27);
   const ly = below <= scale.h ? below : Math.max(y0, 0) + 16;
-  label(ctx, total, lx, ly, C.mist, { size: 10 });
+  const totals = d.style.totals !== false;
+  if (totals) label(ctx, total, lx, ly, C.mist, { size: 10 });
   if (ext && r.after?.session) {
     const st = auctionState(s, r.after.session, clockNow(), 2);
-    label(ctx, `Depuis la fin de la plage : ${auctionLabel(st, 'du profil')}`, lx, ly + 17, C.mist, { size: 10 });
+    label(ctx, `Depuis la fin de la plage : ${auctionLabel(st, 'du profil')}`, lx, totals ? ly + 17 : ly, C.mist, { size: 10 });
   }
   if (r.clipped) note('Plage limitée aux 3 derniers jours de la sélection', C.ember);
   else if (r.partial) note('Historique en cours de téléchargement', C.ember);
