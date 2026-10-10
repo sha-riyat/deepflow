@@ -9,15 +9,8 @@ import { indicatorValues } from './values.js';
 import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
-import { drawVwap } from '../layers/vwap.js';
-import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
-import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
-import { drawKeyLevels } from '../layers/keylevels.js';
-import { drawTimeMarkers } from '../layers/times.js';
-import { drawDivergences } from '../layers/divergence.js';
-import { drawTpoView, tpoItems } from '../layers/tpo.js';
-import { drawQuotes, drawAlertLines } from '../layers/marks.js';
-import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
+import { tpoItems } from '../layers/tpo.js';
+import { INDEXED, drawAbove, drawBehind } from './plot.js';
 import { drawDrawings, drawDrawingLabels } from '../layers/drawings.js';
 import { DrawingEditor } from '../drawings/editor.js';
 import { RangeProfiles } from '../drawings/profiles.js';
@@ -28,8 +21,6 @@ import { clockNow, useClockOf } from '../clock.js';
 
 const AXIS_W = 84;
 const TIME_H = 24;
-const DERIVED = ['linebreak', 'kagi', 'pnf'];
-const INDEXED = [...DERIVED, 'tpo']; // vues sans échelle de temps continue
 
 export class Chart {
   constructor(root, data) {
@@ -271,16 +262,7 @@ export class Chart {
     ctx.clip();
     const O = st.opts;
     const tpo = st.style === 'tpo';
-    if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
-    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile, this.data.dailySessions);
-    if (L.prev && !tpo) drawPrevLevels(ctx, this.data.dailySessions, s, items);
-    if (L.open && !tpo) drawDayOpen(ctx, this.data.dailySessions, s, items);
-    if (L.keys && !tpo) drawKeyLevels(ctx, this.data.keyLevels, s, items, O.keys);
-    if (L.times && !INDEXED.includes(st.style)) drawTimeMarkers(ctx, s, items, { show: O.times.show, futures: this.meta.market === 'futures' });
-    if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.dailySessions, this.data.bars), s, items);
-    // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
-    if (L.bubbles && !tpo) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
-    if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, this.data.ticks);
+    drawBehind(this, ctx, items, geo);
 
     const fpOn = st.fpMode !== 'off' && this.spec.fp > 0 && !INDEXED.includes(st.style);
     if (st.style === 'linebreak') drawLineBreak(ctx, items, geo, s);
@@ -288,11 +270,7 @@ export class Chart {
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { ...O.fp, mode: st.fpMode, bucket: this.meta.fpBucket });
-    if (L.div && !INDEXED.includes(st.style)) drawDivergences(ctx, items, geo, s);
-    if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
-    if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
-    if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
-    if (L.alerts) drawAlertLines(ctx, s, this.alerts);
+    drawAbove(this, ctx, items, geo);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
     const profileOf = (d) => this.rangeProfiles.get(d, this.drawings.moving(d));
     drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '', bars: this.data.bars, profileOf }, indexed);

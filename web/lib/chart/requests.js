@@ -3,8 +3,8 @@
 import { rowBucket } from '@shared/auction.js';
 import { clockNow } from '../clock.js';
 import { periodStart } from '@shared/sessions.js';
+import { INDEXED } from './plot.js';
 
-const INDEXED = ['linebreak', 'kagi', 'pnf', 'tpo'];
 const DAY = 86_400_000;
 const OI_PERIODS = [['5m', 3e5], ['15m', 9e5], ['30m', 18e5], ['1h', 36e5], ['2h', 72e5], ['4h', 144e5], ['6h', 216e5], ['12h', 432e5], ['1d', 864e5]];
 const SLOTS = [100, 200, 500, 1e3, 2e3, 5e3, 1e4, 15e3, 3e4, 6e4, 12e4, 3e5, 6e5, 9e5, 18e5, 36e5];
