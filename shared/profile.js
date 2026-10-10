@@ -102,6 +102,23 @@ function finalize(s, { bucket, tpoMs, range }) {
   };
 }
 
+// POC non testés : POC de volume d'une session terminée qu'aucun prix ultérieur n'a retouché.
+// Les étendues des sessions suivantes font foi (elles couvrent tous les trades) ; `after` =
+// [plus bas, plus haut] du direct postérieur à la dernière session reçue. La dernière session
+// (en cours) n'a pas encore de POC définitif.
+export function nakedPocs(sessions, after = null) {
+  const out = [];
+  for (let i = 0; i < sessions.length - 1; i++) {
+    const s = sessions[i];
+    if (s.poc === null) continue;
+    const price = (s.poc + 0.5) * s.bucket;
+    if (sessions.slice(i + 1).some((x) => x.lo <= price && x.hi >= price)) continue;
+    if (after && after[0] <= price && after[1] >= price) continue;
+    out.push({ t0: s.t0, t1: s.t1, price });
+  }
+  return out;
+}
+
 // Market Profile d'une session, lignes regroupées par `mult` tranches. Contrairement au profil de
 // volume, POC et value area portent sur le nombre de TPO (périodes ayant touché le prix) :
 // POC = prix le plus visité (égalité : le plus proche du centre de l'étendue), value area = 70 %

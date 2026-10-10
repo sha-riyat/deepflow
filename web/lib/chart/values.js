@@ -2,7 +2,7 @@
 import { compact as money, fmt, qty } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
 import { vwapStart } from '../layers/vwap.js';
-import { weeklySessions } from '../layers/volprofile.js';
+import { nakedList, weeklySessions } from '../layers/volprofile.js';
 
 const DAY = 86_400_000;
 
@@ -33,6 +33,12 @@ export function indicatorValues(chart, items) {
   if (L.profile && style !== 'tpo' && s && s.poc !== null) {
     const what = { day: 'Jour', week: 'Semaine', visible: 'Visible' }[range] ?? '';
     out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
+  }
+  if (L.naked && style !== 'tpo') {
+    const list = nakedList(data.nakedSessions, data.bars);
+    const near = last && list.length ? list.reduce((a, b) => (Math.abs(b.price - last.c) < Math.abs(a.price - last.c) ? b : a)) : null;
+    // Sans bougie chargée (changement de série en cours), pas de prix de référence : le nombre seul.
+    out.naked = near ? `${list.length} · le plus proche ${fmt(near.price)}` : list.length ? String(list.length) : data.nakedSessions.length ? 'aucun' : 'chargement…';
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   if (L.big) out.big = opts.big.min ? `≥ ${money(opts.big.min)} $` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';

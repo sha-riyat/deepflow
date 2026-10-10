@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BarBuilder, footprintStats, klineToWire } from '../shared/bars.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '../shared/transforms.js';
-import { SessionProfiler, tpoProfile } from '../shared/profile.js';
+import { SessionProfiler, nakedPocs, tpoProfile } from '../shared/profile.js';
 
 // Rejoue une liste de trades [t, p, q, side] et retourne les bougies closes + la courante.
 function build(spec, trades) {
@@ -155,4 +155,13 @@ test('klines : VWAP exact à partir du volume en devise de cotation', () => {
   assert.equal(b.pv / b.v, 101.5); // VWAP, et non (H + B + C) / 3
   assert.equal(b.p2v, (1015 * 1015) / 10);
   assert.deepEqual([b.b, b.s], [6, 4]);
+});
+
+test('POC non testés : retest par les sessions suivantes ou par le direct', () => {
+  const s = (t0, poc, lo, hi) => ({ t0, t1: t0 + 1, bucket: 1, poc, lo, hi });
+  const sessions = [s(0, 100, 95, 105), s(1, 110, 106, 112), s(2, 108, 107, 115), s(3, 120, 114, 121)];
+  // 100 jamais retouché ; 110 retouché par la session 2 ; 108 (session 2) non retouché ; la session 3 est en cours.
+  assert.deepEqual(nakedPocs(sessions).map((p) => p.price), [100.5, 108.5]);
+  assert.deepEqual(nakedPocs(sessions, [100, 101]).map((p) => p.price), [108.5]); // le direct a touché 100,5
+  assert.deepEqual(nakedPocs(sessions.slice(0, 1)), []);
 });

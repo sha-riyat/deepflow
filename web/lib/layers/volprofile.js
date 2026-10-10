@@ -1,8 +1,8 @@
 // Profils de volume, comme les « Session », « Periodic » et « Visible range » de TradingView ou le
 // Volume Profile d'ATAS : par jour UTC, par semaine (lundi 00:00 UTC) ou sur la plage visible
 // (épinglé au bord droit). Type volume, achats / ventes ou delta ; value area en zone et lignes ;
-// POC et value area « en développement » ; POC non testés prolongés jusqu'au retest.
-import { valueArea } from '@shared/profile.js';
+// POC et value area « en développement ». POC non testés : calque indépendant (drawNakedPocs).
+import { nakedPocs, valueArea } from '@shared/profile.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, pill } from '../theme.js';
 
@@ -104,7 +104,7 @@ function devLines(ctx, s, scale, items, dev) {
 }
 
 export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}) {
-  const { naked = true, width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0 } = opts;
+  const { width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0 } = opts;
   const y = (p) => scale.yOfPrice(p);
   if (range === 'visible') {
     const s = sessions[sessions.length - 1];
@@ -119,7 +119,7 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}) {
   }
   const list = range === 'week' ? weeklySessions(sessions) : sessions;
   const lastT = items.length ? items[items.length - 1].t1 : Date.now();
-  for (const [si, s] of list.entries()) {
+  for (const s of list) {
     const x0 = scale.xAt(s.t0, items);
     const x1 = scale.xAt(Math.min(s.t1, lastT), items);
     if (!(x1 > 0) || x0 > scale.w) continue;
@@ -140,11 +140,38 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}) {
     }
     ctx.fillStyle = alpha(C.white, 0.08);
     ctx.fillRect(x0, 0, 1, scale.h); // séparation de session
+  }
+}
 
-    // POC non testé : prolongé tant qu'aucune bougie postérieure ne l'a traversé.
-    if (!naked || si === list.length - 1) continue;
-    if (items.some((b) => b.t0 >= s.t1 && b.l <= pocP && b.h >= pocP)) continue;
-    hline(ctx, x1, scale.w, y(pocP), alpha(C.ember, 0.6), [6, 4]);
-    pill(ctx, scale.w - 6, y(pocP), `nPOC ${fmt(pocP)}`, { bg: C.obsidian, fg: C.ember, size: 10, align: 'right' });
+// POC non testés des sessions reçues, complétés par l'étendue des bougies du direct postérieures
+// au début de la dernière session (bougies réelles, pas Heikin Ashi).
+export function nakedList(sessions, bars) {
+  const last = sessions[sessions.length - 1];
+  let after = null;
+  if (last) for (const b of bars) if (b.t0 >= last.t0) after = after ? [Math.min(after[0], b.l), Math.max(after[1], b.h)] : [b.l, b.h];
+  return nakedPocs(sessions, after);
+}
+
+// POC non testés (voir nakedPocs) : trait pointillé de la fin de leur session au bord droit, même
+// si la session est hors de la vue, avec le prix et la date de la session. Hors de l'échelle de
+// prix : étiquette fléchée collée au bord haut ou bas (empilées si plusieurs).
+export function drawNakedPocs(ctx, list, scale, items) {
+  const edges = { up: 0, down: 0 };
+  for (const p of [...list].sort((a, b) => Math.abs(a.price - scale.pTop) - Math.abs(b.price - scale.pTop))) {
+    const x0 = Math.max(0, scale.xAt(p.t1, items));
+    if (!(x0 < scale.w)) continue;
+    const y = scale.yOfPrice(p.price);
+    const d = new Date(p.t0);
+    const day = `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    const text = `nPOC ${fmt(p.price)} · ${day}`;
+    if (y >= 0 && y <= scale.h) {
+      hline(ctx, x0, scale.w, y, alpha(C.ember, 0.6), [6, 4]);
+      pill(ctx, scale.w - 6, y, text, { bg: C.obsidian, fg: C.ember, size: 10, align: 'right' });
+      continue;
+    }
+    const up = y < 0;
+    const k = edges[up ? 'up' : 'down']++;
+    const yy = up ? 14 + k * 20 : scale.h - 14 - k * 20;
+    pill(ctx, scale.w - 6, yy, `${up ? '▲' : '▼'} ${text}`, { bg: C.obsidian, fg: alpha(C.ember, 0.85), size: 10, align: 'right' });
   }
 }

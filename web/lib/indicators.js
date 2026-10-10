@@ -14,7 +14,7 @@ export const LAYERS = {
   liq: { label: 'Liquidations', sub: 'Positions liquidées (futures, échantillon Binance)', group: 'flow', color: '#e0685f' },
   quotes: { label: 'Bid / ask', sub: 'Meilleurs prix récents (zoom serré)', group: 'flow', color: '#cccccc' },
   profile: { label: 'Profil de session', sub: 'Volume par prix, POC et value area du jour UTC', group: 'levels', color: '#868f97' },
-  naked: { label: 'POC non testés', sub: 'Prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
+  naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
   vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour UTC et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
   signals: { label: 'Signaux', sub: 'Entrées, stops et cibles', group: 'trade', color: '#4ebe96' },
   alerts: { label: 'Alertes de prix', sub: 'Niveaux surveillés', group: 'trade', color: '#ffa16c' },

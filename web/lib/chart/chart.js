@@ -10,7 +10,7 @@ import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVwap } from '../layers/vwap.js';
-import { drawVolumeProfiles } from '../layers/volprofile.js';
+import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
@@ -244,7 +244,8 @@ export class Chart {
     const O = st.opts;
     const tpo = st.style === 'tpo';
     if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
-    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, { ...O.profile, naked: L.naked });
+    else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile);
+    if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.nakedSessions, this.data.bars), s, items);
     // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
     if (L.bubbles && !tpo) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
     if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, this.data.ticks);

@@ -63,6 +63,15 @@ export function requestData(chart, items) {
       chart.data.loadProfiles(from, to, meta.fpBucket, params);
     }
   }
+  if (layers.naked && !tpo) {
+    // POC non testés : les 7 dernières sessions et celle du jour, quelle que soit la vue.
+    const from = Math.floor(now / DAY) * DAY - 7 * DAY;
+    const key = `${from}:${Math.floor(now / 15_000)}`;
+    if (key !== chart.requests.naked) {
+      chart.requests.naked = key;
+      chart.data.loadNaked(from, now, meta.fpBucket);
+    }
+  }
   if (((layers.liq && !tpo) || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
     const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(now / 30_000)}`;
     if (key !== chart.requests.liqs) {
