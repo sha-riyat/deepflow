@@ -160,7 +160,7 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 - **Panneau Statistiques** : tableau par bougie (delta, volume, delta %, achats, ventes, trades),
   fond d'intensité relative à la vue, valeurs dès que la colonne est assez large.
 - **Rail à droite** : Flux (déséquilibre du carnet, z-score du delta, VWAP, seuil des gros prints,
-  murs actifs), DOM, Trades, Marchés, Alertes (deux panneaux empilés au plus).
+  murs actifs), DOM, Trades, Marchés, Alertes, Journal, Apprendre (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
 
 ## Espace de travail
@@ -188,6 +188,19 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   (sauvegarde, autre ordinateur, partage entre amis).
 
 Tout est mémorisé dans le navigateur (`localStorage`) : rien n'est envoyé ailleurs.
+
+## Apprendre et progresser
+
+- **Panneau Apprendre** (rail à droite) : une fiche par indicateur, panneau, mode du footprint et
+  outil : ce que c'est, comment le lire, les pièges, et son statut (donnée mesurée, règle
+  empirique non prouvée, ou repère de contexte), plus une routine d'analyse pas à pas. Recherche
+  sans accents ; le bouton « ? » d'une ligne de légende ou d'un panneau ouvre directement sa fiche.
+  Le menu Footprint décrit chaque mode.
+- **Journal de trading** (rail à droite) : noter un trade (symbole, sens, entrée, stop, cible,
+  sortie, setup, notes) en reprenant l'outil position sélectionné, avec une capture du graphique
+  actif ; résultat en R (multiples du risque pris au stop), statistiques (taux de réussite, R moyen
+  par trade, total, facteur de profit) et export CSV. Gardé dans le navigateur (IndexedDB).
+- **Replay** : voir ci-dessous ; idéal pour s'entraîner et remplir le journal sans risque.
 
 ## Replay (entraînement)
 
@@ -234,8 +247,8 @@ l'heure rejouée).
 
 ## Feuille de route
 
-1. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
-   (notes et captures liées à un graphique). Le replay des archives est en place (voir plus haut).
+1. **Installation** : guide pas à pas pour Windows et Mac, script de lancement, vérification d'une
+   installation neuve.
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
 backtest) a été retiré de l'application et archivé sur la branche `archive/moteur-strategie`.
