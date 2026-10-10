@@ -11,63 +11,11 @@ export interface Meta {
   base: string;
   quote: string;
   tickSize: number;
-  risk: Record<string, number>;
 }
 
-export interface Target {
-  R: number;
-  pct: number;
-  price: number;
-  hit: boolean;
-}
-
-export interface Signal {
-  id: string;
-  t: number;
+export interface FlowState {
   symbol: string;
-  base: string;
-  quote: string;
-  side: 'LONG' | 'SHORT';
-  dir: 1 | -1;
-  setup: string;
-  label: string;
-  why: string[];
-  notes: string[];
-  entry: number;
-  entryType: string;
-  stop: number;
-  stopCurrent?: number;
-  dist: number;
-  targets: Target[];
-  qty: number;
-  notional: number;
-  leverage: number;
-  riskUsd: number;
-  riskPctEff: number;
-  feesUsd: number;
-  feeR: number;
-  maxHoldMs: number;
-  status: 'open' | 'closed';
-  remainingPct?: number;
-  unrealizedR?: number;
-  resultR?: number;
-  pnlUsd?: number;
-  outcome?: 'stop' | 'breakeven' | 'target' | 'time';
-  closedAt?: number;
-  events: { t: number; text: string }[];
-}
-
-export interface Stats {
-  n: number;
-  wins: number;
-  winRate: number;
-  avgR: number;
-  totalR: number;
-  pnlUsd: number;
-  maxDDR: number;
-}
-
-export interface EngineState {
+  market: 'futures' | 'spot';
   t: number | null;
   price: { bid: number; ask: number } | null;
   warmup: boolean;
@@ -79,12 +27,7 @@ export interface EngineState {
     deltaZ: number | null;
     bigPrintThreshold: number | null;
     walls: { side: 'bid' | 'ask'; price: number; qty: number; ageS: number }[];
-  } | null;
-  atr: number | null;
-  active: Signal | null;
-  lastRejection: { t: number; label: string; dir: number; reason: string } | null;
-  recent: Signal[];
-  stats: Stats;
+  };
 }
 
 export interface Dom {

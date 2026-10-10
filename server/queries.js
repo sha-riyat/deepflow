@@ -89,7 +89,7 @@ export async function bubbles(s, q) {
   }
   const r3 = (v) => Math.round(v * 1000) / 1000;
   const rows = [...slots].map(([k, [pq, buy, sell]]) => [k * slot, pq / (buy + sell), r3(buy), r3(sell)]);
-  const live = s.engine.flow.bigThreshold;
+  const live = s.flow.bigThreshold;
   const sizes = [...prints.values()].map((p) => p[1]).sort((a, b) => a - b);
   const threshold = Number.isFinite(live) ? live : sizes[Math.floor(sizes.length * 0.995)] ?? Infinity;
   const min = Math.max(0, num(q.min, 0));

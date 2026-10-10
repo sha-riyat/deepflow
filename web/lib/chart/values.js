@@ -71,10 +71,6 @@ export function indicatorValues(chart, items) {
       out.liq = `L ${money(longs)} · S ${money(shorts)}`;
     }
   }
-  if (L.signals) {
-    const open = chart.signals.find((x) => x.status === 'open');
-    out.signals = open ? `${open.side} ouvert à ${fmt(open.entry)}` : 'aucun en cours';
-  }
   if (L.alerts) out.alerts = chart.alerts.length ? `${chart.alerts.length} active${chart.alerts.length > 1 ? 's' : ''}` : 'aucune';
   return out;
 }

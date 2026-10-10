@@ -1,6 +1,6 @@
 // Diffusion SSE vers les navigateurs, avec un historique renvoyé à chaque connexion :
-// derniers ticks (prix + trades), signaux, et dernier état de chaque type
-// (status, stats, rejection, dom, history, alert).
+// derniers ticks (prix + trades) et dernier état de chaque type (status, dom, history, mark,
+// alerts).
 const TICK_BACKLOG = 3000; // 5 min à 100 ms
 
 export class Hub {
@@ -12,7 +12,6 @@ export class Hub {
   // Nouveau symbole : on oublie tout et les navigateurs repartent de zéro.
   reset() {
     this.ticks = [];
-    this.signals = new Map();
     this.latest = {};
     this.meta = null;
     this.#broadcast('reset', '{}');
@@ -27,7 +26,6 @@ export class Hub {
     if (this.meta) this.#send(res, 'meta', this.meta);
     for (const [event, data] of Object.entries(this.latest)) this.#send(res, event, data);
     for (const tick of this.ticks) this.#send(res, 'tick', tick);
-    for (const sig of this.signals.values()) this.#send(res, 'signal', sig);
     this.#send(res, 'ready', '{}');
     this.clients.add(res);
     req.on('close', () => this.clients.delete(res));
@@ -43,13 +41,6 @@ export class Hub {
     this.ticks.push(data);
     if (this.ticks.length > TICK_BACKLOG) this.ticks.shift();
     this.#broadcast('tick', data);
-  }
-
-  signal(sig) {
-    const data = JSON.stringify(sig);
-    this.signals.set(sig.id, data);
-    if (this.signals.size > 30) this.signals.delete(this.signals.keys().next().value);
-    this.#broadcast('signal', data);
   }
 
   // Événement ponctuel, non rejoué aux nouveaux clients.

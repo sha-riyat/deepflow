@@ -4,7 +4,7 @@
 export const GROUPS = [
   ['flow', 'Flux d’ordres'],
   ['levels', 'Profils et niveaux'],
-  ['trade', 'Trading'],
+  ['trade', 'Alertes'],
 ];
 
 export const LAYERS = {
@@ -18,7 +18,6 @@ export const LAYERS = {
   prev: { label: 'Value area de la veille', sub: 'VAH, VAL et POC d’hier sur la journée, état d’acceptation ou de rejet', group: 'levels', color: '#479ffa' },
   naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
   vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour UTC et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
-  signals: { label: 'Signaux', sub: 'Entrées, stops et cibles', group: 'trade', color: '#4ebe96' },
   alerts: { label: 'Alertes de prix', sub: 'Niveaux surveillés', group: 'trade', color: '#ffa16c' },
 };
 

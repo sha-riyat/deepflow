@@ -6,15 +6,14 @@ import { ChartView } from './ChartView';
 import { Panels, Rail, toggleOpen } from './Rail';
 import { StatusBar } from './StatusBar';
 import { SymbolSearch } from './SymbolSearch';
-import { SignalPanel } from './panels/SignalPanel';
-import { AccountPanel } from './panels/AccountPanel';
+import { FlowPanel } from './panels/FlowPanel';
 import { AlertsPanel } from './panels/AlertsPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { connectStream, engine, getData } from '@/lib/engine';
 import { getLive, loadPrefs, savePrefs, useLive, type UiPrefs } from '@/lib/store';
 import { beep } from '@/lib/sound';
-import type { EngineState, Meta } from '@/lib/types';
+import type { FlowState, Meta } from '@/lib/types';
 import { seriesLabel } from './TopBar';
 
 type Kind = 'series' | 'style' | 'view' | 'layout';
@@ -23,7 +22,7 @@ interface Toast { id: number; title: string; text: string }
 export default function Workspace() {
   const [prefs, setPrefs] = useState<UiPrefs>(loadPrefs);
   const [search, setSearch] = useState<string | null>(null);
-  const [st, setSt] = useState<EngineState | null>(null);
+  const [st, setSt] = useState<FlowState | null>(null);
   const [badges, setBadges] = useState<Set<string>>(new Set());
   const [preset, setPreset] = useState<{ price: number; n: number } | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -31,7 +30,6 @@ export default function Workspace() {
   const pendingSpan = useRef<number | null>(null);
   const alerts = useLive((s) => s.alerts);
   const meta = useLive((s) => s.meta);
-  const signals = useLive((s) => s.signals);
 
   const toast = useCallback((title: string, text: string) => {
     const id = Date.now() + Math.random();
@@ -101,21 +99,12 @@ export default function Workspace() {
         if (changed) reloadSeries(prefsRef.current);
       },
       onReset: () => {},
-      onSignal: (s, isNew) => {
-        if (isNew && s.status === 'open') {
-          if (prefsRef.current.signalSound) beep();
-          toast(`Signal ${s.side} · ${s.symbol}`, `${s.label} à ${s.entry}`);
-          if (!prefsRef.current.rail.open.includes('signal')) setBadges((b) => new Set([...b, 'signal']));
-        }
-        refresh();
-      },
       onAlert: (a) => {
         beep();
         toast(`${a.label} · ${a.symbol}`, a.text);
         if (window.Notification?.permission === 'granted') new Notification(`${a.label} · ${a.symbol}`, { body: a.text });
         if (!prefsRef.current.rail.open.includes('alerts')) setBadges((b) => new Set([...b, 'alerts']));
       },
-      onRefresh: refresh,
     });
     const id = setInterval(refresh, 1000);
     return () => {
@@ -124,13 +113,12 @@ export default function Workspace() {
     };
   }, [reloadSeries, refresh, toast]);
 
-  // Signaux et alertes de prix dessinés sur le graphique.
+  // Alertes de prix dessinées sur le graphique.
   useEffect(() => {
     if (!engine.chart) return;
-    engine.chart.signals = signals;
     engine.chart.alerts = alerts.items.filter((a) => a.enabled && a.type === 'price' && a.symbol === meta?.symbol);
     engine.chart.invalidate();
-  }, [signals, alerts, meta]);
+  }, [alerts, meta]);
 
   // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap.
   useEffect(() => {
@@ -152,12 +140,11 @@ export default function Workspace() {
   useEffect(() => applyChart(prefs), [applyChart, prefs]);
 
   const render = (id: string) => {
-    if (id === 'signal') return <SignalPanel st={st} />;
+    if (id === 'flow') return <FlowPanel st={st} />;
     if (id === 'dom') return <DomPanel />;
     if (id === 'tape') return <TapePanel />;
     if (id === 'markets') return <MarketsPanel onSelect={selectSymbol} />;
-    if (id === 'alerts') return <AlertsPanel preset={preset} />;
-    return <AccountPanel st={st} sound={prefs.signalSound} setSound={(v) => update({ signalSound: v }, 'view')} />;
+    return <AlertsPanel preset={preset} />;
   };
 
   return (

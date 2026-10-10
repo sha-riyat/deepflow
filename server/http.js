@@ -1,19 +1,7 @@
-// Serveur HTTP local du collecteur : flux SSE et API (état, historique, heatmap,
-// réglages de risque, symbole, alertes). N'écoute que sur 127.0.0.1.
+// Serveur HTTP local du collecteur : flux SSE et API (état du flux, historique, heatmap,
+// symbole, alertes). N'écoute que sur 127.0.0.1.
 import http from 'node:http';
-import fs from 'node:fs';
-import path from 'node:path';
 import * as Q from './queries.js';
-
-
-// Réglages de risque modifiables depuis l'interface, avec leurs bornes.
-const SETTINGS = { equity: [1, 1e9], riskPct: [0.01, 5], maxLeverage: [1, 125] };
-
-export function loadSettings(file, risk) {
-  if (!fs.existsSync(file)) return;
-  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-  for (const key of Object.keys(SETTINGS)) if (typeof saved[key] === 'number') risk[key] = saved[key];
-}
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -40,32 +28,19 @@ function readJson(req) {
   });
 }
 
-function updateSettings(input, { cfg, settingsFile }) {
-  for (const [key, [min, max]] of Object.entries(SETTINGS)) {
-    if (input[key] === undefined) continue;
-    const v = Number(input[key]);
-    if (!Number.isFinite(v) || v < min || v > max) throw new Error(`${key} hors bornes [${min}, ${max}]`);
-    cfg.risk[key] = v;
-  }
-  const saved = Object.fromEntries(Object.keys(SETTINGS).map((k) => [k, cfg.risk[k]]));
-  fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
-  fs.writeFileSync(settingsFile, JSON.stringify(saved, null, 2));
-  return saved;
-}
-
 async function route(req, res, ctx) {
-  const { cfg, hub, session, alerts, rest } = ctx;
+  const { hub, session, alerts, rest } = ctx;
   const url = new URL(req.url, 'http://localhost');
   const q = Object.fromEntries(url.searchParams);
   const key = `${req.method} ${url.pathname}`;
-  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/tickers' && !session.engine) {
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/tickers' && !session.flow) {
     return json(res, 503, { error: 'session en cours de démarrage' });
   }
   switch (key) {
     case 'GET /stream':
       return hub.attach(req, res);
     case 'GET /api/state':
-      return json(res, 200, { ...session.engine.state(), meta: session.meta(), history: session.store.status(), mark: session.mark });
+      return json(res, 200, { ...session.state(), meta: session.meta(), history: session.store.status(), mark: session.mark });
     case 'GET /api/bars':
       return json(res, 200, await Q.bars(session, q));
     case 'GET /api/bubbles':
@@ -89,11 +64,6 @@ async function route(req, res, ctx) {
         'X-Heat': JSON.stringify({ cols: r.cols, rows: r.rows, step: r.step, scale: r.scale, start: session.heat.start }),
       });
       return res.end(r.buf);
-    }
-    case 'POST /api/settings': {
-      const saved = updateSettings(await readJson(req), { cfg, settingsFile: ctx.settingsFile });
-      hub.setMeta(session.meta());
-      return json(res, 200, saved);
     }
     case 'POST /api/symbol': {
       if (session.mode !== 'live') throw new Error('changement de symbole indisponible en replay');

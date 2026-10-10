@@ -19,13 +19,12 @@ export const config = {
   historyFrames: 2048, // colonnes renvoyées à un navigateur qui se connecte
   host: '127.0.0.1',
   port: num(env.COLLECTOR_PORT, 8787), // le port 3000 est celui de l'interface Next.js
-  record: env.RECORD === '1', // enregistre les frames (gzip) pour replay et backtest
+  record: env.RECORD === '1', // enregistre les frames (gzip) pour les rejouer
   dataDir: path.resolve(ROOT, env.DATA_DIR ?? 'data'),
   replay: env.REPLAY ?? null, // chemin d'un enregistrement .ndjson.gz à rejouer
   speed: num(env.SPEED, 1), // vitesse du replay
 
   footprint: {
-    tfMs: num(env.TF_MS, 60_000), // durée d'une bougie footprint
     bucket: env.FP_BUCKET ? Number(env.FP_BUCKET) : null, // tranche d'une cellule ; null = 2 × heatmap
   },
 
@@ -35,40 +34,8 @@ export const config = {
     bigPrintMinSamples: 300, // prints observés avant d'activer la détection
     wallMult: 5, // mur = niveau ≥ wallMult × médiane des niveaux visibles
     wallMinMs: 10_000, // persistance minimale d'un mur
-    lookbackMs: 300_000, // mémoire glissante du moteur (5 min)
-  },
-
-  setups: {
-    absorption: {
-      enabled: true,
-      windowMs: 15_000, // fenêtre d'observation de l'agression sur le mur
-      nearBuckets: 2, // distance max entre le mur et le meilleur prix
-      volMult: 3, // volume agressif ≥ volMult × la normale sur la même durée
-      confirmMs: 2_000, // delta de confirmation (doit s'être retourné)
-      minWallKeep: 0.5, // le mur doit garder ≥ 50 % de sa taille max
-    },
-    breakout: {
-      enabled: true,
-      rangeMs: 300_000, // range de référence (plus haut / plus bas 5 min)
-      excludeMs: 10_000, // exclut les dernières secondes du range
-      windowMs: 10_000, // fenêtre du delta d'impulsion
-      deltaZ: 2, // z-score minimal du delta 10 s
-      minImb: 0.15, // déséquilibre minimal du carnet dans le sens du trade
-      vwapFilter: true, // long seulement au-dessus du VWAP, short en dessous
-    },
-  },
-
-  risk: {
-    equity: num(env.EQUITY, 1000), // capital du compte (devise de cotation, ex. USDT)
-    riskPct: num(env.RISK_PCT, 0.5), // risque par trade en % du capital
-    maxLeverage: num(env.MAX_LEV, 5),
-    minStopPct: num(env.MIN_STOP_PCT, market === 'spot' ? 0.6 : 0.3), // stop minimal en % du prix
-    t1R: 1.5, // première cible (50 % de la position), stop remonté au point d'entrée ensuite
-    t2R: 3, // seconde cible (50 % restants)
-    maxFeeR: 0.35, // rejette le signal si les frais estimés dépassent cette fraction de R
-    takerFee: num(env.TAKER_FEE, market === 'spot' ? 0.001 : 0.0005),
-    maxHoldMs: 30 * 60_000, // sortie forcée au-delà
-    cooldownMs: 60_000, // délai minimal entre deux signaux
+    lookbackMs: 300_000, // mémoire glissante (5 min)
+    deltaWinMs: 10_000, // fenêtre du delta dont on suit le z-score (alertes « delta anormal »)
   },
 };
 

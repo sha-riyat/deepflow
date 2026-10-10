@@ -1,15 +1,13 @@
-// Session d'un symbole : flux (direct ou replay), magasin de trades, heatmap, moteur de
-// signaux, alertes et DOM. `switch` remplace le symbole sans redémarrer le serveur.
-import path from 'node:path';
+// Session d'un symbole : flux (direct ou replay), magasin de trades, heatmap, analyse du flux,
+// alertes et DOM. `start` remplace le symbole sans redémarrer le serveur.
 import { EventEmitter } from 'node:events';
 import { loadSymbolInfo } from './symbol.js';
 import { LiveSource, ReplaySource } from './sources.js';
 import { Recorder } from './recorder.js';
-import { Engine } from './engine/engine.js';
+import { Flow } from './flow.js';
 import { TradeStore, DAY } from './history/store.js';
 import { HeatStore } from './heatstore.js';
 import { LiquidationStore } from './liquidations.js';
-import { formatSignal, formatRejection } from './format.js';
 
 // Plus petit pas « rond » (1, 2, 2,5, 5 × 10^k) supérieur ou égal à x, et au moins un tick.
 export function niceStep(x, tick) {
@@ -38,12 +36,12 @@ export class Session extends EventEmitter {
     } else this.domBucket = cfg.bucket;
     cfg.footprint.bucket = this.fixed.fp ?? Number((cfg.bucket * 2).toPrecision(6));
 
-    const suffix = this.mode === 'replay' ? '-replay' : '';
     this.store = new TradeStore({ market: cfg.market, symbol, dir: cfg.dataDir, rest: this.rest, offline: this.mode === 'replay' });
     this.heat = new HeatStore({ bucket: cfg.bucket, hours: cfg.heatHours });
     this.liqs = new LiquidationStore(cfg.dataDir, cfg.market, symbol);
     this.mark = null;
-    this.engine = new Engine(cfg, this.info, { signalsFile: path.join(cfg.dataDir, `signals-${symbol}-${cfg.market}${suffix}.ndjson`) });
+    this.flow = new Flow(cfg.flow, cfg.bucket, cfg.flow.deltaWinMs);
+    this.frame = null;
     this.domVol = new Map(); // prix -> [achats, ventes] de la session UTC en cours
     this.domDay = null;
     this.recorder =
@@ -54,7 +52,6 @@ export class Session extends EventEmitter {
     this.#wire();
     this.hub.reset();
     this.hub.setMeta(this.meta());
-    this.hub.state('stats', this.engine.tracker.stats());
     this.hub.state('alerts', this.alerts.list());
     this.source.start();
     this.domTimer = setInterval(() => this.#dom(), 250);
@@ -68,8 +65,28 @@ export class Session extends EventEmitter {
     this.recorder?.close();
     clearInterval(this.domTimer);
     this.source.removeAllListeners();
-    this.engine.removeAllListeners();
     this.source = null;
+  }
+
+  // Instantané du flux en direct (panneau Flux, API /api/state).
+  state() {
+    const { flow, frame: f } = this;
+    return {
+      symbol: this.cfg.symbol,
+      market: this.cfg.market,
+      t: f?.t ?? null,
+      price: f ? { bid: f.bid, ask: f.ask } : null,
+      warmup: !flow.ready,
+      warmupPct: Math.min(100, Math.round((flow.spanMs / this.cfg.flow.lookbackMs) * 100)),
+      flow: {
+        cvd: flow.cvd,
+        imbalance: flow.imb,
+        vwap: flow.vwap,
+        deltaZ: flow.deltaZ(),
+        bigPrintThreshold: Number.isFinite(flow.bigThreshold) ? flow.bigThreshold : null,
+        walls: flow.walls.map((w) => ({ side: w.side, price: w.price, qty: w.q, ageS: Math.round(w.ageMs / 1000) })),
+      },
+    };
   }
 
   meta() {
@@ -85,7 +102,6 @@ export class Session extends EventEmitter {
       base: info.base,
       quote: info.quote,
       tickSize: info.tickSize,
-      risk: cfg.risk,
     };
   }
 
@@ -99,9 +115,7 @@ export class Session extends EventEmitter {
   }
 
   #wire() {
-    const { source, engine, store, hub, cfg } = this;
-    let newSignal = null;
-    const printed = new Set();
+    const { source, flow, store, hub, cfg } = this;
 
     source.on('status', (s) => {
       console.log(`[${new Date().toISOString()}] ${cfg.symbol} ${s}`);
@@ -114,32 +128,17 @@ export class Session extends EventEmitter {
     source.on('frame', (f) => {
       this.recorder?.write(f);
       this.heat.add(f);
-      newSignal = null;
-      const an = engine.onFrame(f);
-      this.alerts.evaluate({ symbol: cfg.symbol, f, flow: engine.flow, base: this.info.base, newSignal });
+      this.frame = f;
+      const an = flow.update(f);
+      this.alerts.evaluate({ symbol: cfg.symbol, f, flow, base: this.info.base });
       hub.tick({ t: f.t, bid: f.bid, ask: f.ask, tr: f.tr, liq: f.liq ?? [], an: { cvd: an.cvd, delta: an.delta, imb: an.imb, big: an.big } });
     });
     store.on('progress', (st) => hub.state('history', st));
     source.on('liquidation', (l) => this.liqs.add(l));
     source.on('mark', (m) => {
       this.mark = m;
-      engine.mark = m;
       hub.state('mark', m);
     });
-
-    engine.on('signal', (s) => {
-      hub.signal(s);
-      if (!printed.has(s.id)) {
-        printed.add(s.id);
-        newSignal = s;
-        console.log('\n' + formatSignal(s) + '\n');
-      } else if (s.status === 'closed') console.log('\n' + formatSignal(s) + '\n');
-    });
-    engine.on('rejection', (r) => {
-      hub.state('rejection', r);
-      console.log(formatRejection(r));
-    });
-    engine.on('stats', (st) => hub.state('stats', st));
   }
 
   // Volume échangé par niveau de prix (au pas du DOM), remis à zéro chaque jour UTC.

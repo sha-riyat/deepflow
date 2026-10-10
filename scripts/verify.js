@@ -88,7 +88,7 @@ check('TPO de la session', session.periods.length === 48 && tpo.val <= tpo.poc &
   `${session.periods.length} périodes, POC ${tpo.poc * tpo.bucket}, VA ${tpo.val * tpo.bucket}–${(tpo.vah + 1) * tpo.bucket}, ${tpo.singles.length} simple(s) impression(s)`);
 
 // 3 ter. Bulles par minute : VWAP (volume en quote / volume) et volume acheteur des klines.
-const fake = { mode: 'live', store: { getRange: async () => ({ trades, partial: false }) }, engine: { flow: { bigThreshold: Infinity } } };
+const fake = { mode: 'live', store: { getRange: async () => ({ trades, partial: false }) }, flow: { bigThreshold: Infinity } };
 const bub = new Map((await bubbles(fake, { from: day, to: day + DAY, slot: 60_000 })).rows.map((r) => [r[0], r]));
 let vwapBad = 0;
 let buyBad = 0;

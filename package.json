@@ -2,7 +2,7 @@
   "name": "deepflow",
   "version": "0.3.0",
   "private": true,
-  "description": "Order flow Binance en local : heatmap WebGL, footprint, CVD et signaux expliqués (WHY / ENTRY / EXIT / POS SIZE).",
+  "description": "Terminal d’analyse order flow pour les cryptos Binance, en local : heatmap, footprint, Volume Profile, TPO, CVD.",
   "type": "module",
   "engines": {
     "node": ">=22.4"
@@ -12,8 +12,6 @@
     "start": "node scripts/dev.js start",
     "collector": "node server/index.js",
     "web:build": "npm run build --prefix web",
-    "signal": "node server/signal-cli.js",
-    "backtest": "node server/backtest.js",
     "test": "node --test",
     "verify": "node scripts/verify.js"
   }

@@ -1,5 +1,5 @@
 'use client';
-// Panneau Alertes : création (prix, gros print, mur, delta, déséquilibre, signal), liste des
+// Panneau Alertes : création (prix, gros print, mur, delta, déséquilibre, liquidation), liste des
 // alertes actives, historique des déclenchements, notifications système.
 import { useEffect, useState } from 'react';
 import { Delete02Icon } from '@hugeicons/core-free-icons';
@@ -15,7 +15,6 @@ export const ALERT_FIELDS: Record<string, { label: string; fields: [string, stri
   deltaz: { label: 'Delta anormal', fields: [['z', 'Z-score min.']] },
   imbalance: { label: 'Déséquilibre carnet', fields: [['value', 'Seuil (0 à 1)']] },
   liquidation: { label: 'Liquidation', fields: [['notional', 'Montant min. (USDT)']] },
-  signal: { label: 'Nouveau signal', fields: [] },
 };
 
 function describe(a: AlertItem): string {
@@ -25,8 +24,7 @@ function describe(a: AlertItem): string {
   if (a.type === 'wall') return `Mur ≥ ${fmt(p.qty, 3)} à ${fmt(p.distPct)} %`;
   if (a.type === 'deltaz') return `|z| ≥ ${fmt(p.z, 1)}`;
   if (a.type === 'imbalance') return `|déséquilibre| ≥ ${fmt(p.value)}`;
-  if (a.type === 'liquidation') return `Liquidation ≥ ${fmt(p.notional, 0)} USDT`;
-  return 'Nouveau signal';
+  return `Liquidation ≥ ${fmt(p.notional, 0)} USDT`;
 }
 
 export function AlertsPanel({ preset }: { preset: { price: number; n: number } | null }) {

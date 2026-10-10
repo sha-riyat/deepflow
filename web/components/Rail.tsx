@@ -3,19 +3,18 @@
 // plus sont empilés (le plus ancien est remplacé) ; largeur et partage se règlent à la souris.
 import type { ReactNode } from 'react';
 import {
-  Cancel01Icon, LayoutListIcon, LeftToRightListStar01Icon, Notification03Icon, Target02Icon, TransactionHistoryIcon, Wallet01Icon,
+  Activity01Icon, Cancel01Icon, LayoutListIcon, LeftToRightListStar01Icon, Notification03Icon, TransactionHistoryIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon } from './ui';
 import type { UiPrefs } from '@/lib/store';
 
 export const PANELS: Record<string, [string, IconSvgElement]> = {
-  signal: ['Signal', Target02Icon],
+  flow: ['Flux', Activity01Icon],
   dom: ['DOM', LayoutListIcon],
   tape: ['Trades', TransactionHistoryIcon],
   markets: ['Marchés', LeftToRightListStar01Icon],
   alerts: ['Alertes', Notification03Icon],
-  account: ['Compte', Wallet01Icon],
 };
 
 type RailState = UiPrefs['rail'];

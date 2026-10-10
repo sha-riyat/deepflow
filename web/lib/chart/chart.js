@@ -14,7 +14,7 @@ import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofi
 import { drawPrevLevels } from '../layers/levels.js';
 import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
-import { drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
+import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
@@ -31,7 +31,6 @@ export class Chart {
     this.data = data;
     this.scale = new Scale();
     this.meta = null;
-    this.signals = [];
     this.alerts = [];
     this.title = '';
     this.settings = {
@@ -40,7 +39,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, div: true, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, div: true, naked: true, vwap: false, alerts: true, liq: true },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
@@ -269,7 +268,6 @@ export class Chart {
     if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
-    if (L.signals) drawSignals(ctx, s, items, this.signals);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));

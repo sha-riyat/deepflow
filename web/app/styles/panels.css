@@ -1,4 +1,4 @@
-/* Rail d'icônes, panneaux latéraux et leurs contenus (signal, DOM, trades, marchés, alertes, compte). */
+/* Rail d'icônes, panneaux latéraux et leurs contenus (flux, DOM, trades, marchés, alertes). */
 #rail { grid-column: 3; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-left: 1px solid var(--line); }
 
 .rail-btn {
@@ -43,42 +43,12 @@
 .row span { color: var(--text-3); }
 .row b { font-weight: 500; text-align: right; }
 .note { margin: 6px 0 0; color: var(--text-3); font-size: 12px; }
-.disclaimer { margin: 10px 0 0; color: var(--text-4); font-size: 11px; }
 .form { display: grid; gap: 8px; }
 .form label { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text-3); }
 .form label input:not([type='checkbox']) { width: 130px; text-align: right; }
 label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2); cursor: pointer; }
 
-/* Signal */
-.sig-head { display: flex; align-items: center; gap: 8px; }
-.sig-head .setup { color: var(--text-2); }
-.sig-head time { margin-left: auto; color: var(--text-3); font-size: 12px; }
-.badge { padding: 2px 8px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
-.badge.long { background: var(--buy); }
-.badge.short { background: var(--sell); }
-.hero { margin: 12px 0 2px; font-size: 30px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
-.hero-sub { color: var(--text-3); font-size: 12px; }
-.why { margin: 0; padding: 0; list-style: none; }
-.why li { position: relative; padding: 3px 0 3px 14px; color: var(--text-2); }
-.why li::before { content: ''; position: absolute; left: 2px; top: 10px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-3); }
-.why li.warn { color: var(--ember); }
-.why li.warn::before { background: var(--ember); }
-.levels,
-.hist { width: 100%; border-collapse: collapse; font-size: 12px; }
-.levels td,
-.hist td { padding: 5px 0; border-top: 1px solid var(--line); }
-.levels td:first-child { color: var(--text-3); }
-.levels td:not(:first-child),
-.hist td:last-child { text-align: right; }
-.levels tr.target td:nth-child(3),
-.levels tr.hit td { color: var(--buy); }
-.hist { margin-top: 10px; }
-.size { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
-.size small { font-size: 13px; font-weight: 500; color: var(--text-3); letter-spacing: 0; }
-details { margin-top: 12px; color: var(--text-3); font-size: 12px; }
-summary { cursor: pointer; }
-details ul { margin: 6px 0 0; padding-left: 16px; }
-.empty-title { font-size: 15px; font-weight: 600; }
+/* Flux */
 .warmup { height: 3px; margin: 2px 0 8px; border-radius: 99px; background: var(--active); overflow: hidden; }
 .warmup div { height: 100%; background: var(--ember); }
 .walls { margin: 0; padding: 0; list-style: none; }

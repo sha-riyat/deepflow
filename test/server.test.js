@@ -139,7 +139,7 @@ test('bulles : une par créneau au VWAP, volumes acheteur / vendeur, gros prints
   tr.push(1_500, 102, 3, -1, 2);
   tr.push(1_500, 102, 2, -1, 3); // même ordre agresseur que le précédent
   tr.push(2_200, 101, 4, 1, 4);
-  const s = { mode: 'live', store: { getRange: async () => ({ trades: tr, partial: false }) }, engine: { flow: { bigThreshold: 5 } } };
+  const s = { mode: 'live', store: { getRange: async () => ({ trades: tr, partial: false }) }, flow: { bigThreshold: 5 } };
   const r = await bubbles(s, { from: 0, to: 3_000, slot: 1000 });
   const [a, b] = r.rows;
   assert.deepEqual([a[0], a[2], a[3]], [1000, 1, 5]);

@@ -6,7 +6,7 @@ import { Hub } from './hub.js';
 import { Session } from './session.js';
 import { Alerts } from './alerts.js';
 import { BinanceRest } from './history/rest.js';
-import { createServer, loadSettings } from './http.js';
+import { createServer } from './http.js';
 
 const mode = config.replay ? 'replay' : 'live';
 if (config.replay) {
@@ -14,9 +14,6 @@ if (config.replay) {
   if (!meta) throw new Error(`Enregistrement sans métadonnées : ${config.replay}`);
   Object.assign(config, { symbol: meta.symbol, market: meta.market, bucket: meta.bucket, frameMs: meta.frameMs });
 }
-
-const settingsFile = path.join(config.dataDir, 'settings.json');
-loadSettings(settingsFile, config.risk);
 
 const hub = new Hub();
 const rest = new BinanceRest(config.market);
@@ -30,10 +27,9 @@ alerts.on('fired', (event) => {
 });
 hub.state('alerts', alerts.list());
 
-const server = createServer({ cfg: config, hub, session, alerts, rest, settingsFile });
+const server = createServer({ cfg: config, hub, session, alerts, rest });
 server.listen(config.port, config.host, async () => {
   console.log(`deepflow ${mode} ${config.market} → http://${config.host}:${config.port}`);
-  console.log(`capital ${config.risk.equity} · risque ${config.risk.riskPct} % · levier max ${config.risk.maxLeverage}×`);
   await session.start(config.symbol);
 });
 

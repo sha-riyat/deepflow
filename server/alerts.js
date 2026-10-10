@@ -1,5 +1,5 @@
 // Alertes : franchissement de prix, gros print, mur proche, delta anormal, déséquilibre
-// du carnet, liquidation, nouveau signal. Évaluées à chaque frame ; stockées dans data/alerts.json.
+// du carnet, liquidation. Évaluées à chaque frame ; stockées dans data/alerts.json.
 import fs from 'node:fs';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
@@ -15,14 +15,14 @@ export const ALERT_TYPES = {
   deltaz: { params: { z: [0.5, 20] }, label: 'Delta anormal' },
   imbalance: { params: { value: [0.05, 1] }, label: 'Déséquilibre carnet' },
   liquidation: { params: { notional: [0, 1e12] }, label: 'Liquidation' },
-  signal: { params: {}, label: 'Nouveau signal' },
 };
 
 export class Alerts extends EventEmitter {
   constructor(file) {
     super();
     this.file = file;
-    this.items = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
+    // Les types disparus (ancienne alerte « nouveau signal ») sont ignorés.
+    this.items = (fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : []).filter((a) => ALERT_TYPES[a.type]);
     this.fired = [];
     this.prevMid = new Map();
   }
@@ -58,7 +58,7 @@ export class Alerts extends EventEmitter {
     this.#save();
   }
 
-  // ctx : { symbol, f (frame), flow, base, newSignal }
+  // ctx : { symbol, f (frame), flow, base }
   evaluate(ctx) {
     const { f, flow, symbol } = ctx;
     const mid = (f.bid + f.ask) / 2;
@@ -78,7 +78,7 @@ export class Alerts extends EventEmitter {
     }
   }
 
-  #check(a, { f, flow, base, mid, prev, newSignal }) {
+  #check(a, { f, flow, base, mid, prev }) {
     const p = a.params;
     switch (a.type) {
       case 'price':
@@ -106,8 +106,6 @@ export class Alerts extends EventEmitter {
           ? `Liquidation ${big.side < 0 ? 'longue' : 'courte'} de ${fmt(big.n, 0)} à ${fmt(big.p)} (${fmt(big.q, 3)} ${base})`
           : null;
       }
-      case 'signal':
-        return newSignal ? `${newSignal.side} ${newSignal.label} à ${fmt(newSignal.entry)}` : null;
       default:
         return null;
     }

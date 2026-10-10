@@ -1,5 +1,5 @@
-// Analyse du flux d'ordres, frame par frame : delta/CVD, VWAP, gros prints,
-// murs de liquidité, déséquilibre du carnet, plus une mémoire glissante interrogeable.
+// Analyse du flux d'ordres en direct, frame par frame : delta / CVD, VWAP du jour, gros prints,
+// murs de liquidité, déséquilibre du carnet et z-score du delta (mémoire glissante de 5 min).
 const DAY = 86_400_000;
 const PRINT_RING = 5000;
 const round = (v, d = 3) => Math.round(v * 10 ** d) / 10 ** d;
@@ -9,7 +9,7 @@ export class Flow {
     this.cfg = cfg;
     this.bucket = bucket;
     this.deltaWinMs = deltaWinMs;
-    this.frames = []; // { t, bid, ask, mid, buy, sell, rows: Map(row -> [vente, achat]), big }
+    this.frames = []; // { t, buy, sell }
     this.cvd = 0;
     this.imb = 0;
     this.vw = { day: null, pq: 0, q: 0 };
@@ -40,33 +40,20 @@ export class Flow {
   }
 
   update(f) {
-    const { bucket } = this;
     const day = Math.floor(f.t / DAY);
     if (day !== this.vw.day) this.vw = { day, pq: 0, q: 0 };
 
     let buy = 0;
     let sell = 0;
-    const rows = new Map();
     for (const [p, q, side] of f.tr) {
       if (side > 0) buy += q;
       else sell += q;
-      const r = Math.floor(p / bucket);
-      const cell = rows.get(r) ?? [0, 0];
-      cell[side > 0 ? 1 : 0] += q;
-      rows.set(r, cell);
       this.vw.pq += p * q;
       this.vw.q += q;
     }
     const big = this.#prints(f.tr).filter((pr) => pr.q >= this.bigThreshold);
     this.cvd += buy - sell;
-    // Liquidations de la frame : montant par côté (-1 = longues liquidées, 1 = courtes).
-    let liqLong = 0;
-    let liqShort = 0;
-    for (const [p, q, side] of f.liq ?? []) {
-      if (side < 0) liqLong += p * q;
-      else liqShort += p * q;
-    }
-    this.frames.push({ t: f.t, bid: f.bid, ask: f.ask, mid: (f.bid + f.ask) / 2, buy, sell, rows, big, liqLong, liqShort });
+    this.frames.push({ t: f.t, buy, sell });
     while (this.frames[0].t < f.t - this.cfg.lookbackMs) this.frames.shift();
 
     this.#imbalance(f);
@@ -159,8 +146,6 @@ export class Flow {
     if (this.deltaSamples.length > max) this.deltaSamples.shift();
   }
 
-  // ----- requêtes sur la mémoire glissante -----
-
   *#recent(ms) {
     const from = this.now - ms;
     for (let i = this.frames.length - 1; i >= 0 && this.frames[i].t > from; i--) yield this.frames[i];
@@ -178,62 +163,5 @@ export class Flow {
     const mean = s.reduce((x, y) => x + y, 0) / s.length;
     const sd = Math.sqrt(s.reduce((x, y) => x + (y - mean) ** 2, 0) / s.length);
     return sd > 0 ? (this.delta(this.deltaWinMs) - mean) / sd : null;
-  }
-
-  // Volume agressif d'un côté ('buy' | 'sell') sur les tranches [rowLo, rowHi].
-  volAt(ms, rowLo, rowHi, side) {
-    const k = side === 'buy' ? 1 : 0;
-    let v = 0;
-    for (const fr of this.#recent(ms)) {
-      for (const [r, cell] of fr.rows) if (r >= rowLo && r <= rowHi) v += cell[k];
-    }
-    return v;
-  }
-
-  // Volume agressif moyen d'un côté sur une durée `ms`, estimé sur toute la mémoire.
-  avgVolume(ms, side) {
-    if (this.spanMs <= 0) return 0;
-    let v = 0;
-    for (const fr of this.frames) v += side === 'buy' ? fr.buy : fr.sell;
-    return (v * ms) / this.spanMs;
-  }
-
-  minBid(ms) {
-    let m = Infinity;
-    for (const fr of this.#recent(ms)) m = Math.min(m, fr.bid);
-    return m;
-  }
-
-  maxAsk(ms) {
-    let m = -Infinity;
-    for (const fr of this.#recent(ms)) m = Math.max(m, fr.ask);
-    return m;
-  }
-
-  // Plus haut / plus bas du mid entre now - fromMs et now - toMs.
-  range(fromMs, toMs) {
-    let high = -Infinity;
-    let low = Infinity;
-    let n = 0;
-    for (const fr of this.frames) {
-      if (fr.t < this.now - fromMs || fr.t > this.now - toMs) continue;
-      high = Math.max(high, fr.mid);
-      low = Math.min(low, fr.mid);
-      n++;
-    }
-    return { high, low, n };
-  }
-
-  // Montant liquidé sur la durée : side -1 = positions longues, 1 = positions courtes.
-  liquidated(ms, side) {
-    let n = 0;
-    for (const fr of this.#recent(ms)) n += side < 0 ? fr.liqLong : fr.liqShort;
-    return n;
-  }
-
-  bigPrints(ms, side) {
-    const out = [];
-    for (const fr of this.#recent(ms)) for (const pr of fr.big) if (pr.side === side) out.push(pr);
-    return out;
   }
 }

@@ -2,13 +2,12 @@
 // les widgets impératifs (DOM, trades), et connexion au flux temps réel du collecteur.
 import { DataManager } from './chart/data.js';
 import { getLive, setLive } from './store';
-import type { AlertFired, Meta, Signal, Tick } from './types';
+import type { AlertFired, Meta, Tick } from './types';
 
 type Chart = {
   invalidate(): void;
   resize(): void;
   resetView(): void;
-  signals: Signal[];
   alerts: unknown[];
   meta: Meta | null;
   scale: { follow: boolean; autoScale: boolean; msPerPx: number; w: number };
@@ -39,23 +38,17 @@ export function getData(): DataManager {
 export interface StreamHandlers {
   onMeta(meta: Meta): void;
   onReset(): void;
-  onSignal(s: Signal, isNew: boolean): void;
   onAlert(a: AlertFired): void;
-  onRefresh(): void;
 }
 
 // Connexion SSE ; retourne la fonction de fermeture.
 export function connectStream(h: StreamHandlers): () => void {
   const es = new EventSource('/stream');
   const on = <T>(name: string, fn: (v: T) => void) => es.addEventListener(name, (e) => fn(JSON.parse((e as MessageEvent).data)));
-  const known = new Set<string>();
-  let ready = false;
   let lastQuote = 0;
 
   on('reset', () => {
-    ready = false;
-    known.clear();
-    setLive({ signals: [], dom: null, mark: null });
+    setLive({ dom: null, mark: null });
     getData().reset();
     engine.tape?.clear();
     h.onReset();
@@ -64,7 +57,6 @@ export function connectStream(h: StreamHandlers): () => void {
     setLive({ meta: m, conn: m.mode === 'replay' ? 'replay' : 'live' });
     h.onMeta(m);
   });
-  on('ready', () => (ready = true));
   on<string>('status', (s) => setLive({ status: s }));
   on<Tick>('tick', (tick) => {
     getData().onTick(tick);
@@ -80,15 +72,6 @@ export function connectStream(h: StreamHandlers): () => void {
   on('mark', (m) => setLive({ mark: m as never }));
   on('alerts', (list) => setLive({ alerts: list as never }));
   on<AlertFired>('alert', (a) => h.onAlert(a));
-  on<Signal>('signal', (s) => {
-    const isNew = !known.has(s.id);
-    known.add(s.id);
-    const others = getLive().signals.filter((x) => x.id !== s.id);
-    setLive({ signals: [...others, s] });
-    h.onSignal(s, isNew && ready);
-  });
-  on('stats', () => h.onRefresh());
-  on('rejection', () => h.onRefresh());
   es.onerror = () => setLive({ status: 'Serveur injoignable, reconnexion…', conn: 'off' });
   return () => es.close();
 }
