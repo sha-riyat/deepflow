@@ -26,10 +26,19 @@ export function buildPlan(cand, { f, risk, info, atr, walls, mark = null }) {
   stop = roundTo(stop, tick, dir > 0 ? 'down' : 'up');
   const dist = Math.abs(entry - stop);
 
-  const targets = [
-    { R: risk.t1R, pct: 50 },
-    { R: risk.t2R, pct: 50 },
-  ].map((t) => ({ ...t, price: roundTo(entry + dir * dist * t.R, tick, dir > 0 ? 'down' : 'up'), hit: false }));
+  if (risk.maxStopPct && (dist / entry) * 100 > risk.maxStopPct) {
+    return { rejected: `stop à ${fmt((dist / entry) * 100, 2)} % du prix > ${risk.maxStopPct} % : trop large` };
+  }
+
+  // Cibles : en R par défaut, ou à des prix précis fournis par le setup (POC, bord de value area,
+  // HVN, POC non testé…) ; leur R est alors recalculé sur la distance réelle du stop.
+  const targets = (cand.targets ?? [{ R: risk.t1R, pct: 50 }, { R: risk.t2R, pct: 50 }]).map((t) => {
+    const price = roundTo(t.price ?? entry + dir * dist * t.R, tick, dir > 0 ? 'down' : 'up');
+    return { R: Math.round(((dir * (price - entry)) / dist) * 100) / 100, pct: t.pct, price, hit: false, ...(t.label ? { label: t.label } : {}) };
+  });
+  if (targets.some((t) => t.R <= 0)) return { rejected: 'cible déjà dépassée par le prix d’entrée' };
+  const finalR = targets[targets.length - 1].R;
+  if (risk.minRR && finalR < risk.minRR) return { rejected: `gain jusqu'à la cible finale ${fmt(finalR, 2)}R < ${risk.minRR}R` };
 
   // Un mur opposé avant la première cible rend l'objectif peu probable.
   const blocking = walls.find(

@@ -14,6 +14,10 @@ function testConfig() {
   cfg.rangeBuckets = 50;
   cfg.flow.lookbackMs = 60_000;
   cfg.flow.bigPrintMinSamples = 10;
+  cfg.setups.absorption.enabled = true; // setups historiques testés ici ; stratégie du cours à part
+  cfg.setups.breakout.enabled = true;
+  cfg.setups.valuearea.enabled = false;
+  Object.assign(cfg.risk, { maxStopPct: null, minRR: null, limits: null, windows: [] });
   Object.assign(cfg.risk, { equity: 1000, riskPct: 0.5, maxLeverage: 5, minStopPct: 0.3, takerFee: 0.0002 });
   return cfg;
 }

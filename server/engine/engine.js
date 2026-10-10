@@ -8,6 +8,8 @@ import { Bars } from './bars.js';
 import { Tracker } from './tracker.js';
 import { SETUPS } from './setups.js';
 import { buildPlan } from './plan.js';
+import { ValueAreaStrategy } from './valuearea.js';
+import { activeWindow, riskGate } from './limits.js';
 
 const REJECTION_THROTTLE_MS = 5000;
 
@@ -26,6 +28,19 @@ export class Engine extends EventEmitter {
     this.frame = null;
     this.analytics = null;
     this.mark = null; // prix de marque et financement (futures), fournis par la session
+    const va = cfg.setups.valuearea;
+    this.va = va?.enabled ? new ValueAreaStrategy(va, { fpBucket: cfg.footprint.bucket }) : null;
+    this.windowCache = { minute: null, win: null };
+  }
+
+  // Fenêtre de trading active (calcul mis en cache à la minute) ; null hors fenêtre.
+  window(t) {
+    const minute = Math.floor(t / 60_000);
+    if (minute !== this.windowCache.minute) {
+      const r = this.cfg.risk;
+      this.windowCache = { minute, win: r.windows?.length ? activeWindow(t, r.windows, { weekends: r.weekends }) : { name: 'toujours' } };
+    }
+    return this.windowCache.win;
   }
 
   onFrame(f) {
@@ -49,8 +64,36 @@ export class Engine extends EventEmitter {
       this.emit('signal', active);
     }
 
+    if (this.va) this.#valueArea(f, an);
     if (!this.tracker.active) this.#scan(f);
     return an;
+  }
+
+  // Stratégie du cours : sorties anticipées sur clôture de 30 min, sortie en fin de fenêtre,
+  // puis ouverture d'un signal si un setup est complet et que les garde-fous l'autorisent.
+  #valueArea(f, an) {
+    const out = this.va.onFrame(f, an, { vwap: this.flow.vwap, bid: f.bid, ask: f.ask });
+    const active = this.tracker.active;
+    if (active?.exit && out.periodClosed) {
+      const st = out.periodClosed;
+      const back = active.exit.type === 'rejet'
+        ? ['outside', 'accepted'].includes(st.state) && st.side === active.exit.side
+        : ['inside', 'returning', 'rejected'].includes(st.state);
+      if (back) this.#exit(f, active, 'early', active.exit.type === 'rejet' ? 'Clôture de 30 min de nouveau hors de la value area' : 'Clôture de 30 min de retour dans la value area');
+    }
+    if (this.tracker.active?.exit && !this.window(f.t)) this.#exit(f, this.tracker.active, 'window', 'Fin de la fenêtre de trading');
+    const cand = out.candidate;
+    if (!cand) return;
+    if (cand.rejected) return this.#reject(f.t, { setup: cand.setup, dir: cand.dir, label: 'Acceptation', why: [] }, cand.rejected);
+    const gate = !this.window(f.t) ? 'hors des fenêtres de trading du cours' : riskGate(this.tracker.history, this.tracker.active, f.t, this.cfg.risk);
+    if (gate) return this.#reject(f.t, cand, gate);
+    this.#open(f, cand.setup, cand);
+  }
+
+  #exit(f, signal, outcome, text) {
+    this.tracker.exit(f, outcome, text);
+    this.emit('signal', signal);
+    this.emit('stats', this.tracker.stats());
   }
 
   #scan(f) {
@@ -63,30 +106,37 @@ export class Engine extends EventEmitter {
       for (const dir of [1, -1]) {
         const cand = fn({ ...ctx, cfg: setupCfg }, dir);
         if (!cand) continue;
-        const res = buildPlan(cand, { f, risk: cfg.risk, info: this.info, atr: this.bars.atr(), walls: flow.walls, mark: this.mark });
-        if (res.rejected) {
-          this.#reject(f.t, cand, res.rejected);
-          continue;
-        }
-        const signal = {
-          id: `${f.t}-${name}-${dir > 0 ? 'L' : 'S'}`,
-          t: f.t,
-          symbol: this.info.symbol,
-          base: this.info.base,
-          quote: this.info.quote,
-          side: dir > 0 ? 'LONG' : 'SHORT',
-          dir,
-          setup: name,
-          label: cand.label,
-          why: cand.why,
-          ...res.plan,
-        };
-        this.tracker.open(signal);
-        this.lastSignalT = f.t;
-        this.emit('signal', signal);
-        return;
+        if (this.#open(f, name, cand)) return;
       }
     }
+  }
+
+  // Construit le plan d'un candidat et ouvre le signal ; false si le plan est refusé.
+  #open(f, name, cand) {
+    const res = buildPlan(cand, { f, risk: this.cfg.risk, info: this.info, atr: this.bars.atr(), walls: this.flow.walls, mark: this.mark });
+    if (res.rejected) {
+      this.#reject(f.t, cand, res.rejected);
+      return false;
+    }
+    const { dir } = cand;
+    const signal = {
+      id: `${f.t}-${name}-${dir > 0 ? 'L' : 'S'}`,
+      t: f.t,
+      symbol: this.info.symbol,
+      base: this.info.base,
+      quote: this.info.quote,
+      side: dir > 0 ? 'LONG' : 'SHORT',
+      dir,
+      setup: name,
+      label: cand.label,
+      why: cand.why,
+      ...(cand.exit ? { exit: cand.exit } : {}),
+      ...res.plan,
+    };
+    this.tracker.open(signal);
+    this.lastSignalT = f.t;
+    this.emit('signal', signal);
+    return true;
   }
 
   #reject(t, cand, reason) {

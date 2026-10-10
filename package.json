@@ -15,6 +15,7 @@
     "signal": "node server/signal-cli.js",
     "backtest": "node server/backtest.js",
     "test": "node --test",
-    "verify": "node scripts/verify.js"
+    "verify": "node scripts/verify.js",
+    "backtest:vp": "node scripts/backtest-vp.js"
   }
 }

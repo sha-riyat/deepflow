@@ -10,6 +10,8 @@ import { TradeStore, DAY } from './history/store.js';
 import { HeatStore } from './heatstore.js';
 import { LiquidationStore } from './liquidations.js';
 import { formatSignal, formatRejection } from './format.js';
+import { profiles } from './queries.js';
+import { rowBucket } from '../shared/auction.js';
 
 // Plus petit pas « rond » (1, 2, 2,5, 5 × 10^k) supérieur ou égal à x, et au moins un tick.
 export function niceStep(x, tick) {
@@ -58,6 +60,8 @@ export class Session extends EventEmitter {
     this.hub.state('alerts', this.alerts.list());
     this.source.start();
     this.domTimer = setInterval(() => this.#dom(), 250);
+    this.vaTimer = setInterval(() => this.#feedSessions(), 60_000);
+    setTimeout(() => this.#feedSessions(), 5_000);
     console.log(`session ${this.mode} ${cfg.market} ${symbol} · tranche ${cfg.bucket} · footprint ${cfg.footprint.bucket} · DOM ${this.domBucket}`);
   }
 
@@ -67,9 +71,27 @@ export class Session extends EventEmitter {
     this.store.stop();
     this.recorder?.close();
     clearInterval(this.domTimer);
+    clearInterval(this.vaTimer);
     this.source.removeAllListeners();
     this.engine.removeAllListeners();
     this.source = null;
+  }
+
+  // Stratégie du cours : sessions journalières complètes (10 jours + aujourd'hui depuis 00:00 UTC,
+  // calculées sur l'historique des trades) transmises au moteur, qui ne voit le direct que depuis
+  // le lancement du collecteur.
+  async #feedSessions() {
+    const va = this.engine?.va;
+    const f = this.engine?.frame;
+    if (!va || !f) return;
+    const now = Date.now();
+    const bucket = va.bucket ?? rowBucket((f.bid + f.ask) / 2, this.cfg.footprint.bucket, this.cfg.setups.valuearea.rowPct);
+    try {
+      const r = await profiles(this, { from: Math.floor(now / DAY) * DAY - 10 * DAY, to: now, bucket });
+      va.setSessions(r.sessions, now);
+    } catch (err) {
+      console.error('sessions du moteur :', err.message);
+    }
   }
 
   meta() {

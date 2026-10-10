@@ -53,8 +53,16 @@ export class Tracker {
     return event ? 'event' : 'tick';
   }
 
+  // Sortie décidée par le moteur (clôture de 30 min de l'autre côté, fin de fenêtre…), au marché.
+  exit(f, outcome, text) {
+    const s = this.active;
+    if (!s) return null;
+    s.events.push({ t: f.t, text });
+    return this.#close(s, s.dir > 0 ? f.bid : f.ask, f.t, outcome);
+  }
+
   #close(s, price, t, outcome) {
-    const labels = { stop: 'Stop touché', breakeven: "Sortie au point d'entrée", target: 'Toutes les cibles atteintes', time: 'Sortie forcée (durée max)' };
+    const labels = { stop: 'Stop touché', breakeven: "Sortie au point d'entrée", target: 'Toutes les cibles atteintes', time: 'Sortie forcée (durée max)', early: 'Sortie anticipée', window: 'Sortie en fin de fenêtre' };
     s.realizedR += (((s.dir * (price - s.entry)) / s.dist) * s.remainingPct) / 100;
     s.remainingPct = 0;
     s.status = 'closed';
