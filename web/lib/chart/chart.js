@@ -4,7 +4,7 @@ import { Scale } from './scale.js';
 import { drawPriceAxis, drawTimeAxis, drawCrosshair, drawPaneCrosshair, drawSyncLine } from './axes.js';
 import { drawPane, paneValues } from './panes.js';
 import { attachInteractions } from './interact.js';
-import { requestData } from './requests.js';
+import { bigPool, requestData } from './requests.js';
 import { indicatorValues } from './values.js';
 import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
@@ -326,7 +326,7 @@ export class Chart {
   // Données des panneaux (open interest, liquidations, spot, prime, autres plateformes).
   #paneData() {
     const d = this.data;
-    return { oi: d.oi, liqs: d.liqs, spot: d.spot, funding: d.funding, venues: d.venues };
+    return { oi: d.oi, liqs: d.liqs, spot: d.spot, funding: d.funding, venues: d.venues, big: bigPool(this) };
   }
 
   // Valeurs des panneaux pour la bougie survolée (ou la dernière), transmises si elles changent.

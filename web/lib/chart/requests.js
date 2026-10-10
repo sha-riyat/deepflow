@@ -43,6 +43,13 @@ export function bigRequestMin(chart) {
   return min > 0 && chart.settings.opts.big.sess === 'on' ? min * 0.5 : min;
 }
 
+// Gros prints à montrer : ceux de la plage chargée et du direct, au seuil de session si activé.
+export function bigPool(chart) {
+  const all = chart.data.bigPrints();
+  const min = bigMin(chart);
+  return chart.settings.opts.big.sess === 'on' && min > 0 ? bySession(all, min) : all;
+}
+
 export function requestData(chart, items) {
   // `now` : présent du graphique (heure rejouée en replay) pour les plages de données ; `real` :
   // heure réelle pour le rythme des requêtes (4 par seconde au plus, rafraîchissements).

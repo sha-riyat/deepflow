@@ -14,3 +14,12 @@ test('statistiques de bougie : delta %, volume relatif, taille moyenne', () => {
   assert.equal(avgSize({ v: 12, n: 4 }), 3);
   assert.equal(avgSize({ v: 12, n: 0 }), null);
 });
+
+test('delta des gros prints par bougie : achats moins ventes, vide sans gros print', async () => {
+  const { bigDeltas } = await import('../shared/barstats.js');
+  const MIN = 60_000;
+  const items = [0, 1, 2].map((k) => ({ t0: k * MIN, t1: (k + 1) * MIN }));
+  const prints = [[10, 100, 30, 1], [20, 100, 12, -1], [2 * MIN + 5, 100, 7, -1]]; // bougie 0 : +18 ; bougie 2 : -7
+  assert.deepEqual(bigDeltas(items, prints), [18, null, -7]);
+  assert.deepEqual(bigDeltas(items, []), [null, null, null]);
+});

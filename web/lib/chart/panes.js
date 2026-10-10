@@ -46,7 +46,7 @@ function oiAt(oi, item) {
   return k < 0 ? null : { v: oi[k][1], prev: k > 0 ? oi[k - 1][1] : null };
 }
 
-export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], spot = null, funding = null, venues = null, minuteBars = false, axisW }) {
+export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], spot = null, funding = null, venues = null, big = [], minuteBars = false, axisW }) {
   const { y: top, h } = rect;
   const w = scale.w;
   ctx.save();
@@ -79,7 +79,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
     return { kind, top, h, valueAt: null, format: qty };
   }
   if (kind === 'stats') {
-    drawStats(ctx, items, geo, { top, h, w, axisW });
+    drawStats(ctx, items, geo, { top, h, w, axisW }, big);
     ctx.restore();
     return { kind, top, h, valueAt: null, format: qty };
   }

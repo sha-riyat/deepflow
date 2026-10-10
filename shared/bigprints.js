@@ -14,7 +14,7 @@ export function bySession(prints, min) {
 }
 
 // Index de la bougie qui contient l'instant t (dernière bougie commencée), -1 avant la première.
-function barAt(items, t) {
+export function barAt(items, t) {
   let lo = 0;
   let hi = items.length - 1;
   if (hi < 0 || t < items[0].t0) return -1;

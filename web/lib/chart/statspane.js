@@ -5,16 +5,18 @@
 // la place de la légende HTML du panneau (nom et valeurs de la bougie survolée) quand il y a la hauteur.
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
-import { INITIATIVE_PCT, avgSize, deltaPct, relativeVolume } from '@shared/barstats.js';
+import { INITIATIVE_PCT, avgSize, bigDeltas, deltaPct, relativeVolume } from '@shared/barstats.js';
 
 const LEGEND_H = 18; // hauteur de la légende HTML posée en haut du panneau
 
 // Lignes, par priorité (celles qui tiennent dans la hauteur sont gardées) : [libellé, valeur, sorte].
+// `big` : delta des gros prints par bougie (voir bigDeltas), vide pour les bougies sans gros print.
 const STATS = [
   ['Delta', (items, i) => items[i].b - items[i].s, 'delta'],
   ['Volume', (items, i) => items[i].v, 'plain'],
   ['Delta %', (items, i) => deltaPct(items[i]), 'pct'],
   ['Vol. ×', (items, i) => relativeVolume(items, i), 'mult'],
+  ['Gros Δ', (items, i, big) => big[i], 'delta'],
   ['Achats', (items, i) => items[i].b, 'buy'],
   ['Ventes', (items, i) => items[i].s, 'sell'],
   ['Trades', (items, i) => items[i].n ?? 0, 'count'],
@@ -38,7 +40,8 @@ function label(kind, v) {
   return qty(v);
 }
 
-export function drawStats(ctx, items, geo, { top, h, w }) {
+export function drawStats(ctx, items, geo, { top, h, w }, bigPrints = []) {
+  const big = bigDeltas(items, bigPrints);
   const [i0, i1] = geo.range;
   const head = h >= 64 ? LEGEND_H : 0;
   const body = h - 6 - head;
@@ -53,7 +56,7 @@ export function drawStats(ctx, items, geo, { top, h, w }) {
     const vals = [];
     let max = 0;
     for (let i = i0; i <= i1; i++) {
-      const v = get(items, i);
+      const v = get(items, i, big);
       vals.push(v);
       if (v !== null) max = Math.max(max, Math.abs(v));
     }

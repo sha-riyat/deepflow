@@ -1,5 +1,7 @@
 // Statistiques d'une bougie pour la lecture effort / résultat : delta en % du volume, volume relatif
-// (multiple du volume moyen des bougies précédentes) et taille moyenne d'un ordre agresseur.
+// (multiple du volume moyen des bougies précédentes), taille moyenne d'un ordre agresseur et delta des
+// seuls gros prints.
+import { barAt } from './bigprints.js';
 
 // Seuil de « bougie d'initiative » : |delta| ≥ 10 % du volume (repère cité dans les vidéos sur le
 // CVD ; en dessous, la bougie est équilibrée entre acheteurs et vendeurs agressifs).
@@ -15,6 +17,17 @@ export function relativeVolume(items, i, n = 20) {
   for (let k = from; k < i; k++) sum += items[k].v;
   const mean = sum / (i - from);
   return mean > 0 ? items[i].v / mean : null;
+}
+
+// Delta des gros prints par bougie (achats moins ventes, en quantité) ; null pour une bougie sans gros
+// print. Permet de voir « quand les gros ne poussent plus » : prix en hausse, delta des gros qui faiblit.
+export function bigDeltas(items, prints) {
+  const out = new Array(items.length).fill(null);
+  for (const [t, , q, side] of prints) {
+    const i = barAt(items, t);
+    if (i >= 0) out[i] = (out[i] ?? 0) + (side > 0 ? q : -q);
+  }
+  return out;
 }
 
 // Taille moyenne d'un ordre agresseur (trades agrégés Binance : un ordre au marché, à un prix).
