@@ -69,11 +69,16 @@ export function unfinished(fp, step) {
 }
 
 // Absorption et épuisement lus dans les trades d'une bougie (et non dans le carnet, falsifiable) :
-//  - absorption : sur une des 2 lignes extrêmes, l'agression d'un côté pèse ≥ 2,5 × la ligne moyenne
-//    sans faire progresser le prix (clôture repartie à l'opposé de l'extrême) : un acteur passif
-//    encaisse tout, retournement possible ;
-//  - épuisement : sur la ligne extrême, l'agression qui poussait le prix est quasi nulle
-//    (≤ 15 % de la ligne moyenne) : plus personne pour pousser.
+//  - absorption : sur une des 2 lignes extrêmes, l'agression d'un côté pèse ≥ 1,5 × la ligne moyenne
+//    (et ≥ 60 % de la ligne) sans faire progresser le prix (clôture repartie à l'opposé de l'extrême) :
+//    un acteur passif encaisse tout, retournement possible ;
+//  - épuisement : sur la ligne extrême, l'agression qui poussait le prix est quasi nulle (≤ 15 % de la
+//    ligne moyenne) alors que la ligne voisine était bien fournie (≥ 1 × la moyenne) : le volume s'assèche
+//    net à l'extrême, plus personne pour pousser.
+// Seuils calibrés sur des footprints Binance réels (BTCUSDT 1 et 5 minutes) pour que chaque marque touche
+// quelques pourcents des bougies : avec 2,5 × l'absorption n'apparaissait presque jamais (0 sur 116 bougies
+// de 5 minutes), et sans condition sur la ligne voisine l'épuisement touchait 27 % des bougies (la ligne
+// extrême d'une bougie est presque toujours la plus mince).
 // Retourne [{ row, side, kind }] ; side 1 = acheteurs (en bas), -1 = vendeurs (en haut).
 export function flowMarks(fp, bar, step) {
   if (fp.length < 4 || !(bar.h > bar.l)) return [];
@@ -84,13 +89,15 @@ export function flowMarks(fp, bar, step) {
   const out = [];
   const low = fp.slice(0, 2);
   const high = fp.slice(-2);
-  const absLow = low.find((c) => c[1] >= 2.5 * avg && c[1] >= 0.6 * (c[1] + c[2]));
+  const absLow = low.find((c) => c[1] >= 1.5 * avg && c[1] >= 0.6 * (c[1] + c[2]));
   if (absLow && pos >= 0.4) out.push({ row: absLow[0], side: 1, kind: 'absorption', price: (absLow[0] + 0.5) * step });
-  const absHigh = high.find((c) => c[2] >= 2.5 * avg && c[2] >= 0.6 * (c[1] + c[2]));
+  const absHigh = high.find((c) => c[2] >= 1.5 * avg && c[2] >= 0.6 * (c[1] + c[2]));
   if (absHigh && pos <= 0.6) out.push({ row: absHigh[0], side: -1, kind: 'absorption', price: (absHigh[0] + 0.5) * step });
   const bottom = fp[0];
   const top = fp[fp.length - 1];
-  if (bottom[1] <= 0.15 * avg && bar.c < bar.o) out.push({ row: bottom[0], side: 1, kind: 'exhaustion', price: (bottom[0] + 0.5) * step });
-  if (top[2] <= 0.15 * avg && bar.c > bar.o) out.push({ row: top[0], side: -1, kind: 'exhaustion', price: (top[0] + 0.5) * step });
+  const nextBottom = fp[1];
+  const nextTop = fp[fp.length - 2];
+  if (bottom[1] <= 0.15 * avg && nextBottom[1] >= avg && bar.c < bar.o) out.push({ row: bottom[0], side: 1, kind: 'exhaustion', price: (bottom[0] + 0.5) * step });
+  if (top[2] <= 0.15 * avg && nextTop[2] >= avg && bar.c > bar.o) out.push({ row: top[0], side: -1, kind: 'exhaustion', price: (top[0] + 0.5) * step });
   return out;
 }

@@ -110,7 +110,7 @@ export const FLOW_ARTICLES = [
     group: 'Footprint',
     title: 'Absorption (A) et épuisement (E)',
     level: 'rule',
-    what: 'Absorption : beaucoup d’agression à un extrême de bougie sans que le prix aille plus loin (un passif encaisse). Épuisement : presque plus d’agression à l’extrême (plus personne ne pousse).',
+    what: 'Absorption : beaucoup d’agression à un extrême de bougie (au moins 1,5 fois une ligne moyenne) sans que le prix aille plus loin (un passif encaisse). Épuisement : presque plus d’agression à l’extrême alors que la ligne voisine était bien fournie : le volume s’assèche net, plus personne ne pousse. Chaque marque touche quelques pourcents des bougies ; si vous n’en voyez pas, c’est normal : elles sont rares.',
     read: [
       'A sur un bas, puis reprise à la hausse : des acheteurs passifs ont tenu le niveau.',
       'E sur un haut : la poussée s’arrête faute d’acheteurs ; un retour est possible.',

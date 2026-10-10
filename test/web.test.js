@@ -34,9 +34,15 @@ test('footprint : absorption et épuisement lus dans les trades', async () => {
   const fp = [[10, 30, 2], [11, 3, 3], [12, 2, 4], [13, 2, 3], [14, 1, 2]];
   const marks = flowMarks(fp, { o: 12, h: 15, l: 10, c: 14.5 }, 1);
   assert.deepEqual(marks.map((m) => [m.kind, m.side, m.row]), [['absorption', 1, 10]]);
-  // Bougie haussière dont la ligne haute n’a presque plus d’acheteurs : épuisement des acheteurs.
-  const ex = flowMarks([[10, 3, 3], [11, 3, 4], [12, 2, 5], [13, 3, 4], [14, 1, 0]], { o: 10.5, h: 15, l: 10, c: 14.8 }, 1);
+  // Bougie haussière dont la ligne haute n’a presque plus d’acheteurs alors que la ligne voisine en avait
+  // beaucoup : épuisement des acheteurs (le volume s'assèche net à l'extrême).
+  const ex = flowMarks([[10, 3, 3], [11, 3, 4], [12, 2, 5], [13, 3, 9], [14, 1, 0]], { o: 10.5, h: 15, l: 10, c: 14.8 }, 1);
   assert.deepEqual(ex.map((m) => [m.kind, m.side]), [['exhaustion', -1]]);
+  // Même bougie mais la ligne voisine est mince aussi : simple mèche, pas d'épuisement.
+  assert.deepEqual(flowMarks([[10, 3, 3], [11, 3, 4], [12, 2, 5], [13, 3, 3], [14, 1, 0]], { o: 10.5, h: 15, l: 10, c: 14.8 }, 1), []);
+  // Absorption à 1,6 × la ligne moyenne : détectée (le seuil de 2,5 × l'aurait ratée).
+  const mid = [[10, 10, 1], [11, 3, 3], [12, 2, 4], [13, 2, 3], [14, 1, 2]]; // total 31, ligne moyenne 6,2 ; ventes du bas 10 = 1,6 ×
+  assert.deepEqual(flowMarks(mid, { o: 12, h: 15, l: 10, c: 14.5 }, 1).map((m) => m.kind), ['absorption']);
   assert.deepEqual(flowMarks(fp.slice(0, 3), { o: 1, h: 2, l: 0, c: 1 }, 1), []);
 });
 
