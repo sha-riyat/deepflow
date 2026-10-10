@@ -76,7 +76,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   style: 'candles',
   fpMode: 'off',
   panes: ['volume', 'delta'],
-  layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+  layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, naked: true, vwap: false, signals: true, alerts: true, liq: true },
   opts: defaultOptions() as IndicatorOptions,
   legend: true,
   gamma: 0.9,

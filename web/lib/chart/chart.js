@@ -11,6 +11,7 @@ import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVwap } from '../layers/vwap.js';
 import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
+import { drawPrevLevels } from '../layers/levels.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
@@ -38,7 +39,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, naked: true, vwap: false, signals: true, alerts: true, liq: true },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
@@ -250,7 +251,8 @@ export class Chart {
     const tpo = st.style === 'tpo';
     if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
     else if (L.profile) drawVolumeProfiles(ctx, this.data.profiles, s, items, O.profile);
-    if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.nakedSessions, this.data.bars), s, items);
+    if (L.prev && !tpo) drawPrevLevels(ctx, this.data.dailySessions, s, items);
+    if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(this.data.dailySessions, this.data.bars), s, items);
     // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
     if (L.bubbles && !tpo) drawBubbles(ctx, s, items, this.data.bubbleRows(), this.data.bubbles.slot, O.bubbles);
     if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, this.data.ticks);

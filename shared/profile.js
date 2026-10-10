@@ -36,7 +36,8 @@ export class SessionProfiler {
     if (per) {
       per[0] = Math.min(per[0], row);
       per[1] = Math.max(per[1], row);
-    } else s.periods.set(k, [row, row]);
+      per[2] = p; // clôture de la période (dernier prix)
+    } else s.periods.set(k, [row, row, p]);
     s.close = p;
     s.hi = Math.max(s.hi, p);
     s.lo = Math.min(s.lo, p);
@@ -95,7 +96,7 @@ function finalize(s, { bucket, tpoMs, range }) {
     poc,
     val,
     vah,
-    periods: periods.map(([k, [a, b]]) => [k, a, b]),
+    periods: periods.map(([k, [a, b, c]]) => [k, a, b, c]), // [période, ligne basse, ligne haute, clôture]
     dev,
     ibLo: ib.length ? Math.min(...ib.map((p) => p[1][0])) : null,
     ibHi: ib.length ? Math.max(...ib.map((p) => p[1][1])) : null,

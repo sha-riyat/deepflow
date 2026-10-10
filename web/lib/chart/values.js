@@ -4,6 +4,8 @@ import { optionSummary } from '../indicators.js';
 import { bigMin } from './requests.js';
 import { vwapStart } from '../layers/vwap.js';
 import { nakedList, weeklySessions } from '../layers/volprofile.js';
+import { prevAndToday } from '../layers/levels.js';
+import { auctionLabel, auctionState } from '@shared/auction.js';
 
 const DAY = 86_400_000;
 
@@ -35,11 +37,15 @@ export function indicatorValues(chart, items) {
     const what = { day: 'Jour', week: 'Semaine', visible: 'Visible' }[range] ?? '';
     out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
   }
+  if (L.prev && style !== 'tpo') {
+    const { prev, today } = prevAndToday(data.dailySessions);
+    out.prev = prev ? (today ? auctionLabel(auctionState(prev, today)) : 'session du jour en attente') : 'chargement…';
+  }
   if (L.naked && style !== 'tpo') {
-    const list = nakedList(data.nakedSessions, data.bars);
+    const list = nakedList(data.dailySessions, data.bars);
     const near = last && list.length ? list.reduce((a, b) => (Math.abs(b.price - last.c) < Math.abs(a.price - last.c) ? b : a)) : null;
     // Sans bougie chargée (changement de série en cours), pas de prix de référence : le nombre seul.
-    out.naked = near ? `${list.length} · le plus proche ${fmt(near.price)}` : list.length ? String(list.length) : data.nakedSessions.length ? 'aucun' : 'chargement…';
+    out.naked = near ? `${list.length} · le plus proche ${fmt(near.price)}` : list.length ? String(list.length) : data.dailySessions.length ? 'aucun' : 'chargement…';
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   const min = bigMin(chart);

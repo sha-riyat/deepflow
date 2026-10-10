@@ -41,7 +41,7 @@ export class DataManager {
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
     this.vwapAnchor = null; // sommes du jour avant la première bougie chargée (voir loadVwapAnchor)
-    this.nakedSessions = []; // sessions des 7 derniers jours pour les POC non testés
+    this.dailySessions = []; // sessions journalières des 10 derniers jours (nPOC, veille)
   }
 
   // Charge la série la plus récente pour un type de bougie donné.
@@ -204,11 +204,12 @@ export class DataManager {
     }
   }
 
-  // Sessions journalières des POC non testés (indépendantes du profil affiché).
-  async loadNaked(from, to, bucket) {
+  // Sessions journalières récentes, indépendantes du profil affiché : POC non testés, value area
+  // de la veille et état d'acceptation.
+  async loadDaily(from, to, bucket) {
     try {
       const r = await getJSON(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket })}`);
-      this.nakedSessions = r.sessions;
+      this.dailySessions = r.sessions;
       this.onChange('profiles');
     } catch {
       // nouvelle tentative au prochain cycle

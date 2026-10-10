@@ -82,13 +82,15 @@ export function requestData(chart, items) {
       chart.data.loadProfiles(from, to, bucket, params);
     }
   }
-  if (layers.naked && !tpo) {
-    // POC non testés : les 7 dernières sessions et celle du jour, quelle que soit la vue.
-    const from = Math.floor(now / DAY) * DAY - 7 * DAY;
-    const key = `${from}:${Math.floor(now / 15_000)}`;
-    if (key !== chart.requests.naked) {
-      chart.requests.naked = key;
-      chart.data.loadNaked(from, now, meta.fpBucket);
+  if ((layers.naked || layers.prev) && !tpo) {
+    // Sessions journalières (10 jours + aujourd'hui), quelle que soit la vue : POC non testés, value
+    // area de la veille et état d'acceptation.
+    const from = Math.floor(now / DAY) * DAY - 10 * DAY;
+    const bucket = profileBucket(chart);
+    const key = `${from}:${Math.floor(now / 15_000)}:${bucket}`;
+    if (key !== chart.requests.daily) {
+      chart.requests.daily = key;
+      chart.data.loadDaily(from, now, bucket);
     }
   }
   if (((layers.liq && !tpo) || chart.settings.panes.includes('liq')) && meta.market === 'futures') {
