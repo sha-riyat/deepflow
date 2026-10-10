@@ -75,9 +75,17 @@ export const PANE_ARTICLES = [
     group: 'Panneaux',
     title: 'Statistiques par bougie',
     level: 'fact',
-    what: 'Tableau : delta, volume, delta en %, achats, ventes, nombre de trades de chaque bougie.',
-    read: ['Delta % élevé (plus de 30 %) : bougie dominée par un camp.'],
-    traps: [],
+    what: 'Tableau d’une colonne par bougie : delta, volume, delta en % du volume, volume relatif (× la moyenne des 20 bougies précédentes), achats, ventes, nombre de trades et taille moyenne d’un ordre. Les lignes qui ne tiennent pas dans la hauteur du panneau sont masquées, dans cet ordre de priorité.',
+    read: [
+      'Delta % : au-delà de 10 % (en couleur pleine), la bougie a un camp qui mène (initiative) ; au-delà de 30 %, un camp domine nettement. En dessous de 10 %, les deux camps s’équilibrent (gris).',
+      'Volume relatif (Vol. ×) : ×2 et plus (en orange) = bougie deux fois plus active que d’habitude. Une cassure portée par un volume relatif fort et un delta % franc est plus crédible qu’une cassure à volume faible.',
+      'Taille moyenne d’un ordre : volume divisé par le nombre de trades. Elle grossit quand de gros ordres arrivent, et baisse quand ce sont surtout de petits ordres.',
+    ],
+    traps: [
+      'Les seuils de 10 % et de 30 % sont des repères de lecture tirés de vidéos de traders, pas des lois : ils dépendent du marché et de l’unité de temps.',
+      'Le delta % ne dit pas qui a gagné : un delta acheteur fort sans hausse du prix peut être de l’absorption (des vendeurs passifs encaissent).',
+      'Un trade agrégé Binance est un ordre agresseur : le nombre de trades n’est pas celui des klines Binance.',
+    ],
   },
   {
     id: 'position',
