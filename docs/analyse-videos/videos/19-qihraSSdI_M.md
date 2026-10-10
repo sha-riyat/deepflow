@@ -212,3 +212,8 @@ POC et value area en développement ; value area de la veille avec acceptation /
    et paramètres dans `shared/opening.js`.
 7. **Pourcentage de value area réglable** (68 / 70 / 80 %) : faible utilité. Piste : paramètre de `valueArea` dans
    `shared/profile.js`, plus une option du profil.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/19-qihraSSdI_M/ (nom du fichier = heure de la première image).
+- Images clés : ../references/19-composite-90-jours.jpg, ../references/19-profils-seance-cash-et-nuit.jpg, ../references/19-volume-profile-value-area.jpg

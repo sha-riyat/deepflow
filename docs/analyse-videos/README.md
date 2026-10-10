@@ -8,6 +8,8 @@ Dossier de travail pour reprendre le chantier « outils vus dans les vidéos » 
 | SYNTHESE.md | Ce qui est enseigné, par qui, jugement sur la maîtrise, ce que deepflow a déjà |
 | BESOINS-BRUTS.md | Notes de travail : besoins relevés vidéo par vidéo |
 | videos/NN-ID.md | Rapport détaillé par vidéo : résumé, outils et réglages, règles et stratégies, moments clés horodatés, évaluation critique, transposition à Binance, manques pour deepflow |
+| images/NN-ID/ | Toutes les images récupérées de chaque vidéo, en planches de 12 vignettes horodatées (320 × 180 chacune ; une image toutes les 5 à 10 s, une sur deux pour les deux directs) ; nom du fichier = heure de la première image |
+| references/ | Images clés par outil (bande de 3 images autour du moment cité dans les rapports), voir la liste plus bas |
 | transcriptions/ID.txt | Transcription complète horodatée (sous-titres automatiques anglais) ; Pz8f0wWW12M.fr.vtt : traduction française automatique |
 | outils/ | Scripts pour régénérer les données et tester hors ligne |
 
@@ -48,6 +50,8 @@ Prérequis : `pip install yt-dlp`, Node 22 (pour l'exécution JavaScript de yt-d
 - `python3 vtt2txt.py ID.en-orig.vtt > ID.txt` : transcription horodatée par blocs de 30 s.
 - `./sbs.sh ID…` : planches d'aperçu 320 × 180 (client « mweb »), puis découpage en images (`sb.py`).
 - `python3 sheet.py ID début_s fin_s` : planches contact de 12 images horodatées pour un passage.
+- `python3 planches.py ID sortie [pas]` : planches de toute la vidéo (dossier images/) ; `python3 references.py sortie` :
+  images clés (dossier references/).
 - En local, avec un navigateur connecté à YouTube, on peut aussi télécharger la vidéo complète
   (`yt-dlp --cookies-from-browser chrome -f 18 URL`) puis extraire des images avec ffmpeg
   (`ffmpeg -i video.mp4 -vf fps=1/5 img_%04d.jpg`).
@@ -56,3 +60,47 @@ Tests hors ligne de l'interface :
 - `node outils/gen-enregistrement.mjs data/rec.ndjson.gz` puis `REPLAY=data/rec.ndjson.gz SPEED=0 npm run collector`
   et `npm run dev --prefix web` ;
 - scénarios Playwright à partir de `outils/playwright-aide.mjs`.
+
+## Images clés (references/)
+
+- [00-deep-trades-fenetre-de-reglages.jpg](references/00-deep-trades-fenetre-de-reglages.jpg)
+- [00-deep-trades-gros-ordres-par-prix.jpg](references/00-deep-trades-gros-ordres-par-prix.jpg)
+- [00-footprint-et-dom-deepcharts.jpg](references/00-footprint-et-dom-deepcharts.jpg)
+- [00-outil-position.jpg](references/00-outil-position.jpg)
+- [04-heatmap-carnet-et-dom.jpg](references/04-heatmap-carnet-et-dom.jpg)
+- [04-heatmap-cassure-du-plus-bas.jpg](references/04-heatmap-cassure-du-plus-bas.jpg)
+- [04-heatmap-nuage-des-teneurs-de-marche.jpg](references/04-heatmap-nuage-des-teneurs-de-marche.jpg)
+- [04-heatmap-reglage-du-contraste.jpg](references/04-heatmap-reglage-du-contraste.jpg)
+- [05-footprint-profil-iceberg-et-valeurs-sous-bougies.jpg](references/05-footprint-profil-iceberg-et-valeurs-sous-bougies.jpg)
+- [05-iceberg-alerte.jpg](references/05-iceberg-alerte.jpg)
+- [05-iceberg-indicateur-reglages.jpg](references/05-iceberg-indicateur-reglages.jpg)
+- [06-heatmap-niveau-vide-par-stop-run.jpg](references/06-heatmap-niveau-vide-par-stop-run.jpg)
+- [07-footprint-poc-et-desequilibres.jpg](references/07-footprint-poc-et-desequilibres.jpg)
+- [07-footprint-volume-delta-et-profil.jpg](references/07-footprint-volume-delta-et-profil.jpg)
+- [07-footprint-zone-absorption-et-desequilibres.jpg](references/07-footprint-zone-absorption-et-desequilibres.jpg)
+- [08-stop-run-au-footprint.jpg](references/08-stop-run-au-footprint.jpg)
+- [10-cvd-plus-bas-et-prix-plat.jpg](references/10-cvd-plus-bas-et-prix-plat.jpg)
+- [10-profil-plage-fixe-bougies-masquees.jpg](references/10-profil-plage-fixe-bougies-masquees.jpg)
+- [10-valeurs-delta-volume-sous-bougies.jpg](references/10-valeurs-delta-volume-sous-bougies.jpg)
+- [13-cvd-divergence-absorption.jpg](references/13-cvd-divergence-absorption.jpg)
+- [13-cvd-en-bougies.jpg](references/13-cvd-en-bougies.jpg)
+- [13-valeurs-sous-bougies-delta-pct.jpg](references/13-valeurs-sous-bougies-delta-pct.jpg)
+- [14-cvd-en-bougies-divergence.jpg](references/14-cvd-en-bougies-divergence.jpg)
+- [14-gros-trades-filtres-1-min.jpg](references/14-gros-trades-filtres-1-min.jpg)
+- [14-profil-de-compression-value-area.jpg](references/14-profil-de-compression-value-area.jpg)
+- [14-profil-de-la-premiere-a-la-derniere-bulle.jpg](references/14-profil-de-la-premiere-a-la-derniere-bulle.jpg)
+- [16-deepdom-iceberg-tracker.jpg](references/16-deepdom-iceberg-tracker.jpg)
+- [16-reglage-source-mbp-mbo.jpg](references/16-reglage-source-mbp-mbo.jpg)
+- [18-composite-10-jours-et-lvn.jpg](references/18-composite-10-jours-et-lvn.jpg)
+- [18-footprint-absorption-sous-ib.jpg](references/18-footprint-absorption-sous-ib.jpg)
+- [19-composite-90-jours.jpg](references/19-composite-90-jours.jpg)
+- [19-profils-seance-cash-et-nuit.jpg](references/19-profils-seance-cash-et-nuit.jpg)
+- [19-volume-profile-value-area.jpg](references/19-volume-profile-value-area.jpg)
+- [20-pbd-profil-sur-range-journalier.jpg](references/20-pbd-profil-sur-range-journalier.jpg)
+- [21-footprint-cellule-anormale.jpg](references/21-footprint-cellule-anormale.jpg)
+- [21-footprint-fond-delta-texte-desequilibre.jpg](references/21-footprint-fond-delta-texte-desequilibre.jpg)
+- [22-stats-sous-bougies-stop-run.jpg](references/22-stats-sous-bougies-stop-run.jpg)
+
+Les vignettes viennent des aperçus YouTube (320 × 180) : assez pour voir la mise en page et les outils, pas toujours pour lire
+les chiffres. Pour la pleine résolution, télécharger les vidéos en local (voir plus haut) et extraire les images avec
+ffmpeg aux horodatages des rapports.

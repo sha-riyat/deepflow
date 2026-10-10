@@ -201,3 +201,8 @@ Déjà présents :
   run (pic de volume, delta ≥ 33 %) : il suffit de les lire, sans nouveau développement.
 - Liquidations, CVD et divergences CVD, VWAP ±1/2/3σ, heatmap, footprint, marques d'absorption :
   la stratégie de divergence se prépare déjà avec les outils existants.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/22-kYX05qESJMs/ (nom du fichier = heure de la première image).
+- Images clés : ../references/22-stats-sous-bougies-stop-run.jpg

@@ -141,3 +141,7 @@ alertes « mur ». Le README indique que le carnet (heatmap, DOM) n'est pas disp
 4. **Fiche d'aide « File d'attente et appariement (FIFO) »** : expliquer la priorité prix puis temps,
    pourquoi la file n'est pas visible sur Binance, et ce qu'un iceberg y change ; article dans
    `web/lib/help/flow.js`.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/03-z2cf2KIOA7I/ (nom du fichier = heure de la première image).

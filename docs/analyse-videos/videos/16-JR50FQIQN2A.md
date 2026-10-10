@@ -150,3 +150,8 @@ suivant : c'est le glissement de prix.
 4. **Filtre « près des niveaux seulement »** pour les marques absorption, gros prints et
    recharges : n'afficher que celles proches de la VAH, de la VAL, d'un LVN ou d'un haut / bas de
    la veille. Simple filtre de distance en lignes dans les calques (`web/lib/layers`).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/16-JR50FQIQN2A/ (nom du fichier = heure de la première image).
+- Images clés : ../references/16-deepdom-iceberg-tracker.jpg, ../references/16-reglage-source-mbp-mbo.jpg

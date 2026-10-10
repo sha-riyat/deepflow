@@ -141,3 +141,7 @@ Vidéo de parcours et de finance générale, **pas d'order flow**. Étapes propo
    Cumuler les R par date et ajouter un petit graphique dans le panneau du journal.
 3. **Fiche d'aide « juger une méthode »** (espérance, drawdown, Sharpe, coûts et frais) dans
    `web/lib/help`.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/15-3Zs52kfCwiU/ (nom du fichier = heure de la première image).

@@ -128,3 +128,7 @@ Manques, par utilité :
 - **Scénario long (08:38).** La bande à atteindre (haute ou basse) et ce qui est « cassé puis retesté » (VWAP ou bande) ne sont pas explicites.
 - **Exemple de 09:11.** « We shorted out of the market » : le sens du trade proposé (achat dans les bandes basses ?) n'est pas clair.
 - **Tableau des algorithmes (01:04, 04:16).** Son contenu exact n'est pas lu à l'oral ; sans image, on ne connaît que « price driven » / « volume driven » et la durée de 30 min à 1 jour.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/11-R5L890juvRw/ (nom du fichier = heure de la première image).

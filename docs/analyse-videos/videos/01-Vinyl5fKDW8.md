@@ -145,3 +145,7 @@ financement, OI.
 4. **Prix de liquidation approximatif dans l'outil position** (la fiche dit déjà que le levier
    « rapproche la liquidation ») : formule simplifiée marge isolée, affichée à titre indicatif dans
    `drawtools.js`.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/01-Vinyl5fKDW8/ (nom du fichier = heure de la première image).

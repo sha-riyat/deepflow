@@ -126,3 +126,8 @@ Classement par utilité pour un débutant :
    ajouter aux alertes existantes (alerte manuelle, pas un signal de trade).
 4. **Repère « vide de liquidité »** : une bougie ou une ligne presque vide juste après une cassure
    à très gros volume, mise en évidence sur le footprint (`shared/footprint.js`).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/05-WPAP7JaVzF4/ (nom du fichier = heure de la première image).
+- Images clés : ../references/05-footprint-profil-iceberg-et-valeurs-sous-bougies.jpg, ../references/05-iceberg-alerte.jpg, ../references/05-iceberg-indicateur-reglages.jpg

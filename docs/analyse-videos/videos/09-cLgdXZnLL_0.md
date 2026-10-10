@@ -113,3 +113,7 @@ classement à la Robbins World Cup : 69 %, environ 90 %, 218 % et plus de 160 % 
 4. **Plage horaire personnelle.** Griser la période hors de « mes heures de trading », réglable dans les
    préférences (`web/lib/store.ts`, `web/lib/layers/marketsessions.js`). Les sessions Asie / Londres / NY
    existent déjà, mais pas une plage libre.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/09-cLgdXZnLL_0/ (nom du fichier = heure de la première image).

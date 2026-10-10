@@ -268,3 +268,8 @@ Les cas présentés sont choisis : il le dit lui-même (« un exemple exemplaire
 - Le chiffre de « 104 » pour l'imbalance MOO (millions de dollars ou nombre d'actions : il hésite lui-même).
 - L'explication de la couverture des teneurs de marché vers 4:42, qui se contredit.
 - Le nom de la chaîne gratuite (« worldass edge », probablement « World Class Edge »).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/21-KfjjHv7DB8o/ (nom du fichier = heure de la première image).
+- Images clés : ../references/21-footprint-cellule-anormale.jpg, ../references/21-footprint-fond-delta-texte-desequilibre.jpg

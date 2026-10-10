@@ -128,3 +128,8 @@ de la veille et 1 continuation après une cassure. Il montre d'abord son compte 
 4. **Volume de la bougie en multiple de la moyenne des N précédentes**, écrit sous la bougie, pour
    juger une cassure ou une bougie « non participée » (différent du volume relatif par heure
    noté).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/18-9IliXww64uM/ (nom du fichier = heure de la première image).
+- Images clés : ../references/18-composite-10-jours-et-lvn.jpg, ../references/18-footprint-absorption-sous-ib.jpg

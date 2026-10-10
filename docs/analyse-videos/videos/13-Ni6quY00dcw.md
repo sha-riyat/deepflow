@@ -174,3 +174,8 @@ Vérifié dans `shared/cvd.js`, `web/lib/layers/divergence.js`, `web/lib/chart/p
    - « le CVD = agression ET absorption » ;
    - le piège des divergences sur une séance entière ;
    - le contre-exemple de l'iceberg (fort delta absorbé = poursuite).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/13-Ni6quY00dcw/ (nom du fichier = heure de la première image).
+- Images clés : ../references/13-cvd-divergence-absorption.jpg, ../references/13-cvd-en-bougies.jpg, ../references/13-valeurs-sous-bougies-delta-pct.jpg

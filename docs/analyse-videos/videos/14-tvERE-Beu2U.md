@@ -182,3 +182,8 @@ Chaque point a été vérifié dans le code avant d'être classé comme manquant
 10. **CVD en chandeliers.** Aujourd'hui le CVD est tracé en ligne (`web/lib/chart/panes.js`). Implémentation : calculer l'ouverture, le plus haut, le plus bas et la clôture du CVD de chaque bougie dans le panneau.
 11. **Statistiques du journal par jour de la semaine.** Implémentation : ajouter un regroupement par `getUTCDay()` dans les stats du journal (`web/lib/journal.ts`).
 12. **Bulles sous le seuil en couleur neutre** plutôt que masquées. Implémentation : un mode d'affichage à deux niveaux pour les gros prints, en ajoutant un réglage dans `web/lib/indicators.js`.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/14-tvERE-Beu2U/ (nom du fichier = heure de la première image).
+- Images clés : ../references/14-cvd-en-bougies-divergence.jpg, ../references/14-gros-trades-filtres-1-min.jpg, ../references/14-profil-de-compression-value-area.jpg, ../references/14-profil-de-la-premiere-a-la-derniere-bulle.jpg

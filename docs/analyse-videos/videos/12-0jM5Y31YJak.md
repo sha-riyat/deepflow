@@ -142,3 +142,7 @@ Déjà présents (donc non listés) : CVD de session et divergences CVD, gros pr
 - **Indicateur.** « Deep trades » et « big trades » désignent apparemment le même outil ; son fonctionnement n'est pas expliqué.
 - **Chiffres approximatifs.** Le R:R de la position 1 (« almost 1 to three even more 1:5 ») et la date (« if I'm not wrong, 30 of December ») sont incertains.
 - **Wyckoff.** « Deuxième phase d'accumulation » dans un mouvement baissier : usage du terme discutable ou mal transcrit.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/12-0jM5Y31YJak/ (nom du fichier = heure de la première image).

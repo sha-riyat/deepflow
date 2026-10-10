@@ -198,3 +198,8 @@ Déjà présents :
   (`web/lib/drawings/storage.js`) : un profil tracé en journalier reste visible en 5 min et en 1 min.
 - Gros prints, delta et volume sous la bougie, déséquilibres empilés prolongés jusqu'au retest :
   l'entrée « en limite sur le déséquilibre » se prépare déjà avec les outils existants.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/20-e_RlG84pq6g/ (nom du fichier = heure de la première image).
+- Images clés : ../references/20-pbd-profil-sur-range-journalier.jpg

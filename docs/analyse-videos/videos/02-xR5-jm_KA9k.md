@@ -143,3 +143,7 @@ bulles de trades, fiche d'aide « Agresseurs, bid, ask et delta » et fiche « B
 3. **Alerte spread anormal** : seuil sur le rapport entre le spread courant et sa médiane glissante, dans
    le système d'alertes existant, avec une ligne d'explication dans la fiche « Bid / ask »
    (`web/lib/help/flow.js`).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/02-xR5-jm_KA9k/ (nom du fichier = heure de la première image).

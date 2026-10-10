@@ -108,3 +108,8 @@ au-delà du niveau contredit l'idée d'une « chasse ».
 2. **Zones de hauts / bas égaux.** Regrouper les sommets ou creux pivots distants de moins de N lignes en
    une bande annotée « ×4 ». Implémentation : réutiliser la détection de pivots de `shared/cvd.js`, nouveau
    calque dans `web/lib/layers/`, réglage dans `web/lib/indicators.js`.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/08-3MID2HLZS30/ (nom du fichier = heure de la première image).
+- Images clés : ../references/08-stop-run-au-footprint.jpg

@@ -119,3 +119,8 @@ Classement par utilité pour un débutant :
    que la liquidité éloignée.
 4. **Flipping** : marquer un mur vendeur consommé suivi d'un rejet du prix au-dessus. C'est un
    repère à afficher, pas un signal (règle du projet).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/04-r1cIAW0zr3Q/ (nom du fichier = heure de la première image).
+- Images clés : ../references/04-heatmap-carnet-et-dom.jpg, ../references/04-heatmap-cassure-du-plus-bas.jpg, ../references/04-heatmap-nuage-des-teneurs-de-marche.jpg, ../references/04-heatmap-reglage-du-contraste.jpg

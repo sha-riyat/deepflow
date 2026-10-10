@@ -92,3 +92,8 @@ Il n'y a pas de séance cash. Pour le crypto, on prend le jour UTC, ou un profil
 - Gros trades sommés par niveau dans la bougie (Deep Trades).
 - « Chemin de moindre résistance » : comparer la profondeur au-dessus et en dessous du prix.
 - Stop suiveur dans l'outil position.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/00-Pz8f0wWW12M/ (nom du fichier = heure de la première image).
+- Images clés : ../references/00-deep-trades-fenetre-de-reglages.jpg, ../references/00-deep-trades-gros-ordres-par-prix.jpg, ../references/00-footprint-et-dom-deepcharts.jpg, ../references/00-outil-position.jpg

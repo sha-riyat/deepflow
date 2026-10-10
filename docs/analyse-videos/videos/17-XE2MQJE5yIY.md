@@ -117,3 +117,7 @@ ou sous la dernière grosse bulle, retournements fréquents.
    position (`web/lib/drawings`), à côté du point mort déjà noté.
 3. **Fil d'actualités en direct** (titres horodatés posés sur l'axe du temps). Utilité faible ;
    nécessite une source externe gratuite et un réglage pour le désactiver.
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/17-XE2MQJE5yIY/ (nom du fichier = heure de la première image).

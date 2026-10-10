@@ -3,7 +3,8 @@
 Ce plan reprend tout ce qui manque à deepflow d'après l'analyse des 23 vidéos (voir SYNTHESE.md et videos/). Il est
 découpé en lots indépendants : chacun donne un ou plusieurs commits (une action = un commit, règles du CLAUDE.md).
 Chaque élément indique la ou les vidéos sources (numéros des fichiers de videos/), le principe, les données, les
-fichiers à toucher, les réglages, les tests et la fiche d'aide.
+fichiers à toucher, les réglages, les tests et la fiche d'aide. Pour voir à quoi ressemble l'outil d'origine :
+references/ (images clés nommées par outil, préfixées du numéro de vidéo) et images/NN-ID/ (toute la vidéo).
 
 Rappels du projet : analyse manuelle uniquement (aucun signal automatique, scanner ni backtest) ; calculs purs dans
 `shared/` testés avec `node --test` ; dessin Canvas hors React dans `web/lib/layers` ou `web/lib/chart` ; réglages

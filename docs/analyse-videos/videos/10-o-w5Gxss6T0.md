@@ -86,3 +86,8 @@ Fabio y annonce « plus de 500 % sur 12 mois » et « classé 4 fois » à la co
    préférence dans `web/lib/store.ts`).
 4. **Bougie record de la séance.** Marquer la bougie dont le volume (ou le |delta|) est le plus élevé
    depuis le début de la session UTC (panneau statistiques par bougie, `web/lib/chart/panes.js`).
+
+## Images de référence
+
+- Planches de 12 images horodatées couvrant toute la vidéo : ../images/10-o-w5Gxss6T0/ (nom du fichier = heure de la première image).
+- Images clés : ../references/10-cvd-plus-bas-et-prix-plat.jpg, ../references/10-profil-plage-fixe-bougies-masquees.jpg, ../references/10-valeurs-delta-volume-sous-bougies.jpg
