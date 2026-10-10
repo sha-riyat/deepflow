@@ -139,6 +139,24 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   murs actifs), DOM, Trades, Marchés, Alertes (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
 
+## Replay (entraînement)
+
+Bouton **Replay** de la barre du haut : symbole, jour passé (jusqu'à hier), heure de départ en UTC
+et vitesse. Le collecteur rejoue chaque trade de la journée (archives Binance Vision, téléchargées
+une fois puis gardées dans `data/cache`) comme s'il arrivait en direct : bougies, footprint, CVD,
+bulles, gros prints, profils, value area de la veille et état de l'enchère, panneau Flux et repères
+se construisent sous les yeux, sans rien laisser voir de la suite (toutes les requêtes s'arrêtent à
+l'heure rejouée).
+
+- Départ en pause ; commandes dans la barre d'état : lecture / pause, vitesse ×1, ×5, ×20, ×60 ou
+  ×300, « 1 bougie » (jusqu'à la clôture de la bougie en cours), « 1 h », « Direct » (fin du replay).
+  La journée suivante est enchaînée à minuit, jusqu'à hier.
+- Pendant le replay, le direct est suspendu (le collecteur suit un seul symbole à la fois) et les
+  alertes ne sont pas évaluées.
+- Dessins du replay séparés de ceux du direct.
+- Indisponible en replay : carnet d'ordres (heatmap, DOM), que Binance n'archive pas ;
+  liquidations, sauf les jours où le collecteur tournait.
+
 ## Historique
 
 - Bougies temps sans footprint : klines Binance, depuis la cotation de la paire.
@@ -171,8 +189,8 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 2. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
    ranges des sessions Asie / Londres / New York, historique du financement et de la prime perp /
    spot, CVD et volume agrégés sur plusieurs plateformes gratuites (Bybit, OKX).
-3. **Apprentissage** : explication de chaque indicateur dans l'interface, mode replay (rejouer une
-   journée passée bougie par bougie pour s'entraîner).
+3. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
+   (notes et captures liées à un graphique). Le replay des archives est en place (voir plus haut).
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
 backtest) a été retiré de l'application et archivé sur la branche `archive/moteur-strategie`.
@@ -186,7 +204,7 @@ backtest) a été retiré de l'application et archivé sur la branche `archive/m
 | `BUCKET` / `FP_BUCKET` | auto | Tranches de la heatmap et du footprint (sinon selon le prix) |
 | `HEAT_HOURS` | `4` | Profondeur de la heatmap en mémoire |
 | `RECORD` | désactivé | `1` : enregistre le carnet dans `data/*.ndjson.gz` |
-| `REPLAY`, `SPEED` | — , `1` | Rejouer un enregistrement |
+| `REPLAY`, `SPEED` | — , `1` | Rejouer un enregistrement du carnet (`RECORD=1`) ; pour les trades seuls, le bouton Replay suffit |
 | `COLLECTOR_PORT` | `8787` | Port du collecteur (l'interface est sur 3000) |
 
 ## Limites connues
