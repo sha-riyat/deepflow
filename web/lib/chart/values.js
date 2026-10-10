@@ -7,6 +7,8 @@ import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
 import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
+import { nextMarkers } from '@shared/sessions.js';
+import { formatDuration } from '@shared/measures.js';
 
 const DAY = 86_400_000;
 
@@ -47,6 +49,16 @@ export function indicatorValues(chart, items) {
     const { prev, today } = prevAndToday(data.dailySessions);
     const loc = openLocation(prev, today);
     out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
+  }
+  if (L.times) {
+    // Prochains repères : délai avant l'ouverture de New York et avant le financement.
+    const show = opts.times.show;
+    const now = Date.now();
+    const next = nextMarkers(now, { ny: show !== 'funding', funding: show !== 'ny' && chart.meta?.market === 'futures' });
+    const parts = [];
+    if (next.ny) parts.push(`NY dans ${formatDuration(next.ny - now)}`);
+    if (next.funding) parts.push(`financement dans ${formatDuration(next.funding - now)}`);
+    out.times = parts.join(' · ');
   }
   if (L.naked && style !== 'tpo') {
     const list = nakedList(data.dailySessions, data.bars);
