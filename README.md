@@ -76,6 +76,9 @@ Ouvrir http://localhost:3000. Le moteur observe le marché 5 minutes avant d'ém
 - **Profil de volume** : par jour UTC, par semaine (depuis lundi) ou sur la plage visible (épinglé à
   droite, comme le « visible range » de TradingView) ; type volume, achats / ventes ou delta ; value
   area en zone et lignes ; POC et value area en développement (en escalier).
+- **POC non testés** : POC des 7 dernières sessions UTC qu'aucun prix ultérieur n'a retouché (étendue
+  complète des sessions suivantes et direct), indépendants du profil affiché ; trait jusqu'au bord
+  droit, ou étiquette fléchée en haut / en bas quand le niveau est hors de l'échelle de prix.
 - **Vue TPO** : une colonne par session UTC, une lettre par sous-période (30 min, 15 min ou 1 h ;
   A à X puis a à x), lettres, blocs ou vue éclatée (chaque période dans sa colonne), couleurs selon
   la value area ou par période ; lignes regroupées selon le zoom. POC et value area (70 %) au
