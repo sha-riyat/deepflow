@@ -38,10 +38,21 @@ export function loadSet(key) {
   return parseDrawings(read(KEY))[key] ?? [];
 }
 
-export function saveSet(key, list) {
+// Éditeurs à prévenir quand un jeu change : plusieurs graphiques du même symbole partagent ses
+// dessins (`from` : l'éditeur qui enregistre, déjà à jour).
+const watchers = new Set();
+
+export function saveSet(key, list, from = null) {
   const all = parseDrawings(read(KEY));
   all[key] = list;
   write(KEY, serializeDrawings(all));
+  for (const w of watchers) if (w.from !== from) w.fn(key);
+}
+
+export function watchSets(fn, from) {
+  const w = { fn, from };
+  watchers.add(w);
+  return () => watchers.delete(w);
 }
 
 export function loadStyles() {

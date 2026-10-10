@@ -5,7 +5,7 @@ import { cleanCalc, positionPoints, snapToBar } from '@shared/measures.js';
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
-import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles } from './storage.js';
+import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles, watchSets } from './storage.js';
 
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
 
@@ -26,6 +26,11 @@ export class DrawingEditor {
     this.styles = loadStyles();
     this.calc = loadCalc();
     this.magnet = loadMagnet(); // points collés aux prix OHLC des bougies
+    this.unwatch = watchSets((key) => key === this.key && this.#reload(), this);
+  }
+
+  destroy() {
+    this.unwatch();
   }
 
   // Charge les dessins du symbole affiché quand il change. Les dessins faits en replay des archives
@@ -40,6 +45,16 @@ export class DrawingEditor {
     this.draft = null;
     this.drag = null;
     this.editing = null;
+    this.#changed();
+  }
+
+  // Jeu modifié par un autre graphique du même symbole : relu (sauf pendant un tracé ou un
+  // déplacement), sélection et note en cours de saisie gardées si elles existent encore.
+  #reload() {
+    if (this.draft || this.drag) return;
+    this.list = loadSet(this.key);
+    if (!this.list.some((d) => d.id === this.sel)) this.sel = null;
+    if (!this.list.some((d) => d.id === this.editing)) this.editing = null;
     this.#changed();
   }
 
@@ -269,7 +284,7 @@ export class DrawingEditor {
   }
 
   #save() {
-    if (this.key) saveSet(this.key, this.list);
+    if (this.key) saveSet(this.key, this.list, this);
     this.#changed();
   }
 

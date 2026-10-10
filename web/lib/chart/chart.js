@@ -95,6 +95,7 @@ export class Chart {
   destroy() {
     cancelAnimationFrame(this.raf);
     this.observer.disconnect();
+    this.drawings.destroy();
     for (const c of [this.heatCanvas, this.mainCanvas, this.crossCanvas]) c.remove();
   }
 
