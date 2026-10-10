@@ -105,7 +105,12 @@ export class Chart {
       c.width = Math.round(W * dpr);
       c.height = Math.round(H * dpr);
     }
+    const before = this.scale.w;
     this.#layout();
+    // Vue calculée sur une largeur dérisoire (fenêtre réduite ou cachée au chargement) : on recalcule
+    // l'échelle de temps standard, sinon le graphique reste dézoomé de plusieurs mois.
+    const s = this.scale;
+    if (before < 200 && s.w >= 200 && s.follow && s.mode === 'time' && this.spec) s.msPerPx = (this.spec.param * 120) / s.w;
     this.invalidate();
   }
 
