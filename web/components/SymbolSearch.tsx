@@ -1,5 +1,6 @@
 'use client';
-// Recherche de symbole (fenêtre modale) : filtre instantané, flèches + Entrée, prix et 24 h.
+// Recherche de symbole (fenêtre modale) : marché (futures perpétuels ou spot), filtre instantané,
+// flèches + Entrée, prix et 24 h. Entrée sur un symbole absent de la liste l'ouvre quand même.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
@@ -9,19 +10,21 @@ import { getLive } from '@/lib/store';
 
 const vol = (v: number) => (v >= 1e9 ? `${fmt(v / 1e9, 2)} Md` : `${fmt(v / 1e6, 1)} M`);
 
-export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; onClose: () => void; onSelect: (s: string) => void }) {
+export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; onClose: () => void; onSelect: (s: string, market: string) => void }) {
   const [term, setTerm] = useState(initial);
+  const [market, setMarket] = useState(getLive().meta?.market ?? 'futures');
   const [rows, setRows] = useState<Ticker[] | null>(null);
   const [sel, setSel] = useState(0);
   const list = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Binance injoignable : le collecteur répond par une erreur, la liste reste vide (sans planter).
-    fetch(`/api/tickers?market=${getLive().meta?.market ?? 'futures'}`)
+    setRows(null);
+    fetch(`/api/tickers?market=${market}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setRows(Array.isArray(d) ? d : []))
       .catch(() => setRows([]));
-  }, []);
+  }, [market]);
 
   const shown = useMemo(() => {
     const t = term.trim().toUpperCase();
@@ -34,8 +37,9 @@ export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; 
 
   const choose = (symbol: string) => {
     onClose();
-    onSelect(symbol);
+    onSelect(symbol, market);
   };
+  const typed = term.trim().toUpperCase();
 
   return (
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -53,10 +57,16 @@ export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; 
               else if (e.key === 'ArrowDown') setSel(Math.min(shown.length - 1, sel + 1));
               else if (e.key === 'ArrowUp') setSel(Math.max(0, sel - 1));
               else if (e.key === 'Enter' && shown[sel]) choose(shown[sel].symbol);
+              else if (e.key === 'Enter' && /^[A-Z0-9]{2,20}$/.test(typed)) choose(typed);
               else return;
               e.preventDefault();
             }}
           />
+          <div className="seg">
+            {[['futures', 'Futures'], ['spot', 'Spot']].map(([k, label]) => (
+              <button key={k} type="button" className={market === k ? 'on' : ''} onClick={() => setMarket(k as 'futures' | 'spot')}>{label}</button>
+            ))}
+          </div>
         </div>
         <div className="modal-list" ref={list}>
           {rows === null && <p className="note pad">Chargement des marchés…</p>}
@@ -65,7 +75,7 @@ export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; 
             <div key={r.symbol} className={`modal-row${i === sel ? ' sel' : ''}`} onMouseEnter={() => setSel(i)} onClick={() => choose(r.symbol)}>
               <span className="left">
                 <b>{r.symbol.replace(/USDT$/, '')}</b>
-                <span className="muted"> USDT · Perpétuel</span>
+                <span className="muted"> USDT · {market === 'futures' ? 'Perpétuel' : 'Spot'}</span>
               </span>
               <span>{fmt(r.last, 6)}</span>
               <span className={r.change >= 0 ? 'pos' : 'neg'}>{sgn(r.change)} %</span>

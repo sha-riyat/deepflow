@@ -67,8 +67,9 @@ function LegendRow({ color, label, value, defs, opts, setOpt, onRemove }: RowPro
   );
 }
 
-export function Legend({ pane, prefs, update, bar, values }: { pane: Pane; prefs: UiPrefs; update: Update; bar: Bar | null; values: Record<string, string> }) {
-  const collapsed = !prefs.legend;
+// `compact` : graphique non actif d'une grille, la liste des indicateurs reste repliée.
+export function Legend({ pane, prefs, update, bar, values, compact = false }: { pane: Pane; prefs: UiPrefs; update: Update; bar: Bar | null; values: Record<string, string>; compact?: boolean }) {
+  const collapsed = !prefs.legend || compact;
   const meta = usePane(pane, (s) => s.meta);
   const dataStatus = usePane(pane, (s) => s.dataStatus);
   const tpo = prefs.style === 'tpo';

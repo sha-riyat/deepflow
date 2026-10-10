@@ -15,7 +15,7 @@ import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { activate, dropPane, engine, paneOf } from '@/lib/engine';
 import { getLive, type UiPrefs } from '@/lib/store';
-import { GRIDS, loadLayout, saveLayout, type Layout, type Rail as RailState } from '@/lib/layout';
+import { GRIDS, loadLayout, newId, saveLayout, type Layout, type Rail as RailState } from '@/lib/layout';
 import { beep } from '@/lib/sound';
 import { toolForKey } from '@/lib/drawings/tools.js';
 import type { FlowState } from '@/lib/types';
@@ -84,14 +84,27 @@ export default function Workspace() {
     setRail({ ...rail, open: toggleOpen(rail.open, id) });
   }, [setRail]);
 
-  // Changer de symbole (graphique actif) : changer de session, même marché ; le collecteur la
-  // démarre au besoin. Sans effet sur un graphique en replay.
-  const selectSymbol = useCallback((symbol: string) => {
+  // Changer de symbole (graphique actif) : changer de session (marché choisi, sinon le même) ; le
+  // collecteur la démarre au besoin. Sans effet sur un graphique en replay.
+  const selectSymbol = useCallback((symbol: string, market?: string) => {
     const pane = engine.active;
     const m = getLive().meta;
-    if (!pane || pane.source === 'replay' || !m || symbol === m.symbol) return;
-    setKey(pane.id, `${m.market}:${symbol}`);
+    if (!pane || pane.source === 'replay') return;
+    const key = `${market ?? m?.market ?? 'futures'}:${symbol}`;
+    if (key !== pane.source) setKey(pane.id, key);
   }, [setKey]);
+
+  // Grille : graphiques ajoutés en copie du graphique actif (symbole et réglages) ; ceux qui ne
+  // tiennent plus restent mémorisés pour un retour à une grille plus grande.
+  const setGrid = useCallback((grid: string) => {
+    const l = layoutRef.current;
+    const n = GRIDS[grid].n;
+    const src = l.panes.find((p) => p.id === l.active) ?? l.panes[0];
+    const panes = [...l.panes];
+    while (panes.length < n) panes.push({ ...src, id: newId(), link: null });
+    const active = panes.slice(0, n).some((p) => p.id === l.active) ? l.active : panes[0].id;
+    commit({ ...l, grid, panes, active });
+  }, [commit]);
 
   // Graphique actif : le plus récent cliqué (ou le premier visible).
   useEffect(() => activate(paneOf(activeSpec.id)), [activeSpec.id]);
@@ -179,6 +192,8 @@ export default function Workspace() {
         prefs={activeSpec.prefs}
         update={update}
         onSymbol={() => setSearch('')}
+        grid={layout.grid}
+        onGrid={setGrid}
         onAlert={() => {
           const q = getLive().quote;
           if (q) setPreset({ price: Number(((q.bid + q.ask) / 2).toFixed(6)), n: Date.now() });
@@ -189,7 +204,8 @@ export default function Workspace() {
         <DrawingBar />
         <div className={`charts grid-${layout.grid}`}>
           {visible.map((spec) => (
-            <ChartView key={spec.id} spec={spec} source={sourceOf(spec.id, spec.key)} active={spec.id === activeSpec.id && visible.length > 0}
+            <ChartView key={spec.id} spec={spec} source={sourceOf(spec.id, spec.key)} active={spec.id === activeSpec.id}
+              compact={visible.length > 1 && spec.id !== activeSpec.id}
               onActivate={() => spec.id !== layoutRef.current.active && commit({ ...layoutRef.current, active: spec.id })}
               update={(patch, kind) => updatePane(spec.id, patch, kind)} />
           ))}

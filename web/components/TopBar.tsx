@@ -1,10 +1,11 @@
 'use client';
 // Barre du haut : symbole, intervalles favoris + menu complet, style, footprint, Indicateurs (dont TPO),
-// Alerte, état de connexion, réglages d'affichage, plein écran.
+// Alerte, grille de graphiques, replay, état de connexion, réglages d'affichage, plein écran.
+// Les réglages s'appliquent au graphique actif.
 import { useState } from 'react';
 import {
   AlarmClockPlusIcon, Analytics01Icon, ChartAverageIcon, ChartBarLineIcon, ChartCandlestickIcon, ChartIncreaseIcon,
-  ChartLineData01Icon, FullScreenIcon, FunctionSquareIcon, GridTableIcon, LayoutListIcon, Search01Icon, Settings02Icon,
+  ChartLineData01Icon, FullScreenIcon, FunctionSquareIcon, GridTableIcon, GridViewIcon, LayoutListIcon, Search01Icon, Settings02Icon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon, MenuButton, MenuItem, OptionRows, Switch, type OptDefs } from './ui';
@@ -16,6 +17,7 @@ import { niceStep } from '@/lib/chart/axes.js';
 import { fmt } from '@/lib/fmt.js';
 import { FP_OPTIONS, GROUPS, LAYERS } from '@/lib/indicators.js';
 import { useLive, type UiPrefs } from '@/lib/store';
+import { GRIDS } from '@/lib/layout';
 
 export const TYPES: Record<string, string> = { tick: 'Ticks', volume: 'Volume', range: 'Range', delta: 'Delta', renko: 'Renko' };
 export const INTERVALS: Record<number, string> = {
@@ -56,11 +58,22 @@ interface Props {
   update: (patch: Partial<UiPrefs>, kind: Kind) => void;
   onSymbol: () => void;
   onAlert: () => void;
+  grid: string;
+  onGrid: (grid: string) => void;
+}
+
+// Aperçu d'une grille : une case par graphique, disposée comme dans l'espace de travail.
+function GridIcon({ id }: { id: string }) {
+  return (
+    <span className={`grid-ico charts grid-${id}`}>
+      {Array.from({ length: GRIDS[id].n }, (_, i) => <i key={i} />)}
+    </span>
+  );
 }
 
 const CONN_TEXT: Record<string, string> = { synced: 'En direct', syncing: 'Synchronisation…', 'depth connected': 'Carnet connecté', 'trades connected': 'Trades connectés' };
 
-export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
+export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid }: Props) {
   const meta = useLive((s) => s.meta);
   const conn = useLive((s) => s.conn);
   const status = useLive((s) => s.status);
@@ -184,6 +197,20 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
         <span>Alerte</span>
       </button>
       <div className="tb-right">
+        <MenuButton icon={GridViewIcon} caret={false} align="right" title="Grille de graphiques">
+          {(close) => (
+            <>
+              <div className="pop-title">Graphiques</div>
+              {Object.entries(GRIDS).map(([id, g]) => (
+                <button key={id} type="button" className={`pop-item${grid === id ? ' on' : ''}`} onClick={() => (onGrid(id), close())}>
+                  <GridIcon id={id} />
+                  <span>{g.label}</span>
+                </button>
+              ))}
+              <p className="muted pop-note">Chaque graphique a son symbole, son intervalle et ses indicateurs ; un clic le rend actif.</p>
+            </>
+          )}
+        </MenuButton>
         <ReplayLauncher />
         <span className={`conn ${conn}`}>
           <i />

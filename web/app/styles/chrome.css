@@ -341,3 +341,8 @@
 /* Réglages dans un menu (Footprint) */
 .pop-opts { display: grid; align-content: start; gap: 8px; padding-bottom: 6px; }
 .pop-opts .lg-opt { padding: 0 10px; }
+
+/* Aperçu des grilles (menu Graphiques) */
+.grid-ico.charts { display: inline-grid; width: 22px; height: 16px; gap: 2px; padding: 0; background: none; flex: none; }
+.grid-ico i { border: 1.5px solid currentColor; border-radius: 2px; opacity: 0.8; }
+.pop-note { margin: 4px 10px 6px; font-size: 11px; line-height: 1.4; max-width: 230px; }

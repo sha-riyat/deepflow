@@ -40,13 +40,14 @@ type Update = (p: Partial<UiPrefs>, kind: 'view' | 'style' | 'layout') => void;
 
 interface Props {
   spec: PaneSpec;
+  compact: boolean; // graphique non actif d'une grille : légende repliée
   source: string; // session suivie : clé directe ou « replay »
   active: boolean;
   onActivate: () => void;
   update: Update;
 }
 
-export function ChartView({ spec, source, active, onActivate, update }: Props) {
+export function ChartView({ spec, source, active, compact, onActivate, update }: Props) {
   const pane = paneOf(spec.id);
   const prefs = spec.prefs;
   const host = useRef<HTMLDivElement>(null);
@@ -109,7 +110,7 @@ export function ChartView({ spec, source, active, onActivate, update }: Props) {
       onMouseLeave={() => setNearNav(false)}
     >
       <div className="chart" ref={host} />
-      <Legend pane={pane} prefs={prefs} update={update} bar={bar} values={values} />
+      <Legend pane={pane} prefs={prefs} update={update} bar={bar} values={values} compact={compact} />
       {active && <DrawingStyle />}
       {active && <NoteEditor />}
       <div className="pane-legends">
