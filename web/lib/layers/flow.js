@@ -2,7 +2,7 @@
 // Inspirés des réglages de Bookmap / DeepCharts (bulles), ATAS / DeepCharts (gros prints)
 // et Exocharts / Kiyotaka (liquidations), adaptés aux données publiques de Binance.
 import { barIndex } from '../chart/panes.js';
-import { groupBigPrints } from '@shared/bigprints.js';
+import { groupBigPrints, topPerBar } from '@shared/bigprints.js';
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -85,19 +85,21 @@ export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 
 // dans DeepCharts et les autres plateformes. Les bulles de volume (calque « Bulles de trades ») sont des
 // camemberts translucides : pour une lecture nette, n'affichez que l'un des deux.
 // Regroupement « par niveau » (par défaut) : les gros ordres du même côté, à la même ligne de prix de la
-// même bougie sont additionnés ; « par ordre » les montre un à un. Seuls les `limit` plus gros de la vue
-// sont dessinés.
+// même bougie sont additionnés ; « par ordre » les montre un à un. Seuls les `perBar` plus gros de chaque
+// bougie, et les `limit` plus gros de la vue, sont dessinés.
 // Position horizontale : centre de la bougie (`align` = 'candle') ou heure exacte ('time').
 // Étiquettes (quantité, « ×n » si plusieurs ordres) : les 3 plus gros, ou toutes, ou aucune ; elles ne se
 // chevauchent jamais.
-export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, align = 'candle' } = {}, geo = null) {
+export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, align = 'candle', perBar = 3 } = {}, geo = null) {
   const seen = all.filter((b) => {
     const x = scale.xAt(b[0], items);
     return x >= -40 && x <= scale.w + 40;
   });
-  const big = groupBigPrints(seen, items, group === 'level' ? row : 0)
-    .map((g) => [columnX(scale, items, geo, g[0], align), g])
-    .sort((a, b) => b[1][2] - a[1][2])
+  // Acheteurs à droite et vendeurs à gauche de la mèche (comme les colonnes ask / bid du footprint) : un achat
+  // et une vente au même prix ne se superposent plus. Au plus `perBar` cercles par bougie, puis `limit` au total.
+  const off = align === 'candle' && geo ? Math.min(8, geo.slot * 0.1) : 0;
+  const big = topPerBar(groupBigPrints(seen, items, group === 'level' ? row : 0), perBar)
+    .map((g) => [columnX(scale, items, geo, g[0], align) + g[3] * off, g])
     .slice(0, limit);
   let max = 0;
   for (const [, b] of big) max = Math.max(max, b[2]);

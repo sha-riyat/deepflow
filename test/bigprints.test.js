@@ -37,3 +37,13 @@ test('gros prints : sans ligne de regroupement, un ordre = un groupe ; avant la 
   assert.equal(out[2][5], -1);
   assert.deepEqual(groupBigPrints([], bars, 1), []);
 });
+
+test('au plus k gros prints par bougie : les plus gros restent, les autres bougies sont épargnées', async () => {
+  const { topPerBar } = await import('../shared/bigprints.js');
+  // [t, prix, quantité, côté, nombre, index de bougie] : la bougie 0 en porte 4, la bougie 1 en porte 1.
+  const groups = [[0, 100, 5, 1, 1, 0], [0, 101, 9, -1, 1, 0], [0, 102, 7, 1, 1, 0], [0, 103, 3, 1, 1, 0], [9, 100, 4, 1, 1, 1]];
+  const out = topPerBar(groups, 2);
+  assert.deepEqual(out.map((g) => g[2]), [9, 7, 4]); // 9 et 7 pour la bougie 0, 4 pour la bougie 1 ; trié par taille
+  assert.equal(topPerBar(groups, 0).length, 5); // sans plafond : tous
+  assert.equal(topPerBar([[0, 100, 5, 1, 1, -1], [0, 100, 6, 1, 1, -1]], 1).length, 2); // hors bougies : gardés
+});

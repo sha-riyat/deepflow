@@ -33,3 +33,18 @@ export function groupBigPrints(prints, items, row) {
   }
   return [...groups.values()].map((g) => [g.tq / g.q, g.pq / g.q, g.q, g.side, g.n, g.i]);
 }
+
+// Garde au plus `k` groupes par bougie, les plus gros (k ≤ 0 : tous). Évite qu'une bougie agitée porte une
+// dizaine de cercles empilés sur sa mèche pendant que les autres restent vides. Retourne les groupes triés du
+// plus gros au plus petit ; ceux hors des bougies chargées (index -1) sont tous gardés.
+export function topPerBar(groups, k) {
+  const sorted = [...groups].sort((a, b) => b[2] - a[2]);
+  if (!(k > 0)) return sorted;
+  const count = new Map();
+  return sorted.filter((g) => {
+    if (g[5] < 0) return true;
+    const c = count.get(g[5]) ?? 0;
+    count.set(g[5], c + 1);
+    return c < k;
+  });
+}

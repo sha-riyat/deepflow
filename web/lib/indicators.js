@@ -40,6 +40,7 @@ export const OPTIONS = {
   big: {
     min: { label: 'Seuil', choices: [[-1, 'Selon l’actif (BTC 50 k $, autres 25 k $)'], [0, 'Auto (0,5 % les plus gros)'], [25_000, '≥ 25 k $'], [50_000, '≥ 50 k $'], [100_000, '≥ 100 k $'], [500_000, '≥ 500 k $'], [1_000_000, '≥ 1 M $']] },
     limit: { label: 'Nombre affiché', choices: [[15, '15 plus gros'], [10, '10 plus gros'], [25, '25 plus gros'], [50, '50 plus gros'], [200, '200']] },
+    perBar: { label: 'Maximum par bougie', choices: [[3, 'Les 3 plus gros'], [2, 'Les 2 plus gros'], [5, 'Les 5 plus gros'], [0, 'Tous']] },
     labels: { label: 'Étiquettes', choices: [['big', 'Les 3 plus gros'], ['all', 'Toutes'], ['none', 'Aucune']] },
     align: { label: 'Position horizontale', choices: [['candle', 'Sur la bougie'], ['time', 'Selon l’heure']] },
     group: { label: 'Regroupement', choices: [['level', 'Par niveau dans la bougie'], ['order', 'Par ordre']] },
