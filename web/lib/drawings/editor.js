@@ -3,7 +3,7 @@
 // dernier style de chaque outil : storage.js.
 import { cleanCalc, positionPoints, snapToBar } from '@shared/measures.js';
 import {
-  DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeOf, textSize, toPixel,
+  DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
 import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles } from './storage.js';
 
@@ -135,7 +135,7 @@ export class DrawingEditor {
 
   down(p) {
     if (!this.enabled()) return false;
-    const pt = this.#point(p);
+    let pt = this.#point(p);
     if (this.draft) {
       // Second clic : ignoré s'il retombe sur le premier point (ligne de longueur nulle).
       const [x, y] = this.#px(this.draft.pts[0]);
@@ -144,6 +144,7 @@ export class DrawingEditor {
       this.#finish();
       return true;
     }
+    if (this.tool === 'avwap') pt = this.#anchor(pt, p);
     if (this.tool) {
       const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: cleanStyle(this.styles[this.tool]) };
@@ -184,7 +185,8 @@ export class DrawingEditor {
     } else if (this.drag) {
       const g = this.drag;
       g.moved = true;
-      if (g.handle >= 0) g.d.pts = setHandle(g.d, g.handle, this.#point(p));
+      const pt = g.d.type === 'avwap' ? this.#anchor(this.#point(p), p) : this.#point(p);
+      if (g.handle >= 0) g.d.pts = setHandle(g.d, g.handle, pt);
       else g.d.pts = movePoints(this.chart.scale, this.#items(), g.orig, p.x - g.from.x, p.y - g.from.y);
       this.chart.invalidate();
     }
@@ -231,9 +233,21 @@ export class DrawingEditor {
     return snapToBar(this.chart.itemAt(this.#items(), p.x), pt, p.y, (v) => scale.yOfPrice(v), { tf });
   }
 
+  // Contexte de calcul des formes (voir shapeIn).
+  #view() {
+    const { scale, spec, data } = this.chart;
+    return { scale, items: this.#items(), bars: data.bars, tf: spec.type === 'time' ? spec.param : null };
+  }
+
+  // VWAP ancré : l'ancre est le début de la bougie sous la souris.
+  #anchor(pt, p) {
+    const bar = this.chart.itemAt(this.#items(), p.x);
+    return bar ? { t: bar.t0, p: pt.p } : pt;
+  }
+
   #hit(p) {
-    const { w, h } = this.chart.scale;
-    const shapes = this.list.map((d) => shapeOf(d, d.pts.map((pt) => this.#px(pt)), { w, h }));
+    const view = this.#view();
+    const shapes = this.list.map((d) => shapeIn(d, view));
     return hitTest(shapes, p.x, p.y, 6, this.list.findIndex((d) => d.id === this.sel));
   }
 

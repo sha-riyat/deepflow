@@ -170,3 +170,23 @@ test('dessins : aimant sur l’ouverture, le plus haut, le plus bas ou la clôtu
   assert.deepEqual(snapToBar(bar, { t: 1, p: 140 }, yOf(140), yOf), { t: 1, p: 140 }); // trop loin (120 px) : libre
   assert.deepEqual(snapToBar(null, pt, 0, yOf), pt);
 });
+
+test('dessins : VWAP ancré (cumul depuis la bougie d’ancrage)', async () => {
+  const { anchoredVwap } = await import('../shared/measures.js');
+  const k = [
+    { t0: 0, t1: 59, pv: 100 * 1, v: 1 },
+    { t0: 60, t1: 119, pv: 110 * 3, v: 3 },
+    { t0: 120, t1: 179, pv: 0, v: 0 },
+    { t0: 180, t1: 239, pv: 90 * 4, v: 4 },
+  ];
+  const { points, partial } = anchoredVwap(k, 60);
+  assert.equal(partial, false);
+  assert.deepEqual(points.map((q) => q.vwap), [110, 110, (330 + 360) / 7]); // bougie sans volume : valeur reprise
+  assert.equal(anchoredVwap(k, -100).partial, true); // ancre avant les données chargées
+  assert.deepEqual(anchoredVwap(k, 1000).points, []);
+  assert.equal(anchoredVwap(k, 90).points[0].vwap, 110); // ancre au milieu d'une bougie : elle est incluse
+  // Forme : la poignée est le premier point de la courbe, les segments hors de la vue sont ignorés.
+  const sh = shapeOf({ type: 'avwap' }, [[0, 0]], { w: 100, h: 100 }, { curve: [[-50, 10], [-20, 12], [10, 14], [40, 15], [150, 16], [200, 16]] });
+  assert.deepEqual(sh.handles, [[-50, 10]]);
+  assert.equal(sh.segs.length, 3);
+});

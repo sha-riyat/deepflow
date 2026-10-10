@@ -1,5 +1,6 @@
 // Habillage propre à chaque outil de dessin (étiquettes, zones), après le tracé commun de
-// drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle, position longue / courte.
+// drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle, position longue / courte,
+// VWAP ancré.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
 import { compact, fmt, qty, sgn } from '../fmt.js';
@@ -112,7 +113,13 @@ function position(ctx, d, shape, { digits, base }) {
   label(ctx, info, target[2] + 6, yE + 8.5, C.white, { weight: 600 });
 }
 
-const DECOR = { fib, text, ruler, long: position, short: position };
+// VWAP ancré : nom à l'ancre ; historique incomplet signalé (l'ancre précède les bougies chargées).
+function avwap(ctx, d, shape) {
+  const [x, y] = shape.handles[0];
+  label(ctx, shape.partial ? 'VWAP ancré · historique incomplet' : 'VWAP ancré', x + 6, y - 6, shape.partial ? C.ember : d.style.color);
+}
+
+const DECOR = { fib, text, ruler, long: position, short: position, avwap };
 
 export function decorate(ctx, d, shape, opts) {
   DECOR[d.type]?.(ctx, d, shape, opts);

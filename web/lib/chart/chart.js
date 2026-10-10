@@ -237,6 +237,7 @@ export class Chart {
 
   #render(items) {
     const { ctx, scale: s, settings: st } = this;
+    const tf = this.spec.type === 'time' ? this.spec.param : null; // intervalle des bougies temps
     const L = st.layers;
     const dpr = window.devicePixelRatio || 1;
     const geo = this.geometry(items);
@@ -276,15 +277,14 @@ export class Chart {
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
-    const tf = this.spec.type === 'time' ? this.spec.param : null;
-    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '' }, indexed);
+    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '', bars: this.data.bars }, indexed);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));
     this.paneScales = st.panes.map((kind, k) =>
       drawPane(ctx, kind, { y: s.h + k * this.paneH, h: this.paneH }, items, geo, s, { oi: this.data.oi, liqs: this.data.liqs, spot: this.data.spot, axisW: AXIS_W }));
     drawTimeAxis(ctx, s, items, this.timeTop, TIME_H, AXIS_W);
-    drawDrawingLabels(ctx, this.drawings, s, items, { axisW: AXIS_W, timeTop: this.timeTop, timeH: TIME_H, digits: this.digits() }, indexed);
+    drawDrawingLabels(ctx, this.drawings, s, items, { axisW: AXIS_W, timeTop: this.timeTop, timeH: TIME_H, digits: this.digits(), tf, bars: this.data.bars }, indexed);
 
     const values = indicatorValues(this, items);
     const key = JSON.stringify(values);

@@ -1,4 +1,4 @@
-// Mesures des outils de dessin : niveaux de Fibonacci, règle, position, aimant (et VWAP ancré).
+// Mesures des outils de dessin : niveaux de Fibonacci, règle, position, aimant, VWAP ancré.
 // Fonctions pures, communes au graphique et aux tests.
 
 // Retracement de Fibonacci, comme TradingView : 0 sur le second point (fin du mouvement), 1 sur
@@ -89,4 +89,25 @@ export function snapToBar(bar, pt, y, yOfPrice, { maxPx = 30, tf = null } = {}) 
   }
   if (best === null || dist > maxPx) return pt;
   return { t: Math.round(tf ? bar.t0 + tf / 2 : (bar.t0 + bar.t1) / 2), p: best };
+}
+
+// ---------- VWAP ancré ----------
+
+// Prix moyen pondéré par le volume depuis la bougie qui contient l'ancre (incluse) : Σ prix ×
+// quantité / Σ quantité, cumulés bougie après bougie (pv et v de chaque bougie). Sur une unité plus
+// grande que celle du clic, la moyenne part donc du début de cette bougie. `partial` : l'ancre
+// précède la première bougie chargée, le début de la moyenne manque.
+export function anchoredVwap(bars, t) {
+  let i = bars.findIndex((b) => b.t1 >= t);
+  if (i < 0) i = bars.length;
+  const points = [];
+  let pv = 0;
+  let v = 0;
+  for (; i < bars.length; i++) {
+    const b = bars[i];
+    pv += b.pv;
+    v += b.v;
+    if (v > 0) points.push({ t0: b.t0, t1: b.t1, vwap: pv / v });
+  }
+  return { points, partial: bars.length > 0 && t < bars[0].t0 };
 }

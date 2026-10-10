@@ -2,10 +2,10 @@
 // pixels et test du clic (mesures des outils : measures.js). Un dessin est accroché à des points
 // (heure, prix) et non à des pixels : il garde sa place au zoom, au défilement et au changement
 // d'unité de temps.
-import { FIB_LEVELS, cleanCalc } from './measures.js';
+import { FIB_LEVELS, anchoredVwap, cleanCalc } from './measures.js';
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3, avwap: 1 }; // type -> nombre de points
 export const POSITIONS = ['long', 'short']; // points : entrée (début), stop et cible (fin)
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
@@ -78,6 +78,18 @@ export function fromPixel(scale, items, x, y) {
   return { t: Math.round(t), p: scale.priceOfY(y) };
 }
 
+// Forme d'un dessin sur le graphique : `scale` et `items` (série affichée) pour les positions,
+// `bars` (bougies brutes) et `tf` (intervalle des bougies temps) pour le VWAP ancré.
+export function shapeIn(d, { scale, items, bars = [], tf = null }) {
+  const view = { w: scale.w, h: scale.h };
+  const px = d.pts.map((pt) => toPixel(scale, items, pt));
+  if (d.type !== 'avwap') return shapeOf(d, px, view);
+  const { points, partial } = anchoredVwap(bars, d.pts[0].t);
+  const mid = (q) => (tf ? q.t0 + tf / 2 : (q.t0 + q.t1) / 2);
+  const curve = points.map((q) => toPixel(scale, items, { t: mid(q), p: q.vwap }));
+  return { ...shapeOf(d, px, view, { curve, partial }), last: points[points.length - 1]?.vwap ?? null };
+}
+
 // Déplacement d'un dessin de (dx, dy) pixels, à partir de ses points d'origine.
 export function movePoints(scale, items, pts, dx, dy) {
   return pts.map((pt) => {
@@ -89,9 +101,10 @@ export function movePoints(scale, items, pts, dx, dy) {
 // ---------- Forme en pixels et test du clic ----------
 
 // Segments (tracé et clic), guides (trait fin en tirets, clic), zones pleines (clic à l'intérieur)
-// et poignées (points que l'on peut saisir) d'un dessin, à partir de ses points convertis en pixels ; `view` = dimensions du tracé
-// (lignes prolongées jusqu'aux bords).
-export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
+// et poignées (points que l'on peut saisir) d'un dessin, à partir de ses points convertis en pixels ;
+// `view` = dimensions du tracé (lignes prolongées jusqu'aux bords) ; `extra` = courbe calculée du
+// VWAP ancré (voir shapeIn).
+export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }, extra = {}) {
   const [x, y] = px[0];
   switch (d.type) {
     case 'trend':
@@ -120,6 +133,16 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }) {
       const [, yt] = px[2];
       const box = (ya) => [Math.min(x, x1), Math.min(y, ya), Math.max(x, x1), Math.max(y, ya)];
       return { segs: [[x, y, x1, y]], areas: [box(yt), box(ys)], handles: [px[0], [x, ys], [x, yt], [x1, y]] };
+    }
+    case 'avwap': {
+      // Courbe du VWAP (pixels, voir shapeIn) ; segments hors de la vue ignorés.
+      const c = extra.curve ?? [];
+      const segs = [];
+      for (let i = 1; i < c.length; i++) {
+        if ((c[i - 1][0] < -10 && c[i][0] < -10) || (c[i - 1][0] > view.w + 10 && c[i][0] > view.w + 10)) continue;
+        segs.push([...c[i - 1], ...c[i]]);
+      }
+      return { segs, handles: [c[0] ?? px[0]], end: c[c.length - 1] ?? null, partial: extra.partial };
     }
     case 'text': {
       const box = textBox(d.text, d.style?.width);

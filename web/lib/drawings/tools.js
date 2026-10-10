@@ -11,6 +11,7 @@ export const TOOLS = {
   ruler: { label: 'Règle de mesure', key: 'M' },
   long: { label: 'Position longue', key: 'L' },
   short: { label: 'Position courte', key: 'S' },
+  avwap: { label: 'VWAP ancré (clic sur une bougie)', key: 'A' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

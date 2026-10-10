@@ -64,6 +64,12 @@ const GLYPHS: Record<string, ReactNode> = {
       <rect x="4" y="11" width="16" height="9" rx="1" />
       <path d="M12 14v4M10 16l2 2 2-2" />
     </>
+  ),  avwap: (
+    <>
+      <path d="M5 4v16" />
+      <path d="M5 15c3-1 4-6 7-6s4 4 7 2" />
+      <circle cx="5" cy="15" r="1.6" />
+    </>
   ),
 };
 

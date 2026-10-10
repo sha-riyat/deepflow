@@ -1,6 +1,6 @@
 // Dessins de l'utilisateur (voir lib/drawings) : tracé, poignées du dessin sélectionné ou en cours,
 // étiquettes sur les axes (prix des horizontales, heure de la verticale sélectionnée).
-import { PRICE_ONLY, shapeOf, toPixel } from '@shared/drawings.js';
+import { PRICE_ONLY, shapeIn, toPixel } from '@shared/drawings.js';
 import { OWN_FILL, colorOf, decorate } from './drawtools.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
@@ -11,10 +11,9 @@ const pad = (n) => String(n).padStart(2, '0');
 // Dessins à afficher : dans les vues sans échelle de temps continue, seulement ceux sans heure.
 const shown = (editor, priceOnly) => editor.visible().filter((d) => !priceOnly || PRICE_ONLY.includes(d.type));
 
-export function drawDrawings(ctx, editor, scale, items, { digits, tf, base }, priceOnly = false) {
-  const view = { w: scale.w, h: scale.h };
+export function drawDrawings(ctx, editor, scale, items, { digits, tf, base, bars }, priceOnly = false) {
   for (const d of shown(editor, priceOnly)) {
-    const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)), view);
+    const shape = shapeIn(d, { scale, items, bars, tf });
     const { width, dash } = d.style;
     const color = colorOf(d);
     ctx.fillStyle = alpha(color, 0.12); // zones (rectangle, règle) : fond léger de la couleur du trait
@@ -56,10 +55,15 @@ export function drawDrawings(ctx, editor, scale, items, { digits, tf, base }, pr
   }
 }
 
-// Étiquettes sur les axes, dessinées après eux : prix des horizontales et des rayons (toujours),
-// heure de la verticale sélectionnée.
-export function drawDrawingLabels(ctx, editor, scale, items, { axisW, timeTop, timeH, digits }, priceOnly = false) {
+// Étiquettes sur les axes, dessinées après eux : prix des horizontales et des rayons, dernière
+// valeur du VWAP ancré (toujours), heure de la verticale sélectionnée.
+export function drawDrawingLabels(ctx, editor, scale, items, { axisW, timeTop, timeH, digits, tf, bars }, priceOnly = false) {
   for (const d of shown(editor, priceOnly)) {
+    if (d.type === 'avwap') {
+      const { end, last } = shapeIn(d, { scale, items, bars, tf });
+      if (end && end[1] >= 0 && end[1] <= scale.h) pill(ctx, scale.w + 4, end[1], fmt(last, digits), { bg: d.style.color, fg: C.ink, size: 11, weight: 600 });
+      continue;
+    }
     const [x, y] = toPixel(scale, items, d.pts[0]);
     if ((d.type === 'hline' || d.type === 'hray') && y >= 0 && y <= scale.h) {
       pill(ctx, scale.w + 4, y, fmt(d.pts[0].p, digits), { bg: d.style.color, fg: C.ink, size: 11, weight: 600 });
