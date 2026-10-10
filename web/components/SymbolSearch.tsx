@@ -15,9 +15,10 @@ export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; 
   const list = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Binance injoignable : le collecteur répond par une erreur, la liste reste vide (sans planter).
     fetch('/api/tickers')
-      .then((r) => r.json())
-      .then(setRows)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setRows(Array.isArray(d) ? d : []))
       .catch(() => setRows([]));
   }, []);
 
