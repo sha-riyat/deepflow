@@ -206,16 +206,18 @@ export async function openInterest(s, q) {
   return { period, rows: rows.map((r) => [r.timestamp, Number(r.sumOpenInterest)]) };
 }
 
-let tickerCache = { t: 0, data: null };
-export async function tickers(rest) {
-  if (Date.now() - tickerCache.t < 5000 && tickerCache.data) return tickerCache.data;
+// Tickers 24 h du marché (futures ou spot), en cache 5 s par marché.
+const tickerCache = new Map();
+export async function tickers(rest, market = 'futures') {
+  const hit = tickerCache.get(market);
+  if (hit && Date.now() - hit.t < 5000) return hit.data;
   const rows = await rest.tickers();
   const data = rows
     .filter((r) => r.symbol.endsWith('USDT') && Number(r.quoteVolume) > 0)
     .map((r) => ({ symbol: r.symbol, last: Number(r.lastPrice), change: Number(r.priceChangePercent), volume: Number(r.quoteVolume) }))
     .sort((a, b) => b.volume - a.volume)
     .slice(0, 200);
-  tickerCache = { t: Date.now(), data };
+  tickerCache.set(market, { t: Date.now(), data });
   return data;
 }
 

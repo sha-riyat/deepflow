@@ -1,12 +1,14 @@
-// Diffusion SSE vers les navigateurs, avec un historique renvoyé à chaque connexion :
+// Diffusion SSE d'une session vers les navigateurs, avec un historique renvoyé à chaque abonnement :
 // derniers ticks (prix + trades) et dernier état de chaque type (status, dom, history, mark,
-// alerts).
+// alerts). Un même flux de navigateur peut suivre plusieurs sessions : chaque abonnement a un
+// préfixe (« futures:BTCUSDT| ») ajouté au nom des événements.
 const TICK_BACKLOG = 3000; // 5 min à 100 ms
 const BACKLOG_BYTES = 16 * 1024 * 1024; // plafond (replay rapide : des milliers de trades par tick)
 
 export class Hub {
   constructor() {
-    this.clients = new Set();
+    this.clients = new Map(); // réponse SSE -> préfixe
+    this.idleSince = Date.now(); // sans abonné depuis (session arrêtée après un délai)
     this.reset();
   }
 
@@ -19,18 +21,19 @@ export class Hub {
     this.#broadcast('reset', '{}');
   }
 
-  attach(req, res) {
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+  // Abonne une réponse SSE déjà ouverte (en-têtes écrits par l'appelant).
+  attach(req, res, prefix = '') {
+    const send = (event, data) => res.write(`event: ${prefix}${event}\ndata: ${data}\n\n`);
+    if (this.meta) send('meta', this.meta);
+    for (const [event, data] of Object.entries(this.latest)) send(event, data);
+    for (const tick of this.ticks) send('tick', tick);
+    send('ready', '{}');
+    this.clients.set(res, prefix);
+    this.idleSince = null;
+    req.on('close', () => {
+      this.clients.delete(res);
+      if (this.clients.size === 0) this.idleSince = Date.now();
     });
-    if (this.meta) this.#send(res, 'meta', this.meta);
-    for (const [event, data] of Object.entries(this.latest)) this.#send(res, event, data);
-    for (const tick of this.ticks) this.#send(res, 'tick', tick);
-    this.#send(res, 'ready', '{}');
-    this.clients.add(res);
-    req.on('close', () => this.clients.delete(res));
   }
 
   setMeta(meta) {
@@ -46,7 +49,7 @@ export class Hub {
     this.#broadcast('tick', data);
   }
 
-  // Événement ponctuel, non rejoué aux nouveaux clients.
+  // Événement ponctuel, non rejoué aux nouveaux abonnés.
   event(name, value) {
     this.#broadcast(name, JSON.stringify(value));
   }
@@ -57,11 +60,7 @@ export class Hub {
     this.#broadcast(event, data);
   }
 
-  #send(res, event, data) {
-    res.write(`event: ${event}\ndata: ${data}\n\n`);
-  }
-
   #broadcast(event, data) {
-    for (const res of this.clients) this.#send(res, event, data);
+    for (const [res, prefix] of this.clients) res.write(`event: ${prefix}${event}\ndata: ${data}\n\n`);
   }
 }

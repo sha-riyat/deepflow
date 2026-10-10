@@ -17,7 +17,13 @@ export class DataManager {
     this.onChange = onChange;
     this.gen = 0;
     this.spec = { type: 'time', param: 60_000, fp: 0 };
+    this.key = ''; // session du collecteur
     this.reset();
+  }
+
+  // URL d'une requête au collecteur, pour la session suivie (`key` : « futures:BTCUSDT », « replay »).
+  url(path) {
+    return `${path}${path.includes('?') ? '&' : '?'}s=${encodeURIComponent(this.key)}`;
   }
 
   reset() {
@@ -56,7 +62,7 @@ export class DataManager {
     const q = new URLSearchParams({ type, param, fp, count: 800, recent: 1 });
     if (type !== 'time') q.set('from', clockNow() - 6 * HOUR);
     try {
-      const r = await getJSON(`/api/bars?${q}`);
+      const r = await getJSON(this.url(`/api/bars?${q}`));
       if (gen !== this.gen) return;
       this.bars = r.bars;
       this.builder = new BarBuilder({ type, param, fpBucket: fp });
@@ -92,7 +98,7 @@ export class DataManager {
     this.onChange('status');
     let added = 0;
     try {
-      const r = await getJSON(`/api/bars?${q}`);
+      const r = await getJSON(this.url(`/api/bars?${q}`));
       if (gen !== this.gen) return 0;
       const older = r.bars.filter((b) => b.t0 < first.t0).map((b) => ({ ...b, x: 1 }));
       // Plage vide : soit le début de l'historique, soit un trou en cours de rattrapage.
@@ -179,7 +185,7 @@ export class DataManager {
 
   async loadBubbles(from, to, slot, min = 0) {
     try {
-      const r = await getJSON(`/api/bubbles?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), slot: Math.round(slot), min })}`);
+      const r = await getJSON(this.url(`/api/bubbles?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), slot: Math.round(slot), min })}`));
       if (r.slot !== this.bubbles.slot) this.liveSlots.clear();
       if (r.min !== this.bubbles.min) this.liveBig = []; // seuil changé : le direct repart du nouveau
       // Le créneau en cours à la date de fin reste agrégé en direct : pas de bulle coupée en deux.
@@ -198,7 +204,7 @@ export class DataManager {
   async loadProfiles(from, to, bucket, params = {}) {
     const gen = (this.profileGen = (this.profileGen ?? 0) + 1);
     try {
-      const r = await getJSON(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket, ...params })}`);
+      const r = await getJSON(this.url(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket, ...params })}`));
       if (gen !== this.profileGen) return; // une demande plus récente est partie entre-temps
       this.profiles = r.sessions;
       this.onChange('profiles');
@@ -211,7 +217,7 @@ export class DataManager {
   // de la veille et état d'acceptation, profils composites.
   async loadDaily(from, to, bucket) {
     try {
-      const r = await getJSON(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket })}`);
+      const r = await getJSON(this.url(`/api/profile?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to), bucket })}`));
       this.dailySessions = r.sessions;
       this.onChange('profiles');
     } catch {
@@ -222,7 +228,7 @@ export class DataManager {
   // Liquidations de la plage (enregistrées par le collecteur depuis son premier lancement).
   async loadLiquidations(from, to) {
     try {
-      const r = await getJSON(`/api/liquidations?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to) })}`);
+      const r = await getJSON(this.url(`/api/liquidations?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to) })}`));
       const live = this.liqs.filter((l) => l[0] >= to);
       this.liqs = r.rows.concat(live);
       this.liqTo = Math.floor(to);
@@ -236,7 +242,7 @@ export class DataManager {
   // Ancrage du VWAP : volume du jour antérieur à la première bougie chargée (klines Binance).
   async loadVwapAnchor(t) {
     try {
-      const r = await getJSON(`/api/vwap?t=${Math.floor(t)}`);
+      const r = await getJSON(this.url(`/api/vwap?t=${Math.floor(t)}`));
       if (this.bars[0]?.t0 !== t) return; // historique prolongé entre-temps : réponse périmée
       this.vwapAnchor = { ...r, first: t };
       this.onChange('vwap');
@@ -249,7 +255,7 @@ export class DataManager {
   async loadSpot(param, from, to) {
     if (this.spot.param !== param) this.spot = { rows: new Map(), param, error: null };
     try {
-      const r = await getJSON(`/api/spotdelta?${new URLSearchParams({ param, from: Math.floor(from), to: Math.floor(to) })}`);
+      const r = await getJSON(this.url(`/api/spotdelta?${new URLSearchParams({ param, from: Math.floor(from), to: Math.floor(to) })}`));
       for (const [t, buy, sell] of r.rows) this.spot.rows.set(t, [buy, sell]);
       this.spot.error = null;
       this.onChange('spot');
@@ -261,7 +267,7 @@ export class DataManager {
   // Open interest Binance (futures) : 500 points au plus, se terminant à `to`.
   async loadOI(period, to) {
     try {
-      this.oi = (await getJSON(`/api/oi?${new URLSearchParams({ period, to: Math.floor(to) })}`)).rows;
+      this.oi = (await getJSON(this.url(`/api/oi?${new URLSearchParams({ period, to: Math.floor(to) })}`))).rows;
       this.onChange('oi');
     } catch {
       this.oi = [];
@@ -276,7 +282,7 @@ export class DataManager {
     }
     this.heatBusy = true;
     try {
-      const res = await fetch(`/api/heatmap?${new URLSearchParams(params)}`);
+      const res = await fetch(this.url(`/api/heatmap?${new URLSearchParams(params)}`));
       const head = JSON.parse(res.headers.get('X-Heat') ?? '{}');
       const data = new Uint8Array(await res.arrayBuffer());
       this.heat = { ...params, ...head, data, rowTop: params.rowLo + head.rows * head.step };

@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { FastForwardIcon, NextIcon, PauseIcon, PlayIcon, ReplayIcon } from '@hugeicons/core-free-icons';
 import { Icon, MenuButton } from './ui';
-import { getData } from '@/lib/engine';
+import { engine, getData } from '@/lib/engine';
 import { getLive, useLive } from '@/lib/store';
 
 const DAY = 86_400_000;
@@ -33,9 +33,10 @@ function Launcher({ close }: { close: () => void }) {
   const start = async (e: React.FormEvent) => {
     e.preventDefault();
     const from = Date.parse(`${day}T${time}:00Z`);
-    const err = await post('/api/replay', { symbol: symbol.trim().toUpperCase(), from, speed });
-    if (err) setError(err);
-    else close();
+    const err = await post('/api/replay', { market: meta?.market ?? 'futures', symbol: symbol.trim().toUpperCase(), from, speed });
+    if (err) return setError(err);
+    engine.setReplay?.(true); // le graphique suit la session de replay
+    close();
   };
   return (
     <form className="form replay-form" onSubmit={start}>
@@ -50,7 +51,7 @@ function Launcher({ close }: { close: () => void }) {
       </label>
       <p className="muted">
         Chaque trade du jour est rejoué comme en direct, en pause au départ. L’archive Binance est téléchargée
-        une fois (plusieurs dizaines de Mo), puis gardée. Le direct est suspendu pendant le replay ; le carnet
+        une fois (plusieurs dizaines de Mo), puis gardée. Le collecteur continue de suivre le direct ; le carnet
         d’ordres (heatmap, DOM) n’est pas archivé par Binance.
       </p>
       {error && <p className="neg">{error}</p>}
@@ -81,7 +82,7 @@ export function ReplayControls() {
   const archive = useLive((s) => s.meta?.archive);
   const [error, setError] = useState('');
   if (!archive || !st) return null;
-  const control = async (action: string, value?: number) => setError((await post('/api/replay/control', { action, value })) ?? '');
+  const control = async (action: string, value?: number) => setError((await post('/api/replay/control?s=replay', { action, value })) ?? '');
   const t = getLive().replay?.t ?? st.t;
   return (
     <span className="replay-ctl">
@@ -98,7 +99,10 @@ export function ReplayControls() {
       <button type="button" className="tb-btn" title="Avancer d’une heure" onClick={() => control('step', t + 3_600_000)}>
         <Icon icon={FastForwardIcon} size={14} />1 h
       </button>
-      <button type="button" className="tb-btn" title="Quitter le replay et revenir au direct" onClick={async () => setError((await post('/api/live', {})) ?? '')}>
+      <button type="button" className="tb-btn" title="Quitter le replay et revenir au direct" onClick={() => {
+        engine.setReplay?.(false);
+        post('/api/replay/stop', {});
+      }}>
         Direct
       </button>
       {error && <span className="neg">{error}</span>}

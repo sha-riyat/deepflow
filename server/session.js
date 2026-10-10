@@ -122,6 +122,7 @@ export class Session extends EventEmitter {
   meta() {
     const { cfg, info } = this;
     return {
+      key: this.key, // clé de la session (« futures:BTCUSDT », « replay »)
       mode: this.mode,
       archive: this.archive ? { from: this.archive.from } : null, // replay des archives (pilotable)
       symbol: cfg.symbol,

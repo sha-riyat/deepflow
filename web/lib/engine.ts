@@ -33,7 +33,8 @@ export const engine: {
   chart: Chart | null;
   tape: { push(t: Tick): void; clear(): void; setBigThreshold(v: number | null): void } | null;
   dom: { update(d: unknown): void } | null;
-} = { data: null, chart: null, tape: null, dom: null };
+  setReplay: ((on: boolean) => void) | null; // bascule le graphique sur la session de replay (Workspace)
+} = { data: null, chart: null, tape: null, dom: null, setReplay: null };
 
 export function getData(): DataManager {
   if (!engine.data) {
@@ -54,10 +55,11 @@ export interface StreamHandlers {
   onAlert(a: AlertFired): void;
 }
 
-// Connexion SSE ; retourne la fonction de fermeture.
-export function connectStream(h: StreamHandlers): () => void {
-  const es = new EventSource('/stream');
-  const on = <T>(name: string, fn: (v: T) => void) => es.addEventListener(name, (e) => fn(JSON.parse((e as MessageEvent).data)));
+// Connexion SSE à une session du collecteur (`key` : « futures:BTCUSDT », « replay ») : ses
+// événements arrivent préfixés par la clé. Retourne la fonction de fermeture.
+export function connectStream(key: string, h: StreamHandlers): () => void {
+  const es = new EventSource(`/stream?s=${encodeURIComponent(key)}`);
+  const on = <T>(name: string, fn: (v: T) => void) => es.addEventListener(`${key}|${name}`, (e) => fn(JSON.parse((e as MessageEvent).data)));
   let lastQuote = 0;
 
   on('reset', () => {

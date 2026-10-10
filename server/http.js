@@ -3,6 +3,7 @@
 import http from 'node:http';
 import * as Q from './queries.js';
 import { SPEEDS } from './replay.js';
+import { MARKETS, REPLAY_KEY } from './sessions.js';
 
 const DAY = 86_400_000;
 const FIRST_ARCHIVE = Date.UTC(2019, 8, 1); // premières archives Binance (futures USD-M : sept. 2019)
@@ -32,17 +33,36 @@ function readJson(req) {
   });
 }
 
+// Requêtes sans session (globales) ; les autres visent la session `?s=` (direct par défaut).
+const GLOBAL = new Set(['/stream', '/api/tickers', '/api/alerts', '/api/sessions', '/api/replay', '/api/replay/stop']);
+
+// Flux SSE d'un navigateur : une seule connexion pour toutes ses sessions (`?s=clé1,clé2`), les
+// événements de chacune préfixés par sa clé (les navigateurs limitent les connexions par site).
+function stream(req, res, { sessions }, q) {
+  const keys = [...new Set(String(q.s ?? sessions.defaultKey).split(','))].slice(0, 12);
+  const hubs = keys.map((k) => [k, sessions.get(k)]);
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  for (const [k, s] of hubs) {
+    if (s) s.hub.attach(req, res, `${k}|`);
+    else res.write(`event: ${k}|status\ndata: ${JSON.stringify('aucun replay en cours')}\n\n`);
+  }
+}
+
 async function route(req, res, ctx) {
-  const { hub, session, alerts, rest } = ctx;
+  const { sessions, alerts } = ctx;
   const url = new URL(req.url, 'http://localhost');
   const q = Object.fromEntries(url.searchParams);
   const key = `${req.method} ${url.pathname}`;
-  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/tickers' && !session.flow) {
-    return json(res, 503, { error: 'session en cours de démarrage' });
+  if (url.pathname === '/stream') return stream(req, res, ctx, q);
+  let session = null;
+  if (url.pathname.startsWith('/api/') && !GLOBAL.has(url.pathname)) {
+    session = sessions.get(q.s ?? sessions.defaultKey);
+    if (!session) throw new Error('aucun replay en cours');
+    if (!session.flow) return json(res, 503, { error: 'session en cours de démarrage' });
   }
   switch (key) {
-    case 'GET /stream':
-      return hub.attach(req, res);
+    case 'GET /api/sessions':
+      return json(res, 200, { default: sessions.recording ? 'replay' : sessions.defaultKey, recording: Boolean(sessions.recording), live: sessions.live().map((s) => s.key) });
     case 'GET /api/state':
       return json(res, 200, { ...session.state(), meta: session.meta(), history: session.store.status(), mark: session.mark });
     case 'GET /api/bars':
@@ -60,7 +80,7 @@ async function route(req, res, ctx) {
     case 'GET /api/oi':
       return json(res, 200, await Q.openInterest(session, q));
     case 'GET /api/tickers':
-      return json(res, 200, await Q.tickers(rest));
+      return json(res, 200, await Q.tickers(sessions.rests[MARKETS.includes(q.market) ? q.market : 'futures'], q.market === 'spot' ? 'spot' : 'futures'));
     case 'GET /api/heatmap': {
       const r = Q.heatmap(session, q);
       res.writeHead(200, {
@@ -69,31 +89,24 @@ async function route(req, res, ctx) {
       });
       return res.end(r.buf);
     }
-    case 'POST /api/symbol': {
-      if (session.mode !== 'live') throw new Error('changement de symbole indisponible en replay');
-      const { symbol } = await readJson(req);
-      const s = String(symbol ?? '').toUpperCase();
-      if (!/^[A-Z0-9]{2,20}$/.test(s)) throw new Error('symbole invalide');
-      await session.start(s);
-      return json(res, 200, session.meta());
-    }
     case 'POST /api/replay': {
-      // Replay des archives : démarrage en tâche de fond (l'archive peut être à télécharger), état
-      // et erreurs diffusés en SSE ; en cas d'échec, retour au direct.
-      if (ctx.cfg.replay) throw new Error('déjà en replay d’un enregistrement');
+      // Replay des archives : session « replay » à part (les graphiques en direct continuent),
+      // archive chargée en tâche de fond, état et erreurs diffusés dans son flux.
+      if (sessions.recording) throw new Error('déjà en replay d’un enregistrement');
       const body = await readJson(req);
-      const s = String(body.symbol ?? session.cfg.symbol).toUpperCase();
-      if (!/^[A-Z0-9]{2,20}$/.test(s)) throw new Error('symbole invalide');
+      const market = MARKETS.includes(body.market) ? body.market : 'futures';
+      const symbol = String(body.symbol ?? '').toUpperCase();
+      if (!/^[A-Z0-9]{2,20}$/.test(symbol)) throw new Error('symbole invalide');
       const from = Math.floor(Number(body.from) / 1000) * 1000;
       const today = Math.floor(Date.now() / DAY) * DAY;
       if (!(from >= FIRST_ARCHIVE && from < today)) throw new Error('date de départ invalide : un jour passé, jusqu’à hier');
       const speed = SPEEDS.includes(Number(body.speed)) ? Number(body.speed) : 1;
-      session.start(s, { from, speed }).catch((err) => {
-        hub.state('status', `replay impossible : ${err.message}`);
-        return session.start(s);
-      });
-      return json(res, 202, { ok: true });
+      sessions.startReplay({ market, symbol, from, speed });
+      return json(res, 202, { ok: true, key: REPLAY_KEY });
     }
+    case 'POST /api/replay/stop':
+      sessions.stopReplay();
+      return json(res, 200, { ok: true });
     case 'POST /api/replay/control': {
       const src = session.source;
       if (!session.archive || !src?.advanceTo) throw new Error('aucun replay des archives en cours');
@@ -108,21 +121,17 @@ async function route(req, res, ctx) {
       } else throw new Error('action inconnue');
       return json(res, 200, { t: src.clock, speed: src.speed, playing: src.playing });
     }
-    case 'POST /api/live': {
-      if (ctx.cfg.replay) throw new Error('collecteur lancé en replay d’un enregistrement');
-      if (session.mode !== 'live') await session.start(session.cfg.symbol);
-      return json(res, 200, session.meta());
-    }
     case 'GET /api/alerts':
       return json(res, 200, alerts.list());
     case 'POST /api/alerts': {
       const item = alerts.add(await readJson(req));
-      hub.state('alerts', alerts.list());
+      sessions.state('alerts', alerts.list());
+      sessions.watchAlerts();
       return json(res, 200, item);
     }
     case 'DELETE /api/alerts':
       alerts.remove(String(q.id));
-      hub.state('alerts', alerts.list());
+      sessions.state('alerts', alerts.list());
       return json(res, 200, { ok: true });
     default:
       // L'interface est servie par Next.js (dossier web/).

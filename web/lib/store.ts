@@ -89,6 +89,7 @@ export function useLive<T>(select: (s: Live) => T): T {
 // ---------- Préférences mémorisées ----------
 
 export interface UiPrefs {
+  key: string; // session suivie en direct : « futures:BTCUSDT » (vide : celle du collecteur)
   type: string;
   param: number;
   style: string;
@@ -105,6 +106,7 @@ export type IndicatorOptions = Record<string, Record<string, number | string>>;
 
 const KEY = 'deepflow.ui.v2';
 export const DEFAULT_PREFS: UiPrefs = {
+  key: '',
   type: 'time',
   param: 60_000,
   style: 'candles',

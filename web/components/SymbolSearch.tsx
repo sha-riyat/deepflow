@@ -5,6 +5,7 @@ import { Search01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
 import { fmt, sgn } from '@/lib/fmt.js';
 import type { Ticker } from '@/lib/types';
+import { getLive } from '@/lib/store';
 
 const vol = (v: number) => (v >= 1e9 ? `${fmt(v / 1e9, 2)} Md` : `${fmt(v / 1e6, 1)} M`);
 
@@ -16,7 +17,7 @@ export function SymbolSearch({ initial, onClose, onSelect }: { initial: string; 
 
   useEffect(() => {
     // Binance injoignable : le collecteur répond par une erreur, la liste reste vide (sans planter).
-    fetch('/api/tickers')
+    fetch(`/api/tickers?market=${getLive().meta?.market ?? 'futures'}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setRows(Array.isArray(d) ? d : []))
       .catch(() => setRows([]));

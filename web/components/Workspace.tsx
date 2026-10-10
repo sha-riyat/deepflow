@@ -12,7 +12,8 @@ import { AlertsPanel } from './panels/AlertsPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { connectStream, engine, getData } from '@/lib/engine';
-import { getLive, loadPrefs, savePrefs, useLive, type UiPrefs } from '@/lib/store';
+import { getLive, loadPrefs, savePrefs, setLive, useLive, type UiPrefs } from '@/lib/store';
+import { setReplayClock } from '@/lib/clock.js';
 import { beep } from '@/lib/sound';
 import { toolForKey } from '@/lib/drawings/tools.js';
 import type { FlowState, Meta } from '@/lib/types';
@@ -28,7 +29,11 @@ export default function Workspace() {
   const [badges, setBadges] = useState<Set<string>>(new Set());
   const [preset, setPreset] = useState<{ price: number; n: number } | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [replaying, setReplaying] = useState(false); // graphique branché sur la session de replay
   const prefsRef = useRef(prefs);
+  const key = replaying ? 'replay' : prefs.key; // session suivie
+  const keyRef = useRef(key);
+  keyRef.current = key;
   const pendingSpan = useRef<number | null>(null);
   const alerts = useLive((s) => s.alerts);
   const meta = useLive((s) => s.meta);
@@ -77,7 +82,7 @@ export default function Workspace() {
   }, [applyChart, reloadSeries]);
 
   const refresh = useCallback(() => {
-    fetch('/api/state').then((r) => (r.ok ? r.json() : null)).then((d) => d && setSt(d)).catch(() => {});
+    fetch(`/api/state?s=${encodeURIComponent(keyRef.current)}`).then((r) => (r.ok ? r.json() : null)).then((d) => d && setSt(d)).catch(() => {});
   }, []);
 
   const toggle = useCallback((id: string) => {
@@ -85,15 +90,36 @@ export default function Workspace() {
     update({ rail: { ...prefsRef.current.rail, open: toggleOpen(prefsRef.current.rail.open, id) } }, 'layout');
   }, [update]);
 
-  const selectSymbol = useCallback(async (symbol: string) => {
-    if (getLive().meta?.mode !== 'live' || symbol === getLive().meta?.symbol) return;
-    await fetch('/api/symbol', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol }) });
+  // Changer de symbole : changer de session (même marché) ; le collecteur la démarre au besoin.
+  const selectSymbol = useCallback((symbol: string) => {
+    const m = getLive().meta;
+    if (keyRef.current === 'replay' || !m || symbol === m.symbol) return;
+    update({ key: `${m.market}:${symbol}` }, 'layout');
+  }, [update]);
+
+  // Première ouverture : session par défaut du collecteur.
+  useEffect(() => {
+    if (prefs.key) return;
+    fetch('/api/sessions').then((r) => r.json()).then((d) => update({ key: d.default }, 'layout')).catch(() => {});
+  }, [prefs.key, update]);
+
+  useEffect(() => {
+    engine.setReplay = setReplaying;
+    return () => {
+      engine.setReplay = null;
+    };
   }, []);
 
-  // Flux temps réel.
+  // Flux temps réel de la session suivie : à chaque changement, données vidées et rechargées.
   useEffect(() => {
+    if (!key) return;
+    getData().key = key;
+    getData().reset();
+    engine.chart?.forgetRequests();
+    setReplayClock(null);
+    setLive({ meta: null, dom: null, mark: null, history: null, replay: null, status: 'Connexion…' });
     let prev: Meta | null = null;
-    const close = connectStream({
+    const close = connectStream(key, {
       onMeta: (m) => {
         const changed = !prev || m.symbol !== prev.symbol || m.bucket !== prev.bucket;
         prev = m;
@@ -115,7 +141,7 @@ export default function Workspace() {
       close();
       clearInterval(id);
     };
-  }, [reloadSeries, refresh, toast]);
+  }, [key, reloadSeries, refresh, toast]);
 
   // Alertes de prix dessinées sur le graphique.
   useEffect(() => {

@@ -11,15 +11,16 @@ const vol = (v: number) => (v >= 1e9 ? `${fmt(v / 1e9, 2)} Md` : `${fmt(v / 1e6,
 
 export function MarketsPanel({ onSelect }: { onSelect: (s: string) => void }) {
   const current = useLive((s) => s.meta?.symbol);
+  const market = useLive((s) => s.meta?.market ?? 'futures');
   const [rows, setRows] = useState<Ticker[]>([]);
   const [term, setTerm] = useState('');
 
   useEffect(() => {
-    const load = () => fetch('/api/tickers').then((r) => (r.ok ? r.json() : null)).then((d) => d && setRows(d)).catch(() => {});
+    const load = () => fetch(`/api/tickers?market=${market}`).then((r) => (r.ok ? r.json() : null)).then((d) => d && setRows(d)).catch(() => {});
     load();
     const id = setInterval(load, 5000);
     return () => clearInterval(id);
-  }, []);
+  }, [market]);
 
   const t = term.trim().toUpperCase();
   return (

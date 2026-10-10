@@ -39,7 +39,7 @@ export class RangeProfiles {
     if (this.cache.size > 80) this.cache.delete(this.cache.keys().next().value);
     try {
       const q = new URLSearchParams({ mode: 'range', from: Math.floor(from), to: Math.floor(to), bucket, tpo: 30 });
-      const res = await fetch(`/api/profile?${q}`);
+      const res = await fetch(this.chart.data.url(`/api/profile?${q}`));
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
       entry.result = { session: body.sessions?.[0] ?? null, partial: Boolean(body.partial), clipped: to - from > MAX_SPAN };
