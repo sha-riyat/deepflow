@@ -44,7 +44,7 @@ export function drawAbove(chart, ctx, items, geo) {
   const tpo = st.style === 'tpo';
   if (L.div && !INDEXED.includes(st.style)) drawDivergences(ctx, items, geo, s);
   if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, data.vwapAnchor);
-  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), O.big);
+  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket });
   if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, data.liqs, O.liq);
   if (L.alerts) drawAlertLines(ctx, s, chart.alerts);
 }

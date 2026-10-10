@@ -1,0 +1,35 @@
+// Gros prints regroupés par niveau de prix dans la bougie (lecture « Deep Trades » : plusieurs gros
+// ordres au même prix s'additionnent, 72 + 61 + 60 + 62 contrats ≈ 255 contrats sur un seul niveau).
+// Un gros print est [temps, prix, quantité, côté] ; côté 1 = acheteur agresseur, -1 = vendeur.
+
+// Index de la bougie qui contient l'instant t (dernière bougie commencée), -1 avant la première.
+function barAt(items, t) {
+  let lo = 0;
+  let hi = items.length - 1;
+  if (hi < 0 || t < items[0].t0) return -1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (items[mid].t0 <= t) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+
+// Regroupe par (bougie, ligne de prix de hauteur `row`, côté) : quantité sommée, prix et instant
+// moyens pondérés par la quantité, nombre d'ordres. Retourne [t, prix, quantité, côté, nombre, i]
+// (i = index de la bougie, -1 si hors des bougies chargées). Sans ligne (row ≤ 0), un ordre = un groupe.
+export function groupBigPrints(prints, items, row) {
+  if (!(row > 0)) return prints.map(([t, p, q, side]) => [t, p, q, side, 1, barAt(items, t)]);
+  const groups = new Map();
+  for (const [t, p, q, side] of prints) {
+    const i = barAt(items, t);
+    const key = `${i}:${Math.floor(p / row + 1e-9)}:${side > 0 ? 1 : -1}`;
+    const g = groups.get(key) ?? { tq: 0, pq: 0, q: 0, n: 0, side, i };
+    g.tq += t * q;
+    g.pq += p * q;
+    g.q += q;
+    g.n += 1;
+    groups.set(key, g);
+  }
+  return [...groups.values()].map((g) => [g.tq / g.q, g.pq / g.q, g.q, g.side, g.n, g.i]);
+}

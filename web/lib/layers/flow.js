@@ -2,6 +2,7 @@
 // Inspirés des réglages de Bookmap / DeepCharts (bulles), ATAS / DeepCharts (gros prints)
 // et Exocharts / Kiyotaka (liquidations), adaptés aux données publiques de Binance.
 import { barIndex } from '../chart/panes.js';
+import { groupBigPrints } from '@shared/bigprints.js';
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -67,37 +68,61 @@ export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 
   ctx.textAlign = 'left';
 }
 
-// Gros prints : ordres agresseurs (fills regroupés) au-delà du seuil, au prix moyen de l'ordre.
-// Carrés arrondis, pour les distinguer des bulles (cercles) et des liquidations (losanges).
-// Seuls les `limit` plus gros de la vue sont dessinés, pour ne pas masquer les bougies.
-export function drawBigPrints(ctx, scale, items, all, { limit = 25, labels = 'big' } = {}) {
-  const big = all
-    .map((b) => [scale.xAt(b[0], items), b])
-    .filter(([x]) => x >= -40 && x <= scale.w + 40)
+// Gros prints : ordres agresseurs (fills regroupés) au-delà du seuil, au prix moyen de l'ordre. Cercles
+// pleins lumineux (vert = achat, rouge = vente), sans texte par défaut : c'est la taille qui parle, comme
+// dans DeepCharts et les autres plateformes. Les bulles de volume (calque « Bulles de trades ») sont des
+// camemberts translucides : pour une lecture nette, n'affichez que l'un des deux.
+// Regroupement « par niveau » (par défaut) : les gros ordres du même côté, à la même ligne de prix de la
+// même bougie sont additionnés ; « par ordre » les montre un à un. Seuls les `limit` plus gros de la vue
+// sont dessinés.
+// Étiquettes (quantité, « ×n » si plusieurs ordres) : les 3 plus gros, ou toutes, ou aucune ; elles ne se
+// chevauchent jamais.
+export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0 } = {}) {
+  const seen = all.filter((b) => {
+    const x = scale.xAt(b[0], items);
+    return x >= -40 && x <= scale.w + 40;
+  });
+  const big = groupBigPrints(seen, items, group === 'level' ? row : 0)
+    .map((g) => [scale.xAt(g[0], items), g])
     .sort((a, b) => b[1][2] - a[1][2])
     .slice(0, limit);
   let max = 0;
   for (const [, b] of big) max = Math.max(max, b[2]);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  for (const [x, [, p, q, side]] of big.reverse()) {
-    const yy = scale.yOfPrice(p);
-    const color = side > 0 ? C.growth : C.loss;
-    const r = 4 + 14 * Math.sqrt(q / max); // demi-côté
+  // Du plus gros au plus petit : l'ordre des étiquettes ; dessin dans l'ordre inverse, le plus gros au-dessus.
+  const shapes = big.map(([x, g]) => ({ x, y: scale.yOfPrice(g[1]), r: 3 + 11 * Math.sqrt(g[2] / max), q: g[2], n: g[4], side: g[3], g }));
+  for (const s of [...shapes].reverse()) {
+    const color = s.side > 0 ? C.growth : C.loss;
     ctx.beginPath();
-    ctx.roundRect(x - r, yy - r, 2 * r, 2 * r, Math.min(4, r / 2));
-    ctx.fillStyle = alpha(C.ink, 0.6);
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = color;
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
     ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
-    ctx.stroke();
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = alpha(color, 0.55);
+    ctx.fill();
     ctx.shadowBlur = 0;
-    if (labels === 'none' || (labels === 'big' && r < 11)) continue;
+    ctx.lineWidth = 1.25;
+    ctx.strokeStyle = alpha(color, 0.95);
+    ctx.stroke();
+  }
+  if (labels !== 'none') {
     ctx.font = font(10, 600);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = alpha(C.ink, 0.9);
     ctx.fillStyle = C.white;
-    ctx.fillText(qty(q), x, r < 11 ? yy - r - 7 : yy + 0.5);
+    const placed = [];
+    for (const s of labels === 'all' ? shapes : shapes.slice(0, 3)) {
+      const text = s.n > 1 ? `${qty(s.q)} ×${s.n}` : qty(s.q);
+      const w = ctx.measureText(text).width + 2;
+      const inside = w <= 2 * s.r; // le texte tient dans le cercle ; sinon au-dessus
+      const y = inside ? s.y + 0.5 : s.y - s.r - 7;
+      const box = [s.x - w / 2, y - 6, s.x + w / 2, y + 6];
+      if (placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+      placed.push(box);
+      ctx.strokeText(text, s.x, y);
+      ctx.fillText(text, s.x, y);
+    }
   }
   ctx.textAlign = 'left';
 }
