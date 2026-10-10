@@ -31,7 +31,16 @@
 
 /* ---------- Espace de travail ---------- */
 #workspace { display: grid; grid-template-columns: 40px 1fr auto 40px; min-height: 0; }
-#chart-wrap { grid-column: 2; position: relative; min-width: 0; min-height: 0; }
+/* Grille de graphiques (voir layout.ts) ; le graphique actif est entouré dès qu'il y en a plusieurs. */
+.charts { grid-column: 2; display: grid; gap: 1px; min-width: 0; min-height: 0; background: var(--line-strong); }
+.charts.grid-1 { grid-template: 1fr / 1fr; }
+.charts.grid-2 { grid-template: 1fr / 1fr 1fr; }
+.charts.grid-2v { grid-template: 1fr 1fr / 1fr; }
+.charts.grid-3 { grid-template: 1fr 1fr / 2fr 1fr; }
+.charts.grid-3 > :first-child { grid-row: span 2; }
+.charts.grid-4 { grid-template: 1fr 1fr / 1fr 1fr; }
+.chart-wrap { position: relative; min-width: 0; min-height: 0; background: var(--bg); }
+.charts:not(.grid-1) .chart-wrap.active::after { content: ''; position: absolute; inset: 0; z-index: 9; border: 1px solid rgba(71, 159, 250, 0.55); pointer-events: none; }
 
 /* Barre des outils de dessin (boutons du rail, voir panels.css) */
 #drawbar { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-right: 1px solid var(--line); }
@@ -78,14 +87,14 @@
   resize: none;
   outline: none;
 }
-#chart { position: absolute; inset: 0; }
-#chart canvas { position: absolute; left: 0; top: 0; display: block; }
-#chart canvas.main,
-#chart canvas.cross { width: 100%; height: 100%; }
-#chart canvas.cross { cursor: crosshair; }
+.chart { position: absolute; inset: 0; }
+.chart canvas { position: absolute; left: 0; top: 0; display: block; }
+.chart canvas.main,
+.chart canvas.cross { width: 100%; height: 100%; }
+.chart canvas.cross { cursor: crosshair; }
 
 /* Légende interactive */
-#legend { position: absolute; left: 10px; top: 8px; z-index: 5; display: grid; gap: 2px; pointer-events: none; font-size: 12px; }
+.legend { position: absolute; left: 10px; top: 8px; z-index: 5; display: grid; gap: 2px; pointer-events: none; font-size: 12px; }
 .lg-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .lg-title b { font-size: 14px; font-weight: 600; }
 .lg-title .sub { color: var(--text-3); }
@@ -119,10 +128,10 @@
 .lg-row button { display: inline-flex; padding: 2px; border: none; border-radius: 4px; background: none; color: var(--text-3); cursor: pointer; }
 .lg-row button:hover { color: var(--text); background: var(--active); }
 
-#pane-legends { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-#pane-legends .pane-ctl { position: absolute; right: 92px; height: 20px; padding: 0 2px; }
-#pane-legends .pane-ctl .acts { display: inline-flex; opacity: 0.45; }
-#pane-legends .pane-ctl:hover .acts { opacity: 1; }
+.pane-legends { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.pane-legends .pane-ctl { position: absolute; right: 92px; height: 20px; padding: 0 2px; }
+.pane-legends .pane-ctl .acts { display: inline-flex; opacity: 0.45; }
+.pane-legends .pane-ctl:hover .acts { opacity: 1; }
 
 /* Commandes de navigation : visibles quand la souris approche du bas du tracé, centrées. */
 .nav-ctl {
@@ -154,7 +163,7 @@
 .nav-ctl button:hover { background: rgba(70, 70, 70, 0.95); color: var(--text); }
 .nav-ctl button:last-child { margin-left: 6px; }
 
-#go-live {
+.go-live {
   position: absolute;
   right: 96px;
   bottom: 34px;
@@ -173,7 +182,7 @@
   cursor: pointer;
 }
 
-#go-live:hover { background: var(--hover); }
+.go-live:hover { background: var(--hover); }
 
 /* ---------- Barre d'état ---------- */
 #statusbar { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 2px; padding: 0 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-3); }
@@ -310,7 +319,7 @@
 .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
 
 /* Légendes des panneaux : nom et valeurs de la bougie survolée (ou de la dernière) */
-#pane-legends .pane-lg {
+.pane-legends .pane-lg {
   position: absolute;
   left: 8px;
   display: flex;

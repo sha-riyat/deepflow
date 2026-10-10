@@ -5,7 +5,8 @@ import { Clock01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
 import { ReplayControls } from './Replay';
 import { getLive, useLive } from '@/lib/store';
-import { clockNow } from '@/lib/clock.js';
+import { nowOf } from '@/lib/clock.js';
+import { engine } from '@/lib/engine';
 import { fmt, sgn } from '@/lib/fmt.js';
 
 // Plage visible -> intervalle de bougie adapté.
@@ -34,7 +35,7 @@ export function StatusBar({ onRange }: { onRange: (span: number, tf: number) => 
   useEffect(() => {
     const tick = () => {
       // En replay des archives : date et heure rejouées.
-      const iso = new Date(clockNow()).toISOString();
+      const iso = new Date(nowOf(engine.active?.data)).toISOString(); // heure du graphique actif
       setNow(getLive().meta?.archive ? `${iso.slice(8, 10)}/${iso.slice(5, 7)} ${iso.slice(11, 19)}` : iso.slice(11, 19));
       setClock(Date.now());
     };

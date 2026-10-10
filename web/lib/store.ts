@@ -1,5 +1,6 @@
 // État en direct partagé par les composants, sans bibliothèque : un store observable lu via
-// useSyncExternalStore. Les données à haute fréquence (ticks, bougies) restent hors de React.
+// useSyncExternalStore. Il porte l'état du graphique actif (recopié par engine.ts, voir pane.ts) et
+// les alertes. Les données à haute fréquence (ticks, bougies) restent hors de React.
 import { useSyncExternalStore } from 'react';
 import type { AlertFired, AlertItem, Dom, HistoryStatus, Mark, Meta, ReplayState } from './types';
 import { defaultOptions } from './indicators.js';
@@ -86,10 +87,9 @@ export function useLive<T>(select: (s: Live) => T): T {
   return useSyncExternalStore(subscribe, () => select(state), () => select(state));
 }
 
-// ---------- Préférences mémorisées ----------
+// ---------- Réglages d'un graphique (mémorisés avec la mise en page, voir layout.ts) ----------
 
 export interface UiPrefs {
-  key: string; // session suivie en direct : « futures:BTCUSDT » (vide : celle du collecteur)
   type: string;
   param: number;
   style: string;
@@ -99,14 +99,11 @@ export interface UiPrefs {
   opts: IndicatorOptions;
   legend: boolean; // liste des indicateurs dépliée dans la légende
   gamma: number;
-  rail: { open: string[]; width: number; split: number };
 }
 
 export type IndicatorOptions = Record<string, Record<string, number | string>>;
 
-const KEY = 'deepflow.ui.v2';
 export const DEFAULT_PREFS: UiPrefs = {
-  key: '',
   type: 'time',
   param: 60_000,
   style: 'candles',
@@ -116,29 +113,13 @@ export const DEFAULT_PREFS: UiPrefs = {
   opts: defaultOptions() as IndicatorOptions,
   legend: true,
   gamma: 0.9,
-  rail: { open: ['flow', 'dom'], width: 360, split: 0.55 },
 };
 
-// Panneaux retirés avec la partie automatique : Signal devient Flux, Compte disparaît.
-const RENAMED: Record<string, string | null> = { signal: 'flow', account: null };
-
-export function loadPrefs(): UiPrefs {
-  try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}');
-    const opts = Object.fromEntries(Object.entries(DEFAULT_PREFS.opts).map(([k, v]) => [k, { ...v, ...saved.opts?.[k] }]));
-    const rail = { ...DEFAULT_PREFS.rail, ...saved.rail };
-    rail.open = rail.open.map((id: string) => (id in RENAMED ? RENAMED[id] : id)).filter(Boolean);
-    const { signals: _signals, ...layers } = { ...DEFAULT_PREFS.layers, ...saved.layers };
-    return { ...DEFAULT_PREFS, ...saved, layers, opts, rail };
-  } catch {
-    return DEFAULT_PREFS;
-  }
-}
-
-export function savePrefs(prefs: UiPrefs): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(prefs));
-  } catch {
-    // stockage indisponible (navigation privée) : préférences non mémorisées
-  }
+// Réglages complétés par les valeurs par défaut (indicateurs ajoutés depuis, stockage partiel).
+export function normalizePrefs(saved: Partial<UiPrefs> | null | undefined): UiPrefs {
+  const src = saved ?? {};
+  const opts = Object.fromEntries(Object.entries(DEFAULT_PREFS.opts).map(([k, v]) => [k, { ...v, ...src.opts?.[k] }]));
+  const { signals: _signals, ...layers } = { ...DEFAULT_PREFS.layers, ...src.layers } as Record<string, boolean>;
+  const pick = Object.fromEntries(Object.keys(DEFAULT_PREFS).filter((k) => k in src).map((k) => [k, src[k as keyof UiPrefs]]));
+  return { ...DEFAULT_PREFS, ...pick, layers, opts };
 }

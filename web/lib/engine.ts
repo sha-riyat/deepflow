@@ -1,103 +1,77 @@
-// Pont entre React et le moteur : instance unique des données, références vers le graphique et
-// les widgets impératifs (DOM, trades), et connexion au flux temps réel du collecteur.
+// Pont entre React et le moteur : graphiques de l'espace de travail (voir pane.ts), graphique actif
+// (son état est recopié dans le store global : barres, panneaux et outils agissent sur lui),
+// widgets impératifs (DOM, trades) qui suivent le graphique actif, et alertes du flux partagé.
 import { DataManager } from './chart/data.js';
-import { getLive, setLive, type DrawState, type DrawStyle, type PositionCalc } from './store';
-import type { AlertFired, Meta, ReplayState, Tick } from './types';
-import { setReplayClock } from './clock.js';
+import { Pane, type ChartLike, type PaneLive } from './pane';
+import { setLive } from './store';
+import { stream } from './stream';
+import type { AlertFired, Tick } from './types';
 
-type Chart = {
-  invalidate(): void;
-  resize(): void;
-  resetView(): void;
-  alerts: unknown[];
-  meta: Meta | null;
-  scale: { follow: boolean; autoScale: boolean; msPerPx: number; w: number };
-  settings: Record<string, unknown>;
-  title: string;
-  forgetRequests(): void;
-  drawings: {
-    onState: ((s: DrawState) => void) | null;
-    setTool(tool: string | null): void;
-    setMagnet(on: boolean): void;
-    setStyle(patch: Partial<DrawStyle>): void;
-    setText(text: string | null): void;
-    setCalc(patch: Partial<PositionCalc>, id?: string): void;
-    escape(): boolean;
-    removeSelected(): boolean;
-    clear(): void;
-  };
+class Engine {
+  panes = new Map<string, Pane>();
+  active: Pane | null = null;
+  tape: { push(t: Tick): void; clear(): void; setBigThreshold(v: number | null): void } | null = null;
+  dom: { update(d: unknown): void } | null = null;
+  setReplay: ((on: boolean) => void) | null = null; // bascule le graphique actif sur le replay (Workspace)
+  onAlert: ((a: AlertFired) => void) | null = null; // déclenchement d'alerte (Workspace)
+
+  // Moteur de dessin du graphique actif.
+  get chart(): ChartLike | null {
+    return this.active?.chart ?? null;
+  }
+}
+
+export const engine = new Engine();
+
+const hooks = {
+  changed(pane: Pane, patch: Partial<PaneLive>) {
+    if (engine.active === pane) setLive(patch);
+  },
+  tick(pane: Pane, tick: Tick) {
+    if (engine.active === pane) engine.tape?.push(tick);
+  },
+  dom(pane: Pane, d: unknown) {
+    if (engine.active === pane) engine.dom?.update(d);
+  },
+  reset(pane: Pane) {
+    if (engine.active === pane) engine.tape?.clear();
+  },
 };
 
-export const engine: {
-  data: DataManager | null;
-  chart: Chart | null;
-  tape: { push(t: Tick): void; clear(): void; setBigThreshold(v: number | null): void } | null;
-  dom: { update(d: unknown): void } | null;
-  setReplay: ((on: boolean) => void) | null; // bascule le graphique sur la session de replay (Workspace)
-} = { data: null, chart: null, tape: null, dom: null, setReplay: null };
-
-export function getData(): DataManager {
-  if (!engine.data) {
-    engine.data = new DataManager((kind: string, n: number) => {
-      const chart = engine.chart as (Chart & { scale: { mode: string; iRight: number } }) | null;
-      if (kind === 'older' && chart?.scale.mode === 'index') chart.scale.iRight += n;
-      chart?.invalidate();
-      const status = engine.data?.status ?? '';
-      if (status !== getLive().dataStatus) setLive({ dataStatus: status });
-    });
+// Graphique d'identifiant `id` (créé au besoin).
+export function paneOf(id: string): Pane {
+  let pane = engine.panes.get(id);
+  if (!pane) {
+    pane = new Pane(id, hooks);
+    engine.panes.set(id, pane);
   }
-  return engine.data;
+  return pane;
 }
 
-export interface StreamHandlers {
-  onMeta(meta: Meta): void;
-  onReset(): void;
-  onAlert(a: AlertFired): void;
+export function dropPane(id: string) {
+  engine.panes.get(id)?.dispose();
+  engine.panes.delete(id);
 }
 
-// Connexion SSE à une session du collecteur (`key` : « futures:BTCUSDT », « replay ») : ses
-// événements arrivent préfixés par la clé. Retourne la fonction de fermeture.
-export function connectStream(key: string, h: StreamHandlers): () => void {
-  const es = new EventSource(`/stream?s=${encodeURIComponent(key)}`);
-  const on = <T>(name: string, fn: (v: T) => void) => es.addEventListener(`${key}|${name}`, (e) => fn(JSON.parse((e as MessageEvent).data)));
-  let lastQuote = 0;
-
-  on('reset', () => {
-    setLive({ dom: null, mark: null });
-    getData().reset();
-    engine.chart?.forgetRequests(); // données vidées : tout est redemandé, même pour une plage identique
-    engine.tape?.clear();
-    h.onReset();
-  });
-  on<Meta>('meta', (m) => {
-    if (!m.archive) {
-      setReplayClock(null); // direct (ou replay d'un enregistrement) : heure réelle
-      setLive({ replay: null });
-    }
-    setLive({ meta: m, conn: m.mode === 'replay' ? 'replay' : 'live' });
-    h.onMeta(m);
-  });
-  on<string>('status', (s) => setLive({ status: s }));
-  on<Tick>('tick', (tick) => {
-    getData().onTick(tick);
-    engine.tape?.push(tick);
-    engine.chart?.invalidate();
-    if (performance.now() - lastQuote > 250) {
-      lastQuote = performance.now();
-      setLive({ quote: { bid: tick.bid, ask: tick.ask } });
-    }
-  });
-  on('dom', (d) => engine.dom?.update(d));
-  on('history', (hs) => setLive({ history: hs as never }));
-  on('mark', (m) => setLive({ mark: m as never }));
-  on<ReplayState>('replay', (st) => {
-    setReplayClock(st);
-    setLive({ replay: st });
-    engine.chart?.invalidate();
-  });
-  on('alerts', (list) => setLive({ alerts: list as never }));
-  on<AlertFired>('alert', (a) => h.onAlert(a));
-  es.onerror = () => setLive({ status: 'Serveur injoignable, reconnexion…', conn: 'off' });
-  return () => es.close();
+// Rend un graphique actif : son état devient celui des barres et des panneaux.
+export function activate(pane: Pane) {
+  if (engine.active === pane) return;
+  engine.active = pane;
+  setLive({ ...pane.live });
+  engine.tape?.clear();
 }
 
+// Données du graphique actif.
+const idle = new DataManager(() => {});
+export function getData(): DataManager {
+  return engine.active?.data ?? idle;
+}
+
+stream.onGlobal = (name, data) => {
+  if (name === 'alerts') setLive({ alerts: data as never });
+  else engine.onAlert?.(data as AlertFired);
+};
+
+stream.onError = () => {
+  for (const pane of engine.panes.values()) pane.set({ status: 'Serveur injoignable, reconnexion…', conn: 'off' });
+};

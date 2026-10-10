@@ -6,7 +6,8 @@ import { ArrowDown01Icon, Cancel01Icon, Layers01Icon, SlidersHorizontalIcon } fr
 import { Icon, OptionRows, type OptDefs } from './ui';
 import { LAYERS, OPTIONS, TPO_OPTIONS } from '@/lib/indicators.js';
 import { fmt, qty } from '@/lib/fmt.js';
-import { useLive, type UiPrefs } from '@/lib/store';
+import type { UiPrefs } from '@/lib/store';
+import { usePane, type Pane } from '@/lib/pane';
 import { seriesLabel } from './TopBar';
 
 export interface Bar {
@@ -66,10 +67,10 @@ function LegendRow({ color, label, value, defs, opts, setOpt, onRemove }: RowPro
   );
 }
 
-export function Legend({ prefs, update, bar, values }: { prefs: UiPrefs; update: Update; bar: Bar | null; values: Record<string, string> }) {
+export function Legend({ pane, prefs, update, bar, values }: { pane: Pane; prefs: UiPrefs; update: Update; bar: Bar | null; values: Record<string, string> }) {
   const collapsed = !prefs.legend;
-  const meta = useLive((s) => s.meta);
-  const dataStatus = useLive((s) => s.dataStatus);
+  const meta = usePane(pane, (s) => s.meta);
+  const dataStatus = usePane(pane, (s) => s.dataStatus);
   const tpo = prefs.style === 'tpo';
   const active = Object.keys(LAYERS).filter((k) => prefs.layers[k]);
   const count = active.length + (tpo ? 1 : 0);
@@ -78,7 +79,7 @@ export function Legend({ prefs, update, bar, values }: { prefs: UiPrefs; update:
     update({ opts: { ...prefs.opts, [layer]: { ...prefs.opts[layer], [key]: v } } }, 'view');
 
   return (
-    <div id="legend">
+    <div className="legend">
       <div className="lg-title">
         <b>{meta?.symbol ?? '—'}</b>
         <span className="sub">{tpo ? 'Sessions UTC · TPO 30 min' : seriesLabel(prefs)} · Binance {meta?.market === 'futures' ? 'Perpétuel' : 'Spot'}</span>

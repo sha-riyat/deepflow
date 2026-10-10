@@ -1,6 +1,7 @@
 'use client';
-// Graphique : instancie le moteur Canvas/WebGL (hors du rendu React) et affiche par-dessus la
-// légende interactive, les commandes des panneaux et le bouton « Direct ».
+// Un graphique de l'espace de travail : instancie le moteur Canvas/WebGL (hors du rendu React), suit
+// la session de son graphique et affiche par-dessus la légende interactive, les commandes des
+// panneaux et le bouton « Direct ». Un clic le rend actif (barres et outils agissent sur lui).
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, MinusSignIcon, PlusSignIcon, RefreshCwIcon,
@@ -13,8 +14,10 @@ import { NoteEditor } from './NoteEditor';
 import { Chart } from '@/lib/chart/chart.js';
 import { PANES } from '@/lib/chart/panes.js';
 import { setFontFamily } from '@/lib/theme.js';
-import { engine, getData } from '@/lib/engine';
-import { setLive, useLive, type DrawState, type UiPrefs } from '@/lib/store';
+import { paneOf } from '@/lib/engine';
+import { usePane } from '@/lib/pane';
+import { useLive, type DrawState, type UiPrefs } from '@/lib/store';
+import type { PaneSpec } from '@/lib/layout';
 
 interface NavChart {
   zoom(f: number): void;
@@ -33,7 +36,19 @@ const NAV: [string, IconSvgElement, (c: NavChart) => void][] = [
   ['Réinitialiser la vue', RefreshCwIcon, (c) => c.resetView()],
 ];
 
-export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Partial<UiPrefs>, kind: 'view' | 'style' | 'layout') => void }) {
+type Update = (p: Partial<UiPrefs>, kind: 'view' | 'style' | 'layout') => void;
+
+interface Props {
+  spec: PaneSpec;
+  source: string; // session suivie : clé directe ou « replay »
+  active: boolean;
+  onActivate: () => void;
+  update: Update;
+}
+
+export function ChartView({ spec, source, active, onActivate, update }: Props) {
+  const pane = paneOf(spec.id);
+  const prefs = spec.prefs;
   const host = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState<Bar | null>(null);
   const [panes, setPanes] = useState<{ kind: string; y: number }[]>([]);
@@ -41,32 +56,49 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
   const [paneVals, setPaneVals] = useState<Record<string, [string, string, string][]>>({});
   const [plotH, setPlotH] = useState(0);
   const [nearNav, setNearNav] = useState(false);
-  const following = useLive((s) => s.following);
+  const following = usePane(pane, (s) => s.following);
+  const meta = usePane(pane, (s) => s.meta);
+  const alerts = useLive((s) => s.alerts);
 
   useEffect(() => {
     setFontFamily(getComputedStyle(document.body).fontFamily);
-    const chart = new Chart(host.current, getData());
+    const chart = new Chart(host.current, pane.data);
     chart.onHover = (b: Bar | null) => setBar(b);
-    chart.onFollow = (f: boolean) => setLive({ following: f });
+    chart.onFollow = (f: boolean) => pane.set({ following: f });
     chart.onValues = (v: Record<string, string>) => setValues(v);
     chart.onPaneValues = (v: Record<string, [string, string, string][]>) => setPaneVals(v);
-    chart.drawings.onState = (draw: DrawState) => setLive({ draw });
+    chart.drawings.onState = (draw: DrawState) => pane.set({ draw });
     chart.onLayout = (rects: { kind: string; y: number }[], h: number) => {
       setPanes(rects);
       setPlotH(h);
     };
-    engine.chart = chart;
+    pane.attach(chart);
     document.fonts?.ready.then(() => chart.invalidate());
     return () => {
       chart.destroy();
-      engine.chart = null;
+      pane.attach(null);
     };
-  }, []);
+  }, [pane]);
 
+  // Session suivie (changement de symbole, replay) ; réglages transmis au moteur.
+  useEffect(() => pane.follow(source), [pane, source]);
+  useEffect(() => {
+    pane.apply(prefs);
+    pane.chart?.invalidate();
+  }, [pane, prefs]);
 
+  // Alertes de prix de ce symbole dessinées sur le graphique.
+  useEffect(() => {
+    if (!pane.chart) return;
+    pane.chart.alerts = alerts.items.filter((a) => a.enabled && a.type === 'price' && a.symbol === meta?.symbol);
+    pane.chart.invalidate();
+  }, [pane, alerts, meta]);
+
+  const chart = () => pane.chart as unknown as NavChart | null;
   return (
     <section
-      id="chart-wrap"
+      className={`chart-wrap${active ? ' active' : ''}`}
+      onMouseDownCapture={onActivate}
       onMouseMove={(e) => {
         // Les commandes n'apparaissent que dans la bande basse du tracé principal.
         const r = e.currentTarget.getBoundingClientRect();
@@ -76,11 +108,11 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
       }}
       onMouseLeave={() => setNearNav(false)}
     >
-      <div id="chart" ref={host} />
-      <Legend prefs={prefs} update={update} bar={bar} values={values} />
-      <DrawingStyle />
-      <NoteEditor />
-      <div id="pane-legends">
+      <div className="chart" ref={host} />
+      <Legend pane={pane} prefs={prefs} update={update} bar={bar} values={values} />
+      {active && <DrawingStyle />}
+      {active && <NoteEditor />}
+      <div className="pane-legends">
         {panes.map((p) => (
           <div key={`lg-${p.kind}`} className="pane-lg" style={{ top: p.y + 5 }}>
             <b>{(PANES as Record<string, string>)[p.kind]}</b>
@@ -103,14 +135,20 @@ export function ChartView({ prefs, update }: { prefs: UiPrefs; update: (p: Parti
       {plotH > 120 && (
         <div className={`nav-ctl${nearNav ? ' show' : ''}`} style={{ top: plotH - 46 }}>
           {NAV.map(([label, ico, act]) => (
-            <button key={label} type="button" title={label} onClick={() => engine.chart && act(engine.chart as unknown as NavChart)}>
+            <button key={label} type="button" title={label} onClick={() => { const c = chart(); if (c) act(c); }}>
               <Icon icon={ico} size={16} />
             </button>
           ))}
         </div>
       )}
       {!following && (
-        <button type="button" id="go-live" onClick={() => engine.chart && ((engine.chart.scale.follow = true), (engine.chart.scale.autoScale = true), engine.chart.invalidate())}>
+        <button type="button" className="go-live" onClick={() => {
+          const c = pane.chart;
+          if (!c) return;
+          c.scale.follow = true;
+          c.scale.autoScale = true;
+          c.invalidate();
+        }}>
           <Icon icon={ArrowRightDoubleIcon} size={16} />
           Direct
         </button>

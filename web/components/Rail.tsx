@@ -7,7 +7,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon } from './ui';
-import type { UiPrefs } from '@/lib/store';
+import type { Rail as RailLayout } from '@/lib/layout';
 
 export const PANELS: Record<string, [string, IconSvgElement]> = {
   flow: ['Flux', Activity01Icon],
@@ -17,7 +17,7 @@ export const PANELS: Record<string, [string, IconSvgElement]> = {
   alerts: ['Alertes', Notification03Icon],
 };
 
-type RailState = UiPrefs['rail'];
+type RailState = RailLayout;
 
 export function toggleOpen(open: string[], id: string): string[] {
   return open.includes(id) ? open.filter((x) => x !== id) : [...open, id].slice(-2);

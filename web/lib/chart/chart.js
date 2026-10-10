@@ -23,7 +23,7 @@ import { RangeProfiles } from '../drawings/profiles.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
-import { clockNow } from '../clock.js';
+import { clockNow, useClockOf } from '../clock.js';
 
 const AXIS_W = 84;
 const TIME_H = 24;
@@ -37,7 +37,6 @@ export class Chart {
     this.scale = new Scale();
     this.meta = null;
     this.alerts = [];
-    this.title = '';
     this.settings = {
       style: 'candles',
       fpMode: 'off',
@@ -228,6 +227,7 @@ export class Chart {
   }
 
   #frame() {
+    useClockOf(this.data); // heure de ce graphique (rejouée s'il est en replay) pour toute l'image
     // Changement de densité de pixels (zoom du navigateur, autre écran) : on redimensionne.
     if ((window.devicePixelRatio || 1) !== this.dpr) this.resize();
     if (!this.meta || !this.W) return;

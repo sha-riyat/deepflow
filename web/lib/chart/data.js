@@ -1,7 +1,7 @@
 // Données du graphique : bougies (historique paginé + direct, raccordés par le même
 // constructeur que le serveur), bulles de trades, profils de session, heatmap et open interest.
 import { BarBuilder } from '@shared/bars.js';
-import { clockNow } from '../clock.js';
+import { nowOf } from '../clock.js';
 
 const HOUR = 3_600_000;
 
@@ -18,6 +18,8 @@ export class DataManager {
     this.gen = 0;
     this.spec = { type: 'time', param: 60_000, fp: 0 };
     this.key = ''; // session du collecteur
+    this.replay = null; // horloge du replay des archives (voir clock.js)
+    this.lastTickT = 0; // dernier tick appliqué (le flux rouvert renvoie les derniers ticks)
     this.reset();
   }
 
@@ -28,6 +30,7 @@ export class DataManager {
 
   reset() {
     this.gen++;
+    this.lastTickT = 0;
     this.bars = [];
     this.builder = null;
     this.ready = false;
@@ -60,7 +63,7 @@ export class DataManager {
     this.onChange('bars');
     const { type, param, fp } = this.spec;
     const q = new URLSearchParams({ type, param, fp, count: 800, recent: 1 });
-    if (type !== 'time') q.set('from', clockNow() - 6 * HOUR);
+    if (type !== 'time') q.set('from', nowOf(this) - 6 * HOUR);
     try {
       const r = await getJSON(this.url(`/api/bars?${q}`));
       if (gen !== this.gen) return;
@@ -117,6 +120,8 @@ export class DataManager {
   }
 
   onTick(tick) {
+    if (tick.t <= this.lastTickT) return; // déjà reçu (flux rouvert)
+    this.lastTickT = tick.t;
     // Meilleurs prix récents (calque bid / ask) : sans les trades, qui pèsent lourd en replay rapide.
     this.ticks.push({ t: tick.t, bid: tick.bid, ask: tick.ask });
     if (this.ticks.length > 3000) this.ticks.shift();

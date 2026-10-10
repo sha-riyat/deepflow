@@ -1,5 +1,7 @@
 'use client';
-// Espace de travail : relie préférences, flux temps réel, graphique, panneaux et raccourcis.
+// Espace de travail : mise en page (grille de graphiques, graphique actif, rail des panneaux),
+// graphiques indépendants (chacun sa session, ses réglages), panneaux et raccourcis. Barre du haut,
+// barre d'état, panneaux et outils de dessin agissent sur le graphique actif.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TopBar } from './TopBar';
 import { ChartView } from './ChartView';
@@ -11,32 +13,35 @@ import { FlowPanel } from './panels/FlowPanel';
 import { AlertsPanel } from './panels/AlertsPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
-import { connectStream, engine, getData } from '@/lib/engine';
-import { getLive, loadPrefs, savePrefs, setLive, useLive, type UiPrefs } from '@/lib/store';
-import { setReplayClock } from '@/lib/clock.js';
+import { activate, dropPane, engine, paneOf } from '@/lib/engine';
+import { getLive, type UiPrefs } from '@/lib/store';
+import { GRIDS, loadLayout, saveLayout, type Layout, type Rail as RailState } from '@/lib/layout';
 import { beep } from '@/lib/sound';
 import { toolForKey } from '@/lib/drawings/tools.js';
-import type { FlowState, Meta } from '@/lib/types';
-import { seriesLabel } from './TopBar';
+import type { FlowState } from '@/lib/types';
 
 type Kind = 'series' | 'style' | 'view' | 'layout';
 interface Toast { id: number; title: string; text: string }
 
 export default function Workspace() {
-  const [prefs, setPrefs] = useState<UiPrefs>(loadPrefs);
+  const [layout, setLayout] = useState<Layout>(loadLayout);
   const [search, setSearch] = useState<string | null>(null);
   const [st, setSt] = useState<FlowState | null>(null);
   const [badges, setBadges] = useState<Set<string>>(new Set());
   const [preset, setPreset] = useState<{ price: number; n: number } | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [replaying, setReplaying] = useState(false); // graphique branché sur la session de replay
-  const prefsRef = useRef(prefs);
-  const key = replaying ? 'replay' : prefs.key; // session suivie
-  const keyRef = useRef(key);
-  keyRef.current = key;
-  const pendingSpan = useRef<number | null>(null);
-  const alerts = useLive((s) => s.alerts);
-  const meta = useLive((s) => s.meta);
+  const [replay, setReplay] = useState<Set<string>>(new Set()); // graphiques branchés sur le replay
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+  const visible = layout.panes.slice(0, GRIDS[layout.grid].n);
+  const activeSpec = visible.find((p) => p.id === layout.active) ?? visible[0];
+  const sourceOf = (id: string, key: string) => (replay.has(id) ? 'replay' : key);
+
+  const commit = useCallback((next: Layout) => {
+    layoutRef.current = next;
+    setLayout(next);
+    saveLayout(next);
+  }, []);
 
   const toast = useCallback((title: string, text: string) => {
     const id = Date.now() + Math.random();
@@ -44,111 +49,90 @@ export default function Workspace() {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 8000);
   }, []);
 
-  const applyChart = useCallback((p: UiPrefs) => {
-    const chart = engine.chart;
-    if (!chart) return;
-    Object.assign(chart.settings, { style: p.style, fpMode: p.fpMode, panes: p.panes, layers: p.layers, opts: p.opts, gamma: p.gamma });
-    chart.title = `${getLive().meta?.symbol ?? ''} · ${seriesLabel(p)}`;
-  }, []);
+  // Réglages d'un graphique : mémorisés, puis appliqués à son moteur.
+  const updatePane = useCallback((id: string, patch: Partial<UiPrefs>, kind: Kind) => {
+    const l = layoutRef.current;
+    const panes = l.panes.map((p) => (p.id === id ? { ...p, prefs: { ...p.prefs, ...patch } } : p));
+    commit({ ...l, panes });
+    const pane = paneOf(id);
+    pane.apply(panes.find((p) => p.id === id)!.prefs);
+    if (kind === 'series') pane.reload();
+    else if (kind === 'style') pane.chart?.resetView();
+    else if (kind === 'layout') pane.chart?.resize();
+    pane.chart?.invalidate();
+  }, [commit]);
 
-  const reloadSeries = useCallback(async (p: UiPrefs) => {
-    const chart = engine.chart;
-    const m = getLive().meta;
-    if (!chart || !m) return;
-    applyChart(p);
-    // setSpec fixe la nouvelle série avant son premier await : la vue standard est ainsi calculée
-    // pour le nouvel intervalle (et non pour l'ancien).
-    const loading = getData().setSpec({ type: p.type, param: p.param, fp: p.fpMode !== 'off' ? m.fpBucket : 0 });
-    chart.resetView();
-    await loading;
-    if (pendingSpan.current) {
-      chart.scale.follow = true;
-      chart.scale.msPerPx = pendingSpan.current / chart.scale.w;
-      pendingSpan.current = null;
-    }
-    chart.invalidate();
-  }, [applyChart]);
+  // Barre du haut, barre d'état, clavier : graphique actif.
+  const update = useCallback((patch: Partial<UiPrefs>, kind: Kind) => updatePane(layoutRef.current.active, patch, kind), [updatePane]);
 
-  const update = useCallback((patch: Partial<UiPrefs>, kind: Kind) => {
-    const next = { ...prefsRef.current, ...patch };
-    prefsRef.current = next;
-    setPrefs(next);
-    savePrefs(next);
-    applyChart(next);
-    if (kind === 'series') reloadSeries(next);
-    else if (kind === 'style') engine.chart?.resetView();
-    else if (kind === 'layout') engine.chart?.resize();
-    engine.chart?.invalidate();
-  }, [applyChart, reloadSeries]);
+  const setKey = useCallback((id: string, key: string) => {
+    const l = layoutRef.current;
+    commit({ ...l, panes: l.panes.map((p) => (p.id === id ? { ...p, key } : p)) });
+  }, [commit]);
+
+  const setRail = useCallback((rail: RailState) => commit({ ...layoutRef.current, rail }), [commit]);
 
   const refresh = useCallback(() => {
-    fetch(`/api/state?s=${encodeURIComponent(keyRef.current)}`).then((r) => (r.ok ? r.json() : null)).then((d) => d && setSt(d)).catch(() => {});
+    const src = engine.active?.source;
+    if (!src) return;
+    fetch(`/api/state?s=${encodeURIComponent(src)}`).then((r) => (r.ok ? r.json() : null)).then((d) => d && setSt(d)).catch(() => {});
   }, []);
 
   const toggle = useCallback((id: string) => {
     setBadges((b) => (b.has(id) ? new Set([...b].filter((x) => x !== id)) : b));
-    update({ rail: { ...prefsRef.current.rail, open: toggleOpen(prefsRef.current.rail.open, id) } }, 'layout');
-  }, [update]);
+    const rail = layoutRef.current.rail;
+    setRail({ ...rail, open: toggleOpen(rail.open, id) });
+  }, [setRail]);
 
-  // Changer de symbole : changer de session (même marché) ; le collecteur la démarre au besoin.
+  // Changer de symbole (graphique actif) : changer de session, même marché ; le collecteur la
+  // démarre au besoin. Sans effet sur un graphique en replay.
   const selectSymbol = useCallback((symbol: string) => {
+    const pane = engine.active;
     const m = getLive().meta;
-    if (keyRef.current === 'replay' || !m || symbol === m.symbol) return;
-    update({ key: `${m.market}:${symbol}` }, 'layout');
-  }, [update]);
+    if (!pane || pane.source === 'replay' || !m || symbol === m.symbol) return;
+    setKey(pane.id, `${m.market}:${symbol}`);
+  }, [setKey]);
 
-  // Première ouverture : session par défaut du collecteur.
+  // Graphique actif : le plus récent cliqué (ou le premier visible).
+  useEffect(() => activate(paneOf(activeSpec.id)), [activeSpec.id]);
+
+  // Graphiques sans session (première ouverture) : session par défaut du collecteur.
   useEffect(() => {
-    if (prefs.key) return;
-    fetch('/api/sessions').then((r) => r.json()).then((d) => update({ key: d.default }, 'layout')).catch(() => {});
-  }, [prefs.key, update]);
+    const missing = layout.panes.filter((p) => !p.key);
+    if (!missing.length) return;
+    fetch('/api/sessions').then((r) => r.json()).then((d) => missing.forEach((p) => setKey(p.id, d.default))).catch(() => {});
+  }, [layout.panes, setKey]);
+
+  // Graphiques retirés de la mise en page : session quittée, mémoire libérée.
+  useEffect(() => {
+    const ids = new Set(visible.map((p) => p.id));
+    for (const id of [...engine.panes.keys()]) if (!ids.has(id)) dropPane(id);
+  }, [visible]);
 
   useEffect(() => {
-    engine.setReplay = setReplaying;
-    return () => {
-      engine.setReplay = null;
+    engine.setReplay = (on: boolean) => {
+      const id = engine.active?.id;
+      if (!id) return;
+      setReplay((r) => {
+        const next = new Set(r);
+        if (on) next.add(id);
+        else next.delete(id);
+        return next;
+      });
     };
-  }, []);
-
-  // Flux temps réel de la session suivie : à chaque changement, données vidées et rechargées.
-  useEffect(() => {
-    if (!key) return;
-    getData().key = key;
-    getData().reset();
-    engine.chart?.forgetRequests();
-    setReplayClock(null);
-    setLive({ meta: null, dom: null, mark: null, history: null, replay: null, status: 'Connexion…' });
-    let prev: Meta | null = null;
-    const close = connectStream(key, {
-      onMeta: (m) => {
-        const changed = !prev || m.symbol !== prev.symbol || m.bucket !== prev.bucket;
-        prev = m;
-        if (engine.chart) engine.chart.meta = m;
-        if (changed) reloadSeries(prefsRef.current);
-      },
-      onReset: () => {
-        prev = null; // le collecteur repart de zéro (symbole, saut dans le replay) : rechargement au prochain meta
-      },
-      onAlert: (a) => {
-        beep();
-        toast(`${a.label} · ${a.symbol}`, a.text);
-        if (window.Notification?.permission === 'granted') new Notification(`${a.label} · ${a.symbol}`, { body: a.text });
-        if (!prefsRef.current.rail.open.includes('alerts')) setBadges((b) => new Set([...b, 'alerts']));
-      },
-    });
+    engine.onAlert = (a) => {
+      beep();
+      toast(`${a.label} · ${a.symbol}`, a.text);
+      if (window.Notification?.permission === 'granted') new Notification(`${a.label} · ${a.symbol}`, { body: a.text });
+      if (!layoutRef.current.rail.open.includes('alerts')) setBadges((b) => new Set([...b, 'alerts']));
+    };
     const id = setInterval(refresh, 1000);
     return () => {
-      close();
+      engine.setReplay = null;
+      engine.onAlert = null;
       clearInterval(id);
     };
-  }, [key, reloadSeries, refresh, toast]);
-
-  // Alertes de prix dessinées sur le graphique.
-  useEffect(() => {
-    if (!engine.chart) return;
-    engine.chart.alerts = alerts.items.filter((a) => a.enabled && a.type === 'price' && a.symbol === meta?.symbol);
-    engine.chart.invalidate();
-  }, [alerts, meta]);
+  }, [refresh, toast]);
 
   // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap ; dessins :
   // Alt + lettre -> outil, Échap -> annulation, Suppr -> suppression du dessin sélectionné.
@@ -171,15 +155,15 @@ export default function Workspace() {
         e.preventDefault();
         setSearch(e.key.toUpperCase());
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        const g = prefsRef.current.gamma + (e.key === 'ArrowUp' ? -0.05 : 0.05);
+        const prefs = layoutRef.current.panes.find((p) => p.id === layoutRef.current.active)?.prefs;
+        if (!prefs) return;
+        const g = prefs.gamma + (e.key === 'ArrowUp' ? -0.05 : 0.05);
         update({ gamma: Math.min(3, Math.max(0.2, g)) }, 'view');
       }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [search, update]);
-
-  useEffect(() => applyChart(prefs), [applyChart, prefs]);
 
   const render = (id: string) => {
     if (id === 'flow') return <FlowPanel st={st} />;
@@ -192,22 +176,31 @@ export default function Workspace() {
   return (
     <>
       <TopBar
-        prefs={prefs}
+        prefs={activeSpec.prefs}
         update={update}
         onSymbol={() => setSearch('')}
         onAlert={() => {
           const q = getLive().quote;
           if (q) setPreset({ price: Number(((q.bid + q.ask) / 2).toFixed(6)), n: Date.now() });
-          if (!prefsRef.current.rail.open.includes('alerts')) toggle('alerts');
+          if (!layoutRef.current.rail.open.includes('alerts')) toggle('alerts');
         }}
       />
       <main id="workspace">
         <DrawingBar />
-        <ChartView prefs={prefs} update={update} />
-        <Panels rail={prefs.rail} setRail={(rail) => update({ rail }, 'layout')} onToggle={toggle} render={render} />
-        <Rail rail={prefs.rail} badges={badges} onToggle={toggle} />
+        <div className={`charts grid-${layout.grid}`}>
+          {visible.map((spec) => (
+            <ChartView key={spec.id} spec={spec} source={sourceOf(spec.id, spec.key)} active={spec.id === activeSpec.id && visible.length > 0}
+              onActivate={() => spec.id !== layoutRef.current.active && commit({ ...layoutRef.current, active: spec.id })}
+              update={(patch, kind) => updatePane(spec.id, patch, kind)} />
+          ))}
+        </div>
+        <Panels rail={layout.rail} setRail={setRail} onToggle={toggle} render={render} />
+        <Rail rail={layout.rail} badges={badges} onToggle={toggle} />
       </main>
-      <StatusBar onRange={(span, tf) => ((pendingSpan.current = span), update({ type: 'time', param: tf }, 'series'))} />
+      <StatusBar onRange={(span, tf) => {
+        if (engine.active) engine.active.pendingSpan = span;
+        update({ type: 'time', param: tf }, 'series');
+      }} />
       {search !== null && <SymbolSearch initial={search} onClose={() => setSearch(null)} onSelect={selectSymbol} />}
       <div id="toasts">
         {toasts.map((t) => (
