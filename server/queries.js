@@ -246,6 +246,16 @@ export async function funding(s, q) {
   };
 }
 
+// CVD multi-plateformes : volumes agressifs par minute de Bybit et d'OKX, depuis le lancement de
+// la session en direct (rien en replay).
+export function venues(s, q) {
+  if (!s.venues) return { since: null, rows: [], status: null };
+  const now = s.now();
+  const to = Math.min(num(q.to, now), now);
+  const from = num(q.from, to - 86_400_000);
+  return { since: s.venues.book.since, rows: s.venues.book.range(from, to), status: s.venues.status };
+}
+
 // Tickers 24 h du marché (futures ou spot), en cache 5 s par marché.
 const tickerCache = new Map();
 export async function tickers(rest, market = 'futures') {

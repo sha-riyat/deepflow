@@ -122,6 +122,13 @@ export function requestData(chart, items) {
       }
     }
   }
+  if (chart.settings.panes.includes('venues')) {
+    const key = `${Math.floor(tL / 60_000)}:${Math.floor(tR / 60_000)}:${Math.floor(real / 10_000)}`;
+    if (key !== chart.requests.venues) {
+      chart.requests.venues = key;
+      chart.data.loadVenues(tL - 86_400_000, tR); // depuis la veille : CVD de session complet
+    }
+  }
   if (chart.settings.panes.includes('funding') && meta.market === 'futures') {
     // Indice de prime à l'intervalle Binance le plus proche (1 min au minimum), 1000 bougies.
     const tf = chart.spec.type === 'time' ? chart.spec.param : 0;

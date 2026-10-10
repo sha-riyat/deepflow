@@ -10,6 +10,7 @@ import { Flow } from './flow.js';
 import { TradeStore, DAY, dayKey } from './history/store.js';
 import { HeatStore } from './heatstore.js';
 import { LiquidationStore } from './liquidations.js';
+import { VenueFeed } from './venues.js';
 
 // Plus petit pas « rond » (1, 2, 2,5, 5 × 10^k) supérieur ou égal à x, et au moins un tick.
 export function niceStep(x, tick) {
@@ -77,6 +78,9 @@ export class Session extends EventEmitter {
     this.hub.setMeta(this.meta());
     this.hub.state('alerts', this.alerts.list());
     this.source.start();
+    // CVD multi-plateformes : trades Bybit et OKX du même perpétuel, en direct seulement.
+    this.venues = this.mode === 'live' && cfg.market === 'futures' && cfg.venues ? new VenueFeed(symbol) : null;
+    this.venues?.start();
     this.domTimer = setInterval(() => this.#dom(), 250);
     console.log(`session ${this.mode} ${cfg.market} ${symbol} · tranche ${cfg.bucket} · footprint ${cfg.footprint.bucket} · DOM ${this.domBucket}`);
   }
@@ -86,6 +90,7 @@ export class Session extends EventEmitter {
     this.source.stop();
     this.store.stop();
     this.recorder?.close();
+    this.venues?.stop();
     clearInterval(this.domTimer);
     this.source.removeAllListeners();
     this.source = null;

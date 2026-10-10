@@ -21,7 +21,7 @@ export function spotCvd(items, upto, spot) {
   return out;
 }
 
-function line(ctx, pts, color, top, h, pad) {
+export function line(ctx, pts, color, top, h, pad) {
   const vals = pts.filter(Boolean).map((p) => p[1]);
   if (!vals.length) return null;
   let lo = Math.min(...vals);

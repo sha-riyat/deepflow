@@ -51,6 +51,7 @@ export class DataManager {
     this.spot = { rows: new Map(), param: 0, error: null }; // delta spot par bougie : début -> [achats, ventes]
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
+    this.venues = null; // CVD multi-plateformes : { since, rows, status } (voir loadVenues)
     this.funding = null; // prime et financement : { interval, premium, rates } (voir loadFunding)
     this.keyLevels = null; // ouvertures semaine / mois, hauts et bas précédents (voir loadLevels)
     this.vwapAnchor = null; // sommes de la période (jour, semaine, mois) avant la première bougie chargée (voir loadVwapAnchor)
@@ -243,6 +244,16 @@ export class DataManager {
       this.onChange('liqs');
     } catch {
       // nouvelle tentative au prochain cycle
+    }
+  }
+
+  // Volumes agressifs par minute de Bybit et d'OKX (collecteur, depuis le lancement de la session).
+  async loadVenues(from, to) {
+    try {
+      this.venues = await getJSON(this.url(`/api/venues?${new URLSearchParams({ from: Math.floor(from), to: Math.floor(to) })}`));
+      this.onChange('venues');
+    } catch {
+      // nouvel essai au prochain cycle
     }
   }
 

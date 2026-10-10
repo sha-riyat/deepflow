@@ -81,6 +81,8 @@ async function route(req, res, ctx) {
       return json(res, 200, await Q.spotDelta(session, q));
     case 'GET /api/funding':
       return json(res, 200, await Q.funding(session, q));
+    case 'GET /api/venues':
+      return json(res, 200, Q.venues(session, q));
     case 'GET /api/oi':
       return json(res, 200, await Q.openInterest(session, q));
     case 'GET /api/tickers':

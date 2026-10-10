@@ -218,3 +218,37 @@ test('prime et financement : futures seulement, rien après l’heure rejouée',
   assert.equal((await funding({ ...replay, mode: 'live' }, {})).premium.length, 3);
   assert.deepEqual(await funding({ ...replay, cfg: { market: 'spot' } }, {}), { interval: null, premium: [], rates: [] });
 });
+
+test('autres plateformes : messages Bybit et OKX, volumes par minute', async () => {
+  const { parseBybit, parseOkx, subscribeError, MinuteBook } = await import('../server/venues.js');
+  // Exemples tirés des documentations Bybit v5 et OKX v5.
+  const bybit = { topic: 'publicTrade.BTCUSDT', type: 'snapshot', ts: 1672304486868, data: [
+    { T: 1672304486865, s: 'BTCUSDT', S: 'Buy', v: '0.001', p: '16578.50', L: 'PlusTick', i: 'x', BT: false },
+    { T: 1672304486866, s: 'BTCUSDT', S: 'Sell', v: '0.25', p: '16578.00', L: 'MinusTick', i: 'y', BT: false },
+  ] };
+  assert.deepEqual(parseBybit(bybit), [{ t: 1672304486865, q: 0.001, side: 1 }, { t: 1672304486866, q: 0.25, side: -1 }]);
+  assert.deepEqual(parseBybit({ op: 'pong' }), []);
+  const okx = { arg: { channel: 'trades', instId: 'BTC-USDT-SWAP' }, data: [{ instId: 'BTC-USDT-SWAP', tradeId: '1', px: '42219.9', sz: '12', side: 'sell', ts: '1630048897897', count: '3' }] };
+  assert.deepEqual(parseOkx(okx, 0.01), [{ t: 1630048897897, q: 0.12, side: -1 }]); // 12 contrats de 0,01 BTC
+  assert.equal(subscribeError('bybit', { success: false, ret_msg: 'error:handler not found', op: 'subscribe' }), 'error:handler not found');
+  assert.equal(subscribeError('okx', { event: 'error', code: '60018', msg: 'Doesn\'t exist' }), 'Doesn\'t exist');
+  assert.equal(subscribeError('okx', { event: 'subscribe', arg: {} }), null);
+  const book = new MinuteBook();
+  book.add('bybit', { t: 60_500, q: 2, side: 1 });
+  book.add('bybit', { t: 61_000, q: 1, side: -1 });
+  book.add('okx', { t: 119_999, q: 0.5, side: 1 });
+  book.add('okx', { t: 120_000, q: 0, side: 1 }); // quantité nulle ignorée
+  assert.deepEqual(book.range(0, 200_000), [[60_000, 2, 1, 0.5, 0]]);
+  assert.equal(book.since, 60_000);
+});
+
+test('autres plateformes : rien en replay, plage bornée au présent', async () => {
+  const { venues } = await import('../server/queries.js');
+  const { MinuteBook } = await import('../server/venues.js');
+  assert.deepEqual(venues({ venues: null, now: () => 0 }, {}), { since: null, rows: [], status: null });
+  const book = new MinuteBook();
+  book.add('bybit', { t: 60_000, q: 1, side: 1 });
+  book.add('bybit', { t: 600_000, q: 1, side: 1 });
+  const r = venues({ venues: { book, status: { bybit: 'connecté' } }, now: () => 300_000 }, { from: 0, to: 900_000 });
+  assert.deepEqual(r.rows.map((x) => x[0]), [60_000]);
+});

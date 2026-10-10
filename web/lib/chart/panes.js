@@ -7,8 +7,9 @@ import { C, alpha, font } from '../theme.js';
 import { sessionCvd, sessionStart } from '@shared/cvd.js';
 import { drawSpotPane, spotValues } from './spotpane.js';
 import { drawFundingPane, fundingValues, pct } from './fundingpane.js';
+import { drawVenuesPane, venuesValues } from './venuespane.js';
 
-export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques', spot: 'CVD spot / perp', funding: 'Prime et financement' };
+export const PANES = { volume: 'Volume', delta: 'Delta', cvd: 'CVD (session)', oi: 'Open interest', liq: 'Liquidations', stats: 'Statistiques', spot: 'CVD spot / perp', funding: 'Prime et financement', venues: 'CVD multi-plateformes' };
 
 // Lignes du tableau de statistiques, par priorité (celles qui tiennent dans la hauteur sont gardées).
 const STATS = [
@@ -89,7 +90,7 @@ function oiAt(oi, item) {
   return k < 0 ? null : { v: oi[k][1], prev: k > 0 ? oi[k - 1][1] : null };
 }
 
-export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], spot = null, funding = null, axisW }) {
+export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [], spot = null, funding = null, venues = null, minuteBars = false, axisW }) {
   const { y: top, h } = rect;
   const w = scale.w;
   ctx.save();
@@ -113,6 +114,11 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
 
   if (kind === 'spot') {
     drawSpotPane(ctx, items, geo, { top, h, w, axisW }, spot);
+    ctx.restore();
+    return { kind, top, h, valueAt: null, format: qty };
+  }
+  if (kind === 'venues') {
+    drawVenuesPane(ctx, items, geo, { top, h, w, axisW }, venues, minuteBars);
     ctx.restore();
     return { kind, top, h, valueAt: null, format: qty };
   }
@@ -216,7 +222,7 @@ export function drawPane(ctx, kind, rect, items, geo, scale, { oi = [], liqs = [
 }
 
 // Valeurs d'une bougie pour la légende HTML du panneau : [libellé, valeur, ton].
-export function paneValues(kind, items, i, { oi = [], liqs = [], spot = null, funding = null } = {}) {
+export function paneValues(kind, items, i, { oi = [], liqs = [], spot = null, funding = null, venues = null } = {}) {
   const b = items[i];
   if (!b) return [];
   const tone = (v) => (v >= 0 ? 'pos' : 'neg');
@@ -232,6 +238,7 @@ export function paneValues(kind, items, i, { oi = [], liqs = [], spot = null, fu
   }
   if (kind === 'spot') return spotValues(items, i, spot);
   if (kind === 'funding') return fundingValues(items, i, funding);
+  if (kind === 'venues') return venuesValues(items, i, venues);
   if (kind === 'oi') {
     const p = oiAt(oi, b);
     if (!p) return [['', '—', '']];

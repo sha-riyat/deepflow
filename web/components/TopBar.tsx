@@ -34,6 +34,7 @@ const PANE_SUB: Record<string, string> = {
   stats: 'Tableau par bougie : delta, volume, delta %, achats, ventes, trades',
   spot: 'CVD du spot (achat réel) contre CVD du perp (levier), par session',
   funding: 'Indice de prime et taux de financement passés (futures)',
+  venues: 'CVD de Binance, Bybit et OKX sur le même perpétuel (en direct, depuis le lancement)',
 };
 type LayerDef = { label: string; sub: string; group: string };
 const STYLE_ICON: Record<string, IconSvgElement> = {

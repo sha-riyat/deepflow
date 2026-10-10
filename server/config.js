@@ -23,6 +23,7 @@ export const config = {
   dataDir: path.resolve(ROOT, env.DATA_DIR ?? 'data'),
   replay: env.REPLAY ?? null, // chemin d'un enregistrement .ndjson.gz à rejouer
   speed: num(env.SPEED, 1), // vitesse du replay
+  venues: env.VENUES !== '0', // CVD multi-plateformes : trades Bybit et OKX en direct (futures)
 
   footprint: {
     bucket: env.FP_BUCKET ? Number(env.FP_BUCKET) : null, // tranche d'une cellule ; null = 2 × heatmap
