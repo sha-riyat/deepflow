@@ -132,7 +132,7 @@ export function requestData(chart, items) {
       chart.data.loadFunding(interval, Math.min(now, tR + ms * 100));
     }
   }
-  if (chart.settings.panes.includes('oi') && meta.market === 'futures') {
+  if ((chart.settings.panes.includes('oi') || layers.oiprof) && meta.market === 'futures') {
     // Période Binance la plus proche de l'intervalle des bougies (5 min au minimum, 30 jours d'historique).
     const tf = chart.spec.type === 'time' ? chart.spec.param : 0;
     const [period, ms] = OI_PERIODS.find(([, p]) => p >= tf) ?? OI_PERIODS[OI_PERIODS.length - 1];

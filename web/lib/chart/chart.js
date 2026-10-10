@@ -35,7 +35,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, ib: false, keys: false, sessions: false, times: true, div: true, naked: true, vwap: false, alerts: true, liq: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, ib: false, keys: false, sessions: false, times: true, div: true, naked: true, vwap: false, alerts: true, liq: true, oiprof: false },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {

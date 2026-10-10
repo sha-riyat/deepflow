@@ -1,5 +1,5 @@
 // Valeurs courantes des indicateurs, affichées dans la légende à côté de leur nom.
-import { compact as money, fmt, qty } from '../fmt.js';
+import { compact as money, fmt, qty, sgn } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
 import { bigMin } from './requests.js';
 import { cvdDivergences, sessionCvd } from '@shared/cvd.js';
@@ -11,6 +11,7 @@ import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, prof
 import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
 import { ibLevels, openType, openTypeLabel } from '@shared/opening.js';
+import { QUADRANT_LABEL, oiChange } from '@shared/oiflow.js';
 import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
@@ -61,6 +62,13 @@ export function indicatorValues(chart, items) {
     if (!ib) out.ib = data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
     else if (!ib.done) out.ib = `en formation jusqu’à ${new Date(ib.end).toISOString().slice(11, 16)} UTC`;
     else out.ib = `${fmt(ib.lo)} – ${fmt(ib.hi)}${open ? ` · ${openTypeLabel(open)}` : ''}`;
+  }
+  if (L.oiprof) {
+    // Dernière heure : variation du prix et de l'OI, et le cas correspondant.
+    const now = clockNow();
+    const c = chart.meta?.market === 'futures' ? oiChange(data.oi, data.bars, now - 3_600_000, now) : null;
+    out.oiprof = chart.meta?.market !== 'futures' ? 'futures uniquement' : c
+      ? `1 h : prix ${sgn(c.dPrice, 2)} %, OI ${sgn(c.dOi, 2)} % · ${QUADRANT_LABEL[c.quadrant]}` : 'chargement de l’OI…';
   }
   if (L.keys && style !== 'tpo') {
     const k = data.keyLevels;

@@ -5,6 +5,7 @@ import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofi
 import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
 import { drawKeyLevels } from '../layers/keylevels.js';
 import { drawIb } from '../layers/ib.js';
+import { drawOiProfile } from '../layers/oiprofile.js';
 import { drawTimeMarkers } from '../layers/times.js';
 import { MAX_SESSION_TF, drawMarketSessions } from '../layers/marketsessions.js';
 import { drawDivergences } from '../layers/divergence.js';
@@ -31,6 +32,7 @@ export function drawBehind(chart, ctx, items, geo) {
   if (L.times && !INDEXED.includes(st.style)) drawTimeMarkers(ctx, s, items, { show: O.times.show, futures: chart.meta.market === 'futures' });
   if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(data.dailySessions, data.bars), s, items);
   // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
+  if (L.oiprof && s.mode === 'time' && chart.meta.market === 'futures') drawOiProfile(ctx, s, items, data.oi, data.bars, O.oiprof);
   if (L.bubbles && !tpo) drawBubbles(ctx, s, items, data.bubbleRows(), data.bubbles.slot, O.bubbles);
   if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, data.ticks);
 }
