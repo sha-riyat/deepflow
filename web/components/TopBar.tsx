@@ -1,8 +1,8 @@
 'use client';
 // Barre du haut : symbole, intervalles favoris + menu complet, style, footprint, Indicateurs (dont TPO),
-// Alerte, grille de graphiques, replay, état de connexion, réglages d'affichage, plein écran.
+// Alerte, mises en page, grille de graphiques, replay, état de connexion, réglages d'affichage, plein écran.
 // Les réglages s'appliquent au graphique actif.
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   AlarmClockPlusIcon, Analytics01Icon, ChartAverageIcon, ChartBarLineIcon, ChartCandlestickIcon, ChartIncreaseIcon,
   ChartLineData01Icon, FullScreenIcon, FunctionSquareIcon, GridTableIcon, GridViewIcon, LayoutListIcon, Search01Icon, Settings02Icon,
@@ -60,6 +60,7 @@ interface Props {
   onAlert: () => void;
   grid: string;
   onGrid: (grid: string) => void;
+  presets: ReactNode; // menu des mises en page et modèles (Workspace)
 }
 
 // Aperçu d'une grille : une case par graphique, disposée comme dans l'espace de travail.
@@ -73,7 +74,7 @@ function GridIcon({ id }: { id: string }) {
 
 const CONN_TEXT: Record<string, string> = { synced: 'En direct', syncing: 'Synchronisation…', 'depth connected': 'Carnet connecté', 'trades connected': 'Trades connectés' };
 
-export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid }: Props) {
+export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid, presets }: Props) {
   const meta = useLive((s) => s.meta);
   const conn = useLive((s) => s.conn);
   const status = useLive((s) => s.status);
@@ -197,6 +198,7 @@ export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid }: Props
         <span>Alerte</span>
       </button>
       <div className="tb-right">
+        {presets}
         <MenuButton icon={GridViewIcon} caret={false} align="right" title="Grille de graphiques">
           {(close) => (
             <>

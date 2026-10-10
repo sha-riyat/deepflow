@@ -49,6 +49,14 @@ export function saveSet(key, list, from = null) {
   for (const w of watchers) if (w.from !== from) w.fn(key);
 }
 
+// Tous les jeux (export, import d'un fichier) ; les éditeurs ouverts relisent le leur.
+export const loadAllSets = () => parseDrawings(read(KEY));
+
+export function saveAllSets(sets) {
+  write(KEY, serializeDrawings(sets));
+  for (const w of watchers) w.fn(null);
+}
+
 // Dessins modifiés dans une autre fenêtre (voir windows.ts) : tous les jeux sont relus.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {

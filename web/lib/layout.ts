@@ -66,6 +66,14 @@ export function normalizeLayout(raw: Partial<Layout> | null | undefined): Layout
   return { grid, linkMode, panes, active, rail };
 }
 
+// Mise en page enregistrée rappelée : graphiques recréés (nouveaux identifiants), le même
+// graphique restant actif.
+export function restoreLayout(raw: Partial<Layout>, current: Layout): Layout {
+  const l = normalizeLayout(raw);
+  const ids = new Map(l.panes.map((p) => [p.id, newId()]));
+  return { ...l, panes: l.panes.map((p) => ({ ...p, id: ids.get(p.id)! })), active: ids.get(l.active)!, rail: raw.rail ? l.rail : current.rail };
+}
+
 export function loadLayout(): Layout {
   try {
     const saved = localStorage.getItem(keyOf(windowId));

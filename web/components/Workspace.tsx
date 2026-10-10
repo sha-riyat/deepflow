@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { TopBar } from './TopBar';
 import { ChartView } from './ChartView';
 import { DrawingBar } from './DrawingBar';
+import { PresetsMenu } from './PresetsMenu';
 import { Panels, Rail, toggleOpen } from './Rail';
 import { StatusBar } from './StatusBar';
 import { SymbolSearch } from './SymbolSearch';
@@ -14,8 +15,9 @@ import { AlertsPanel } from './panels/AlertsPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { activate, dropPane, engine, paneOf } from '@/lib/engine';
-import { getLive, type UiPrefs } from '@/lib/store';
-import { DEFAULT_RAIL, GRIDS, loadLayout, newId, normalizeLayout, saveLayout, type Layout, type PaneSpec, type Rail as RailState } from '@/lib/layout';
+import { getLive, normalizePrefs, type UiPrefs } from '@/lib/store';
+import { DEFAULT_RAIL, GRIDS, loadLayout, newId, normalizeLayout, restoreLayout, saveLayout, type Layout, type PaneSpec, type Rail as RailState } from '@/lib/layout';
+import { templateOf } from '@shared/presets.js';
 import { beep } from '@/lib/sound';
 import { toolForKey } from '@/lib/drawings/tools.js';
 import { onWindowMessage, openWindow, post } from '@/lib/windows';
@@ -166,6 +168,16 @@ export default function Workspace() {
     openWindow((w) => saveLayout(normalizeLayout({ grid: '1', linkMode, panes: [pane], active: pane.id, rail: { ...DEFAULT_RAIL, open: [] } }), w));
   }, []);
 
+  // Mise en page enregistrée, ou modèle d'indicateurs appliqué au graphique actif.
+  const applyPreset = useCallback((what: 'layouts' | 'templates', value: Record<string, unknown>) => {
+    const l = layoutRef.current;
+    if (what === 'layouts') return commit(restoreLayout(value, l));
+    const prefs = l.panes.find((p) => p.id === l.active)?.prefs;
+    updatePane(l.active, templateOf(normalizePrefs({ ...prefs, ...value })), 'series');
+    paneOf(l.active).chart?.resize();
+    paneOf(l.active).chart?.resetView();
+  }, [commit, updatePane]);
+
   // Graphique actif : le plus récent cliqué (ou le premier visible).
   useEffect(() => activate(paneOf(activeSpec.id)), [activeSpec.id]);
 
@@ -254,6 +266,8 @@ export default function Workspace() {
         onSymbol={() => setSearch('')}
         grid={layout.grid}
         onGrid={setGrid}
+        presets={<PresetsMenu onApply={applyPreset}
+          current={(what) => (what === 'layouts' ? { ...layoutRef.current } : templateOf(activeSpec.prefs))} />}
         onAlert={() => {
           const q = getLive().quote;
           if (q) setPreset({ price: Number(((q.bid + q.ask) / 2).toFixed(6)), n: Date.now() });
