@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Clock01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
+import { ReplayControls } from './Replay';
 import { getLive, useLive } from '@/lib/store';
 import { clockNow } from '@/lib/clock.js';
 import { fmt, sgn } from '@/lib/fmt.js';
@@ -54,6 +55,7 @@ export function StatusBar({ onRange }: { onRange: (span: number, tf: number) => 
         <button key={label} type="button" className="tb-btn" onClick={() => onRange(span, tf)}>{label}</button>
       ))}
       <span className="tb-sep" />
+      <ReplayControls />
       <span className="sb-info">{info.join(' · ') || 'Historique à jour'}</span>
       <div className="sb-right">
         {mark && meta?.market === 'futures' && (

@@ -8,6 +8,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon, MenuButton, MenuItem, OptionRows, Switch, type OptDefs } from './ui';
+import { ReplayLauncher } from './Replay';
 import { STYLES } from '@/lib/layers/candles.js';
 import { FP_MODES } from '@/lib/layers/footprint.js';
 import { PANES } from '@/lib/chart/panes.js';
@@ -183,6 +184,7 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
         <span>Alerte</span>
       </button>
       <div className="tb-right">
+        <ReplayLauncher />
         <span className={`conn ${conn}`}>
           <i />
           <span>{CONN_TEXT[status] ?? status}</span>

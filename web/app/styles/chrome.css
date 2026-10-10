@@ -182,6 +182,14 @@
 .sb-info b { font-weight: 600; }
 .sb-right { display: flex; align-items: center; margin-left: auto; }
 
+/* Replay des archives : fenêtre de lancement et commandes de la barre d'état */
+.replay-form { width: 300px; padding: 4px 6px 6px; }
+.replay-form .muted { margin: 2px 0; font-size: 11px; line-height: 1.4; }
+.replay-form .neg { margin: 0; font-size: 12px; }
+.replay-ctl { display: inline-flex; align-items: center; gap: 1px; padding-right: 6px; }
+.replay-ctl .tb-btn { gap: 3px; }
+.replay-tag { margin-right: 4px; padding: 1px 6px; border-radius: 4px; background: var(--ember); color: var(--bg); font-size: 10px; letter-spacing: 0.04em; }
+
 /* ---------- Menus et fenêtres ---------- */
 .menu-wrap { position: relative; }
 

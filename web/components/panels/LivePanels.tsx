@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { DomView } from '@/lib/widgets/dom.js';
 import { TapeView } from '@/lib/widgets/tape.js';
 import { engine, getData } from '@/lib/engine';
+import { useLive } from '@/lib/store';
 
 export function DomPanel() {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,7 +17,13 @@ export function DomPanel() {
       view.destroy();
     };
   }, []);
-  return <div className="pane-body fill" ref={ref} />;
+  const replay = useLive((s) => Boolean(s.meta?.archive));
+  return (
+    <>
+      {replay && <p className="note pad">Carnet d’ordres indisponible en replay : Binance ne l’archive pas.</p>}
+      <div className="pane-body fill" ref={ref} />
+    </>
+  );
 }
 
 export function TapePanel() {

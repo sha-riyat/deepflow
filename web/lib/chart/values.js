@@ -51,6 +51,7 @@ export function indicatorValues(chart, items) {
     const loc = openLocation(prev, today);
     out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
   }
+  if (L.heat && chart.meta?.archive) out.heat = 'indisponible en replay (carnet non archivé par Binance)';
   if (L.times) {
     // Prochains repères : délai avant l'ouverture de New York et avant le financement.
     const show = opts.times.show;
