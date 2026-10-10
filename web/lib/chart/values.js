@@ -51,6 +51,11 @@ export function indicatorValues(chart, items) {
     const loc = openLocation(prev, today);
     out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
   }
+  if (L.keys && style !== 'tpo') {
+    const k = data.keyLevels;
+    const parts = k && [k.weekOpen !== null && `Ouv. S ${fmt(k.weekOpen)}`, k.monthOpen !== null && `Ouv. M ${fmt(k.monthOpen)}`, k.prevDay && `J-1 ${fmt(k.prevDay.lo)} – ${fmt(k.prevDay.hi)}`];
+    out.keys = k ? parts.filter(Boolean).join(' · ') : 'chargement…';
+  }
   if (L.heat && chart.meta?.archive) out.heat = 'indisponible en replay (carnet non archivé par Binance)';
   if (L.times) {
     // Prochains repères : délai avant l'ouverture de New York et avant le financement.

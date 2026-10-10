@@ -75,6 +75,8 @@ async function route(req, res, ctx) {
       return json(res, 200, Q.liquidations(session, q));
     case 'GET /api/vwap':
       return json(res, 200, await Q.vwapAnchor(session, q));
+    case 'GET /api/levels':
+      return json(res, 200, await Q.levels(session));
     case 'GET /api/spotdelta':
       return json(res, 200, await Q.spotDelta(session, q));
     case 'GET /api/oi':

@@ -189,3 +189,16 @@ test('ancrage du VWAP par période : heures entières en 1 h, reste en 1 min', a
   await vwapAnchor(s, { t: monday, period: 'week' }); // début de période : rien à demander
   assert.equal(calls.length, 0);
 });
+
+test('niveaux clés : bougies journalières jusqu’à aujourd’hui, calcul gardé pour la journée', async () => {
+  const { levels } = await import('../server/queries.js');
+  const today = Date.parse('2026-10-07T00:00:00Z');
+  const calls = [];
+  const rest = { klines: async (sym, iv, o) => (calls.push([iv, o.endTime]), [[today - 86_400_000, '10', '12', '9'], [today, '11', '99', '1']]) };
+  const s = { rest, cfg: { symbol: 'BTCUSDT' }, now: () => today + 5 * 3_600_000 };
+  const k = await levels(s);
+  assert.deepEqual(calls, [['1d', today]]);
+  assert.deepEqual([k.dayOpen, k.prevDay], [11, { hi: 12, lo: 9 }]); // plus haut / bas du jour ignorés
+  await levels(s);
+  assert.equal(calls.length, 1);
+});

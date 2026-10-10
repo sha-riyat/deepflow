@@ -51,6 +51,7 @@ export class DataManager {
     this.spot = { rows: new Map(), param: 0, error: null }; // delta spot par bougie : début -> [achats, ventes]
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
+    this.keyLevels = null; // ouvertures semaine / mois, hauts et bas précédents (voir loadLevels)
     this.vwapAnchor = null; // sommes de la période (jour, semaine, mois) avant la première bougie chargée (voir loadVwapAnchor)
     this.dailySessions = []; // sessions journalières des 10 derniers jours (nPOC, veille, composite)
   }
@@ -241,6 +242,16 @@ export class DataManager {
       this.onChange('liqs');
     } catch {
       // nouvelle tentative au prochain cycle
+    }
+  }
+
+  // Niveaux clés : bougies journalières Binance, calculés par le collecteur une fois par jour.
+  async loadLevels() {
+    try {
+      this.keyLevels = await getJSON(this.url('/api/levels'));
+      this.onChange('levels');
+    } catch {
+      this.keyLevels = null;
     }
   }
 

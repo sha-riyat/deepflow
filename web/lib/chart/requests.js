@@ -132,6 +132,13 @@ export function requestData(chart, items) {
     }
   }
   const first = chart.data.bars[0];
+  if (layers.keys && !tpo) {
+    const key = `${Math.floor(now / DAY)}:${Math.floor(real / 300_000)}`; // chaque jour, nouvel essai toutes les 5 min
+    if (key !== chart.requests.levels) {
+      chart.requests.levels = key;
+      chart.data.loadLevels();
+    }
+  }
   const { period } = chart.settings.opts.vwap;
   if (layers.vwap && first && first.t0 !== periodStart(first.t0, period) && chart.requests.vwap !== `${period}:${first.t0}`) {
     chart.requests.vwap = `${period}:${first.t0}`; // VWAP de la période : ancrage avant la première bougie chargée

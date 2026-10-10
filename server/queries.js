@@ -3,6 +3,7 @@
 import { BarBuilder, BAR_TYPES, klineToWire } from '../shared/bars.js';
 import { SessionProfiler } from '../shared/profile.js';
 import { PERIODS, periodStart } from '../shared/sessions.js';
+import { keyLevels } from '../shared/keylevels.js';
 import { BinanceRest } from './history/rest.js';
 
 const HOUR = 3_600_000;
@@ -177,6 +178,19 @@ export async function vwapAnchor(s, q) {
   if (hour > start) add(await s.rest.klines(s.cfg.symbol, '1h', { startTime: start, endTime: hour - 1, limit: 1000 }));
   if (t > hour) add(await s.rest.klines(s.cfg.symbol, '1m', { startTime: hour, endTime: t - 1, limit: 60 }));
   return out;
+}
+
+// Niveaux clés (ouvertures de la semaine et du mois, hauts et bas précédents) : bougies
+// journalières Binance jusqu'à aujourd'hui (dont seule l'ouverture est gardée : rien du futur en
+// replay), calculés une fois par jour et par session.
+export async function levels(s) {
+  const today = periodStart(s.now(), 'day');
+  const key = `${s.cfg.symbol}:${today}`; // la session « replay » change de symbole
+  if (s.levelsCache?.key === key) return s.levelsCache.value;
+  const rows = await s.rest.klines(s.cfg.symbol, '1d', { endTime: today, limit: 70 });
+  const days = rows.map((k) => ({ t0: k[0], o: Number(k[1]), h: Number(k[2]), l: Number(k[3]) }));
+  s.levelsCache = { key, value: keyLevels(days, today) };
+  return s.levelsCache.value;
 }
 
 // Delta du marché spot du même actif (klines spot Binance : volume acheteur taker exact par bougie),
