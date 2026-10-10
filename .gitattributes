@@ -1,0 +1,3 @@
+# Fins de ligne des lanceurs : Windows (CRLF) pour le .cmd, Unix pour le .command du Mac.
+*.cmd text eol=crlf
+*.command text eol=lf

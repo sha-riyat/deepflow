@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "node scripts/dev.js",
     "start": "node scripts/dev.js start",
+    "launch": "node scripts/launch.js",
     "collector": "node server/index.js",
     "web:build": "npm run build --prefix web",
     "test": "node --test",
