@@ -51,10 +51,11 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   Alerte, mises en page, grille de graphiques, Replay, réglages, plein écran. Ces réglages
   s'appliquent au graphique actif (voir Espace de travail).
 - **Indicateurs** (menu sur deux colonnes) : flux d'ordres (heatmap, bulles de trades, gros prints,
-  liquidations, bid/ask, divergences CVD), alertes de prix, vue Market Profile (TPO), profils et niveaux
-  (profil de session, value area de la veille, ouverture du jour, repères horaires, POC non testés,
-  VWAP), panneaux
-  (volume, delta, CVD de session, CVD spot / perp, open interest, liquidations).
+  liquidations, bid/ask, divergences CVD, open interest par prix), alertes de prix, vue Market
+  Profile (TPO), profils et niveaux (profil de session, value area de la veille, ouverture du jour,
+  initial balance et type d'ouverture, niveaux clés, sessions Asie / Londres / New York, repères
+  horaires, POC non testés, VWAP), panneaux (volume, delta, CVD de session, CVD spot / perp, CVD
+  multi-plateformes, open interest, liquidations, prime et financement, statistiques).
 - **Légende** : une ligne par indicateur actif avec sa valeur courante (VWAP, POC et value area,
   liquidations longues / courtes en vue, seuil des gros prints, état de l'enchère…) ; au survol,
   réglages et retrait. Les réglages sont mémorisés dans le navigateur.
@@ -117,13 +118,35 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   après 2 clôtures de 30 min) et l'extrême de la sortie en cours.
 - **Ouverture du jour** : premier prix de la session UTC, en pointillés depuis 00:00, et sa
   position dans la légende (au-dessus, dans ou sous la valeur de la veille).
+- **Initial balance (IB) et ouverture** : plus haut et plus bas de la première heure de la session
+  UTC, extensions à 1,5 × et 2 × (option 3 ×) en tirets ; dans la légende, le type d'ouverture de
+  Dalton lu sur l'IB : Open-Drive (départ sans retour sur l'ouverture, conviction forte),
+  Open-Test-Drive (petit test d'un côté puis départ de l'autre), Open-Rejection-Reverse (départ
+  rejeté, retour au-delà de l'ouverture), Open-Auction (rotation, pas de direction). Règle
+  simplifiée : lecture indicative.
+- **Niveaux clés** : ouvertures de la semaine (lundi) et du mois, plus haut et plus bas de la
+  veille, de la semaine et du mois précédents (bougies journalières Binance), chacun depuis le
+  début de la période où il sert.
+- **Sessions Asie / Londres / New York** : zone du plus haut au plus bas de chaque session, heures
+  de bureau locales (Tokyo 9 h – 18 h, Londres et New York 8 h – 17 h, heures d'été comprises ; du
+  lundi au vendredi), plus haut et plus bas prolongés jusqu'à minuit UTC ; intervalle d'1 h au plus.
 - **Repères horaires** : traits verticaux à l'ouverture de New York (9 h 30 là-bas : 13 h 30 UTC
   en heure d'été américaine, 14 h 30 en hiver ; du lundi au vendredi, jours fériés non gérés) et aux
   heures de financement des perpétuels (0 h, 8 h, 16 h UTC) ; délai avant les prochains dans la
   légende. Les heures de l'axe du temps sont en heure locale, la session reste en UTC.
 - **CVD** : remis à zéro à chaque session UTC ; divergences prix / CVD entre deux sommets ou deux
   creux de la même session ; panneau CVD spot / perp (klines spot du même actif) pour distinguer
-  une hausse portée par l'achat réel d'une hausse portée par les seuls dérivés.
+  une hausse portée par l'achat réel d'une hausse portée par les seuls dérivés ; panneau CVD
+  multi-plateformes (Binance, Bybit, OKX sur le même perpétuel, chacun à son échelle) pour voir si
+  un mouvement est suivi par tout le marché. Bybit et OKX : en direct seulement, depuis le
+  lancement du collecteur (rien en replay).
+- **VWAP** : du jour, de la semaine (depuis lundi) ou du mois UTC, bandes à ±1, ±2 et ±3 écarts-types.
+- **Open interest par prix** : profil à droite du tracé, positions ouvertes (vert) et fermées
+  (rouge) par niveau de prix sur la plage visible ; dans la légende, la lecture prix / OI de la
+  dernière heure : nouveaux longs (prix ↑, OI ↑), nouveaux shorts (prix ↓, OI ↑), rachats de shorts
+  (prix ↑, OI ↓), sorties de longs (prix ↓, OI ↓).
+- **Prime et financement** (panneau, futures) : indice de prime (écart du perpétuel à l'indice spot)
+  et taux de financement payés, avec leur équivalent annuel ; positifs, les longs paient les shorts.
 - **POC non testés** : POC des 7 dernières sessions UTC qu'aucun prix ultérieur n'a retouché (étendue
   complète des sessions suivantes et direct), indépendants du profil affiché ; trait jusqu'au bord
   droit, ou étiquette fléchée en haut / en bas quand le niveau est hors de l'échelle de prix.
@@ -200,8 +223,9 @@ l'heure rejouée).
 - Session = jour UTC (00:00 → 24:00), comme la bougie journalière de Binance ; marché ouvert en
   continu, donc 48 périodes TPO par session et initial balance de 00:00 à 01:00 UTC.
 - Prix de marque et financement (`markPrice@1s`) dans la barre d'état.
-- VWAP du jour ancré à 00:00 UTC : les sommes antérieures à la première bougie chargée viennent des
-  klines 1 min (volume en cotation / volume = VWAP exact), quelle que soit la profondeur chargée.
+- VWAP ancré au début du jour, de la semaine ou du mois UTC : les sommes antérieures à la première
+  bougie chargée viennent des klines 1 h puis 1 min (volume en cotation / volume = VWAP exact) ;
+  les bandes ignorent la dispersion à l'intérieur de chaque kline (un peu plus étroites).
 - Open interest : historique Binance (`openInterestHist`), 30 derniers jours, période adaptée à
   l'intervalle des bougies (5 min au minimum).
 - `npm run verify` contrôle sur la veille : bougies 1 min, volume et volume acheteur, trades REST
@@ -210,10 +234,7 @@ l'heure rejouée).
 
 ## Feuille de route
 
-1. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
-   ranges des sessions Asie / Londres / New York, historique du financement et de la prime perp /
-   spot, CVD et volume agrégés sur plusieurs plateformes gratuites (Bybit, OKX).
-2. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
+1. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
    (notes et captures liées à un graphique). Le replay des archives est en place (voir plus haut).
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
@@ -229,6 +250,7 @@ backtest) a été retiré de l'application et archivé sur la branche `archive/m
 | `HEAT_HOURS` | `4` | Profondeur de la heatmap en mémoire |
 | `RECORD` | désactivé | `1` : enregistre le carnet dans `data/*.ndjson.gz` |
 | `REPLAY`, `SPEED` | — , `1` | Rejouer un enregistrement du carnet (`RECORD=1`) ; pour les trades seuls, le bouton Replay suffit |
+| `VENUES` | activé | `0` : pas de connexion à Bybit et OKX (CVD multi-plateformes) |
 | `COLLECTOR_PORT` | `8787` | Port du collecteur (l'interface est sur 3000) |
 
 ## Limites connues
@@ -238,6 +260,8 @@ backtest) a été retiré de l'application et archivé sur la branche `archive/m
   voisine par rapport aux klines Binance (écart visible sur quelques bougies et bulles).
 - Binance n'envoie qu'une liquidation par seconde et par symbole (la plus récente) : les
   liquidations affichées sont un échantillon, pas le total.
+- CVD Bybit et OKX : en mémoire du collecteur (3 jours), perdus à son arrêt ; paires USDT
+  seulement, et seulement si le perpétuel existe sur la plateforme.
 - Nombre de trades : les klines comptent les trades individuels, nos bougies construites depuis les
   trades comptent les aggTrades (un ordre agresseur regroupé) ; les deux ne sont pas comparables.
 
