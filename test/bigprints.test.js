@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupBigPrints } from '../shared/bigprints.js';
+import { bySession, groupBigPrints } from '../shared/bigprints.js';
 
 const MIN = 60_000;
 const bars = [0, 1, 2].map((k) => ({ t0: k * 5 * MIN, t1: (k + 1) * 5 * MIN }));
@@ -54,6 +54,17 @@ test('suite d’un gros print : le prix avance, ou le gros ordre est absorbé', 
   assert.equal(printFollow(buy, up.slice(0, 3), { bars: 3 }), null);
   assert.equal(printFollow([10, 100, 20, 1, 1, -1], up, { bars: 3 }), null);
   assert.equal(printFollow(buy, up, { bars: 0 }), null);
+});
+
+test('seuil par session : plus bas en Asie, plus haut à New York', () => {
+  const day = Date.parse('2026-10-09T00:00:00Z'); // vendredi, heure d'été
+  const h = (hh) => day + hh * 3_600_000;
+  // Ordres de 40 000 $ (400 × 100) : au seuil de base de 50 000 $, seul l'Asie (seuil 25 000 $) les garde.
+  const prints = [[h(3), 100, 400, 1], [h(9), 100, 400, 1], [h(13), 100, 400, 1], [h(22), 100, 400, -1]];
+  assert.deepEqual(bySession(prints, 50_000).map((p) => p[0]), [h(3), h(22)]); // Asie ×0,5 et hors session ×0,5
+  // Un ordre de 120 000 $ passe partout, même à New York (seuil 100 000 $).
+  assert.equal(bySession([[h(14), 100, 1200, 1]], 50_000).length, 1);
+  assert.equal(bySession([[h(14), 100, 900, 1]], 50_000).length, 0); // 90 000 $ < 100 000 $
 });
 
 test('suite d’un gros print : le seuil suit l’amplitude des bougies de l’unité de temps', async () => {

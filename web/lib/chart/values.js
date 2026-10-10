@@ -108,7 +108,7 @@ export function indicatorValues(chart, items) {
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   const min = bigMin(chart);
-  if (L.big) out.big = min ? `≥ ${money(min)} $` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';
+  if (L.big) out.big = min ? `≥ ${money(min)} $${opts.big.sess === 'on' ? ' par session' : ''}` : data.bubbles.threshold ? `auto ≥ ${qty(data.bubbles.threshold)}` : '';
   if (L.liq) {
     if (chart.meta?.market !== 'futures') out.liq = 'futures uniquement';
     else {

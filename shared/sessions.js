@@ -92,6 +92,23 @@ export function sessionHours(day, kind) {
   return usDst(day) ? [12, 21] : [13, 22];
 }
 
+// Session de l'instant t : 'ny', 'london' ou 'asia' (New York l'emporte sur Londres pendant leur
+// chevauchement), 'off' hors des heures de bureau et le week-end.
+const hoursOfDay = new Map();
+export function sessionAt(t) {
+  const d = Math.floor(t / DAY) * DAY;
+  let hours = hoursOfDay.get(d);
+  if (!hours) {
+    const wd = new Date(d).getUTCDay();
+    hours = wd === 0 || wd === 6 ? [] : ['ny', 'london', 'asia'].map((kind) => [kind, ...sessionHours(d, kind)]);
+    if (hoursOfDay.size > 400) hoursOfDay.clear();
+    hoursOfDay.set(d, hours);
+  }
+  const h = (t - d) / HOUR;
+  for (const [kind, h0, h1] of hours) if (h >= h0 && h < h1) return kind;
+  return 'off';
+}
+
 // Sessions qui touchent [from, to] : { kind, t0, t1 }, triées par début.
 export function marketSessions(from, to, kinds = MARKET_SESSIONS) {
   const out = [];

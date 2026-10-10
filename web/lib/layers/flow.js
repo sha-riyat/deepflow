@@ -2,7 +2,7 @@
 // Inspirés des réglages de Bookmap / DeepCharts (bulles), ATAS / DeepCharts (gros prints)
 // et Exocharts / Kiyotaka (liquidations), adaptés aux données publiques de Binance.
 import { barIndex } from '../chart/panes.js';
-import { groupBigPrints, printFollow, topPerBar } from '@shared/bigprints.js';
+import { bySession, groupBigPrints, printFollow, topPerBar } from '@shared/bigprints.js';
 import { compact, qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -91,9 +91,11 @@ export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 
 // les `limit` plus gros de la vue, sont dessinés.
 // Position horizontale : centre de la bougie (`align` = 'candle') ou heure exacte ('time').
 // Étiquettes (quantité, « ×n » si plusieurs ordres) : les 3 plus gros, ou toutes, ou aucune ; elles ne se
-// chevauchent jamais.
-export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, follow = 0, move = 0.5, align = 'candle', perBar = 3 } = {}, geo = null) {
-  const seen = all.filter((b) => {
+// chevauchent jamais. Avec `sess` = 'on', le montant minimum `min` est ajusté par session (Asie ×0,5,
+// Londres ×1, New York ×2).
+export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, follow = 0, move = 0.5, min = 0, sess = 'off', align = 'candle', perBar = 3 } = {}, geo = null) {
+  const pool = sess === 'on' && min > 0 ? bySession(all, min) : all; // seuil propre à chaque session
+  const seen = pool.filter((b) => {
     const x = scale.xAt(b[0], items);
     return x >= -40 && x <= scale.w + 40;
   });

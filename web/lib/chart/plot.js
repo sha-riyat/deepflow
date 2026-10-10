@@ -13,6 +13,7 @@ import { drawTpoView } from '../layers/tpo.js';
 import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
 import { clockNow } from '../clock.js';
+import { bigMin } from './requests.js';
 
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
 export const INDEXED = [...DERIVED, 'tpo']; // vues sans échelle de temps continue
@@ -44,7 +45,7 @@ export function drawAbove(chart, ctx, items, geo) {
   const tpo = st.style === 'tpo';
   if (L.div && !INDEXED.includes(st.style)) drawDivergences(ctx, items, geo, s);
   if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, data.vwapAnchor);
-  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket }, geo);
+  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket, min: bigMin(chart) }, geo);
   if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, data.liqs, O.liq);
   if (L.alerts) drawAlertLines(ctx, s, chart.alerts);
 }

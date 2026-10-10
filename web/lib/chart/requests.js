@@ -1,6 +1,7 @@
 // Requêtes de données dépendant de la vue (heatmap, bulles, profils, historique plus ancien),
 // limitées à 4 par seconde.
 import { rowBucket } from '@shared/auction.js';
+import { bySession } from '@shared/bigprints.js';
 import { clockNow } from '../clock.js';
 import { periodStart } from '@shared/sessions.js';
 import { INDEXED } from './plot.js';
@@ -35,6 +36,13 @@ export function bigMin(chart) {
   return chart.meta?.symbol?.startsWith('BTC') ? 50_000 : 25_000;
 }
 
+// Montant demandé au serveur : avec un seuil ajusté par session, le plus bas des seuils (Asie ×0,5) ;
+// le navigateur filtre ensuite session par session.
+export function bigRequestMin(chart) {
+  const min = bigMin(chart);
+  return min > 0 && chart.settings.opts.big.sess === 'on' ? min * 0.5 : min;
+}
+
 export function requestData(chart, items) {
   // `now` : présent du graphique (heure rejouée en replay) pour les plages de données ; `real` :
   // heure réelle pour le rythme des requêtes (4 par seconde au plus, rafraîchissements).
@@ -62,7 +70,7 @@ export function requestData(chart, items) {
   if ((layers.bubbles || layers.big) && !tpo) {
     const span = Math.max(1000, tR - tL);
     const slot = bubbleSlot(span / s.w, chart.settings.opts.bubbles.density, s.mode === 'time' && chart.spec.type === 'time' ? chart.spec.param : null);
-    const min = bigMin(chart);
+    const min = bigRequestMin(chart);
     const key = `${Math.floor(tL / slot)}:${Math.floor(tR / (slot * 20))}:${slot}:${min}`;
     if (key !== chart.requests.bubbles && span <= 86_400_000) {
       chart.requests.bubbles = key;

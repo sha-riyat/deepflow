@@ -2,6 +2,17 @@
 // ordres au même prix s'additionnent, 72 + 61 + 60 + 62 contrats ≈ 255 contrats sur un seul niveau).
 // Un gros print est [temps, prix, quantité, côté] ; côté 1 = acheteur agresseur, -1 = vendeur.
 
+import { sessionAt } from './sessions.js';
+
+// Multiplicateur du seuil de gros print selon la session (la liquidité n'est pas la même à Tokyo qu'à
+// New York) : Asie ×0,5, Londres ×1, New York ×2, hors sessions et week-end ×0,5.
+export const SESSION_MULT = { asia: 0.5, london: 1, ny: 2, off: 0.5 };
+
+// Ne garde que les prints dont le montant (prix × quantité) atteint le seuil `min` de leur session.
+export function bySession(prints, min) {
+  return prints.filter(([t, p, q]) => p * q >= min * SESSION_MULT[sessionAt(t)]);
+}
+
 // Index de la bougie qui contient l'instant t (dernière bougie commencée), -1 avant la première.
 function barAt(items, t) {
   let lo = 0;

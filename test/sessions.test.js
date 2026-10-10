@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  marketSessions, nextMarkers, nyOpen, periodEnd, periodStart, sessionRanges, timeMarkers, ukDst, usDst,
+  marketSessions, nextMarkers, nyOpen, periodEnd, periodStart, sessionAt, sessionRanges, timeMarkers, ukDst, usDst,
 } from '../shared/sessions.js';
 
 const utc = (s) => Date.parse(`${s}Z`);
@@ -65,4 +65,16 @@ test('sessions : plus haut et plus bas d’après les bougies qui y commencent',
   const r = sessionRanges(bars, list, d + 15 * H);
   assert.deepEqual(r.map((s) => [s.kind, s.hi, s.lo, s.done]), [['asia', 108, 42, true], ['london', 115, 35, false], ['ny', 120, 30, false]]);
   assert.deepEqual(sessionRanges([], list, d), []);
+});
+
+test('session d’un instant : New York prime sur Londres, heures d’été suivies, week-end hors session', () => {
+  // Vendredi 2026-10-09 (heure d'été britannique et américaine) : Londres 7–16, New York 12–21 UTC.
+  assert.equal(sessionAt(utc('2026-10-09T03:00:00')), 'asia');
+  assert.equal(sessionAt(utc('2026-10-09T09:00:00')), 'london');
+  assert.equal(sessionAt(utc('2026-10-09T13:00:00')), 'ny'); // chevauchement Londres / New York
+  assert.equal(sessionAt(utc('2026-10-09T21:30:00')), 'off');
+  // Mardi 2026-12-01 (hiver) : Londres 8–17, New York 13–22 UTC.
+  assert.equal(sessionAt(utc('2026-12-01T12:30:00')), 'london');
+  assert.equal(sessionAt(utc('2026-12-01T13:00:00')), 'ny');
+  assert.equal(sessionAt(utc('2026-10-10T14:00:00')), 'off'); // samedi
 });

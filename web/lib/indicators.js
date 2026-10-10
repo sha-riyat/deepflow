@@ -45,6 +45,7 @@ export const OPTIONS = {
     align: { label: 'Position horizontale', choices: [['candle', 'Sur la bougie'], ['time', 'Selon l’heure']] },
     group: { label: 'Regroupement', choices: [['level', 'Par niveau dans la bougie'], ['order', 'Par ordre']] },
     follow: { label: 'Suite du prix (absorbé = anneau creux)', choices: [[3, 'Sur 3 bougies'], [1, 'Sur 1 bougie'], [5, 'Sur 5 bougies'], [0, 'Masquée']] },
+    sess: { label: 'Seuil par session', choices: [['off', 'Le même partout'], ['on', 'Ajusté (Asie ×0,5, Londres ×1, New York ×2)']] },
     move: { label: 'Avancée minimale', choices: [[0.5, 'Une demi-bougie moyenne'], [0.25, 'Un quart de bougie'], [1, 'Une bougie moyenne']] },
   },
   oiprof: {
