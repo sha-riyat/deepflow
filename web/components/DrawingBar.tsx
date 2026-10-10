@@ -40,6 +40,11 @@ const GLYPHS: Record<string, ReactNode> = {
       <circle cx="5" cy="7" r="1.6" />
       <circle cx="19" cy="17" r="1.6" />
     </>
+  ),  fib: (
+    <>
+      <path d="M4 5h16M4 10h16M4 14h16M4 19h16" />
+      <path d="M6 19 18 5" strokeDasharray="2 2" />
+    </>
   ),
 };
 

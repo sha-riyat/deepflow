@@ -1,6 +1,7 @@
 // Dessins de l'utilisateur (voir lib/drawings) : tracé, poignées du dessin sélectionné ou en cours,
 // étiquettes sur les axes (prix des horizontales, heure de la verticale sélectionnée).
 import { PRICE_ONLY, shapeOf, toPixel } from '@shared/drawings.js';
+import { decorate } from './drawtools.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
@@ -10,7 +11,7 @@ const pad = (n) => String(n).padStart(2, '0');
 // Dessins à afficher : dans les vues sans échelle de temps continue, seulement ceux sans heure.
 const shown = (editor, priceOnly) => editor.visible().filter((d) => !priceOnly || PRICE_ONLY.includes(d.type));
 
-export function drawDrawings(ctx, editor, scale, items, priceOnly = false) {
+export function drawDrawings(ctx, editor, scale, items, { digits }, priceOnly = false) {
   const view = { w: scale.w, h: scale.h };
   for (const d of shown(editor, priceOnly)) {
     const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)), view);
@@ -30,7 +31,17 @@ export function drawDrawings(ctx, editor, scale, items, priceOnly = false) {
     ctx.lineWidth = width;
     ctx.setLineDash(DASH[dash] ?? []);
     ctx.stroke();
+    // Guides (diagonale du Fibonacci) : trait fin en tirets.
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    for (const [x1, y1, x2, y2] of shape.guides ?? []) {
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.stroke();
     ctx.setLineDash([]);
+    decorate(ctx, d, shape, { digits });
     if (d.id !== editor.sel && d !== editor.draft) continue;
     ctx.fillStyle = C.ink;
     ctx.lineWidth = 1.5;

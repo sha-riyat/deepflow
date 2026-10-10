@@ -92,3 +92,17 @@ test('dessins : rectangle, clic à l’intérieur et coins opposés', () => {
   assert.deepEqual(setHandle({ type: 'trend', pts: d.pts }, 1, { t: 7, p: 8 }), [{ t: 1, p: 10 }, { t: 7, p: 8 }]);
   assert.deepEqual(d.pts, [{ t: 1, p: 10 }, { t: 5, p: 20 }]); // l'original n'est pas modifié
 });
+
+test('dessins : retracement de Fibonacci (0 sur la fin du mouvement, 1 sur son début)', async () => {
+  const { fibLevels } = await import('../shared/measures.js');
+  const lv = fibLevels(100, 200); // hausse de 100 à 200
+  assert.deepEqual(lv.map((l) => l.level), [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1]);
+  assert.equal(lv[0].price, 200);
+  assert.equal(lv[3].price, 150);
+  assert.ok(Math.abs(lv[4].price - 138.2) < 1e-9);
+  assert.equal(lv[6].price, 100);
+  const f = shapeOf({ type: 'fib' }, [[300, 400], [100, 200]]);
+  assert.deepEqual(f.segs[0], [100, 200, 300, 200]); // niveau 0 au second point, de gauche à droite
+  assert.deepEqual(f.segs[6], [100, 400, 300, 400]);
+  assert.deepEqual(hitTest([f], 200, 300), { index: 0, handle: -1 }); // sur la diagonale (guide)
+});

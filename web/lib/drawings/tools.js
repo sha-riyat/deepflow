@@ -6,6 +6,7 @@ export const TOOLS = {
   hray: { label: 'Rayon horizontal', key: 'J' },
   vline: { label: 'Ligne verticale', key: 'V' },
   rect: { label: 'Rectangle (zone)', key: 'R' },
+  fib: { label: 'Retracement de Fibonacci', key: 'F' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre
