@@ -25,6 +25,7 @@ export class ArchiveSource extends EventEmitter {
   }
 
   start() {
+    this.emit('status', 'replay en pause : lancer la lecture');
     this.timer = setInterval(() => {
       if (this.playing) this.#run(this.clock + this.frameMs * this.speed, false);
     }, this.frameMs);
@@ -55,8 +56,10 @@ export class ArchiveSource extends EventEmitter {
     this.#state();
   }
 
-  // Avance jusqu'à `t` (au plus la fin des données), en pause comme en lecture.
-  advanceTo(t) {
+  // Avance jusqu'à `t` (au plus la fin des données), en pause comme en lecture ; attend la fin du
+  // pas de lecture en cours.
+  async advanceTo(t) {
+    while (this.busy) await new Promise((r) => setTimeout(r, 10));
     return this.#run(t, t - this.clock > JUMP_MS);
   }
 

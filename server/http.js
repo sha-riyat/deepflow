@@ -2,6 +2,10 @@
 // symbole, alertes). N'écoute que sur 127.0.0.1.
 import http from 'node:http';
 import * as Q from './queries.js';
+import { SPEEDS } from './replay.js';
+
+const DAY = 86_400_000;
+const FIRST_ARCHIVE = Date.UTC(2019, 8, 1); // premières archives Binance (futures USD-M : sept. 2019)
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -71,6 +75,42 @@ async function route(req, res, ctx) {
       const s = String(symbol ?? '').toUpperCase();
       if (!/^[A-Z0-9]{2,20}$/.test(s)) throw new Error('symbole invalide');
       await session.start(s);
+      return json(res, 200, session.meta());
+    }
+    case 'POST /api/replay': {
+      // Replay des archives : démarrage en tâche de fond (l'archive peut être à télécharger), état
+      // et erreurs diffusés en SSE ; en cas d'échec, retour au direct.
+      if (ctx.cfg.replay) throw new Error('déjà en replay d’un enregistrement');
+      const body = await readJson(req);
+      const s = String(body.symbol ?? session.cfg.symbol).toUpperCase();
+      if (!/^[A-Z0-9]{2,20}$/.test(s)) throw new Error('symbole invalide');
+      const from = Math.floor(Number(body.from) / 1000) * 1000;
+      const today = Math.floor(Date.now() / DAY) * DAY;
+      if (!(from >= FIRST_ARCHIVE && from < today)) throw new Error('date de départ invalide : un jour passé, jusqu’à hier');
+      const speed = SPEEDS.includes(Number(body.speed)) ? Number(body.speed) : 1;
+      session.start(s, { from, speed }).catch((err) => {
+        hub.state('status', `replay impossible : ${err.message}`);
+        return session.start(s);
+      });
+      return json(res, 202, { ok: true });
+    }
+    case 'POST /api/replay/control': {
+      const src = session.source;
+      if (!session.archive || !src?.advanceTo) throw new Error('aucun replay des archives en cours');
+      const { action, value } = await readJson(req);
+      if (action === 'play') src.play();
+      else if (action === 'pause') src.pause();
+      else if (action === 'speed') src.setSpeed(Number(value));
+      else if (action === 'step') {
+        const to = Number(value);
+        if (!(to > src.clock)) throw new Error('instant invalide');
+        await src.advanceTo(to);
+      } else throw new Error('action inconnue');
+      return json(res, 200, { t: src.clock, speed: src.speed, playing: src.playing });
+    }
+    case 'POST /api/live': {
+      if (ctx.cfg.replay) throw new Error('collecteur lancé en replay d’un enregistrement');
+      if (session.mode !== 'live') await session.start(session.cfg.symbol);
       return json(res, 200, session.meta());
     }
     case 'GET /api/alerts':
