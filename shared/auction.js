@@ -1,9 +1,89 @@
-// Lecture d'enchère sur les profils de session (calculs sans dessin, testables) : état
-// d'acceptation ou de rejet par rapport à la value area de la veille, profils composites sur
-// plusieurs sessions et taille des lignes.
+// Lecture d'enchère sur les profils de session (calculs sans dessin, testables) : nœuds de volume
+// (HVN / LVN), forme du profil, état d'acceptation ou de rejet par rapport à la value area de la
+// veille, profils composites sur plusieurs sessions et taille des lignes.
 import { valueArea } from './profile.js';
 
 const DAY = 86_400_000;
+
+// HVN / LVN, comme les plateformes de volume profile : histogramme continu (lignes vides à 0),
+// lissé par une moyenne mobile centrée, extrema locaux sur ± `span` lignes, puis filtre de
+// proéminence. Un HVN doit dépasser `prom` × le maximum au-dessus du creux le plus haut qui le
+// sépare d'un pic plus fort ; un LVN est le creux le plus bas entre deux HVN retenus et doit être
+// au moins `prom` sous le plus petit des deux. rows = [[ligne, achats, ventes], ...].
+export function volumeNodes(rows, { smooth = 3, span = 2, prom = 0.15 } = {}) {
+  if (rows.length < 5) return { hvn: [], lvn: [] };
+  const lo = rows[0][0];
+  const hi = rows[rows.length - 1][0];
+  const raw = new Array(hi - lo + 1).fill(0);
+  for (const [row, bv, sv] of rows) raw[row - lo] = bv + sv;
+  const half = Math.floor(smooth / 2);
+  const v = raw.map((_, i) => {
+    let s = 0;
+    let n = 0;
+    for (let k = i - half; k <= i + half; k++) if (k >= 0 && k < raw.length) (s += raw[k]), n++;
+    return s / n;
+  });
+  const max = Math.max(...v);
+  if (!(max > 0)) return { hvn: [], lvn: [] };
+  const isPeak = (i) => {
+    for (let k = i - span; k <= i + span; k++) if (k !== i && k >= 0 && k < v.length && v[k] > v[i]) return false;
+    return v[i] > 0;
+  };
+  // Proéminence topographique : hauteur du pic au-dessus du col le plus haut menant à un pic plus haut.
+  const prominence = (i) => {
+    const side = (dir) => {
+      let col = v[i];
+      for (let k = i + dir; k >= 0 && k < v.length; k += dir) {
+        if (v[k] > v[i]) return col; // pic plus haut atteint : col = point le plus bas du chemin
+        col = Math.min(col, v[k]);
+      }
+      return null; // aucun pic plus haut de ce côté
+    };
+    const cols = [side(-1), side(1)].filter((c) => c !== null);
+    return v[i] - (cols.length ? Math.max(...cols) : 0);
+  };
+  const peaks = [];
+  for (let i = 0; i < v.length; i++) {
+    if (!isPeak(i) || prominence(i) < prom * max) continue;
+    if (peaks.length && i - peaks[peaks.length - 1] <= span) continue; // plateau : un seul nœud
+    peaks.push(i);
+  }
+  const lvn = [];
+  for (let k = 1; k < peaks.length; k++) {
+    let m = peaks[k - 1];
+    for (let i = peaks[k - 1]; i <= peaks[k]; i++) if (v[i] < v[m]) m = i;
+    if (v[m] <= (1 - prom) * Math.min(v[peaks[k - 1]], v[peaks[k]])) lvn.push(m + lo);
+  }
+  return { hvn: peaks.map((i) => i + lo), lvn };
+}
+
+// Forme du profil (Dalton) : « double » si un LVN sépare deux HVN importants, « P » si le volume
+// se concentre dans le tiers haut (rachat de shorts), « b » dans le tiers bas (liquidation de longs),
+// sinon « D » (équilibre).
+export function profileShape(s, nodes = volumeNodes(s.rows)) {
+  if (!s.rows.length) return null;
+  const lo = s.rows[0][0];
+  const hi = s.rows[s.rows.length - 1][0];
+  if (hi - lo < 4) return 'D';
+  const vol = new Map(s.rows.map(([r, b, v]) => [r, b + v]));
+  const big = nodes.hvn.filter((r) => (vol.get(r) ?? 0) >= 0.5 * Math.max(...vol.values()));
+  if (big.length >= 2 && nodes.lvn.some((l) => l > Math.min(...big) && l < Math.max(...big))) return 'double';
+  const third = (hi - lo + 1) / 3;
+  let top = 0;
+  let bottom = 0;
+  let total = 0;
+  for (const [r, v] of vol) {
+    total += v;
+    if (r >= hi - third) top += v;
+    if (r <= lo + third) bottom += v;
+  }
+  const pocPos = (s.poc - lo) / (hi - lo);
+  if (pocPos >= 0.6 && top / total >= 0.45) return 'P';
+  if (pocPos <= 0.4 && bottom / total >= 0.45) return 'b';
+  return 'D';
+}
+
+export const SHAPE_LABEL = { D: 'D (équilibre)', P: 'P (rachat de shorts)', b: 'b (liquidation de longs)', double: 'double distribution (tendance)' };
 
 // État de l'enchère du jour face à la value area de la veille, sur les clôtures de périodes de
 // 30 min terminées (règle d'acceptation du cours : 2 périodes) :

@@ -1,6 +1,6 @@
 // Niveaux de la stratégie du cours : value area de la veille prolongée sur la journée (VAH, VAL,
-// POC d'hier) et extrême de la sortie en cours.
-import { auctionState } from '@shared/auction.js';
+// POC d'hier), extrême de la sortie en cours, et nœuds de volume (HVN / LVN) d'un profil.
+import { auctionState, volumeNodes } from '@shared/auction.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, font, pill } from '../theme.js';
 
@@ -52,4 +52,23 @@ export function drawPrevLevels(ctx, daily, scale, items) {
     ctx.fillText(`extrême de la sortie ${fmt(st.extreme)}`, x0 + 6, y(st.extreme) + (st.side > 0 ? -2 : 2));
   }
   return st;
+}
+
+// HVN (pics) et LVN (creux) d'un profil : repère orange au bout des barres HVN, trait pointillé
+// sur les LVN (zones traversées vite, où placer un stop de l'autre côté). x0..x1 = étendue.
+export function drawNodes(ctx, s, scale, x0, x1, { labels = false } = {}) {
+  const { hvn, lvn } = volumeNodes(s.rows);
+  const y = (row) => scale.yOfPrice((row + 0.5) * s.bucket);
+  for (const row of hvn) {
+    if (row === s.poc) continue;
+    if (!labels) {
+      ctx.fillStyle = alpha(C.ember, 0.9);
+      ctx.fillRect(x0, y(row) - 1, 6, 2);
+    } else pill(ctx, x1 - 6, y(row), `HVN ${fmt((row + 0.5) * s.bucket)}`, { bg: C.obsidian, fg: C.ember, size: 10, align: 'right' });
+  }
+  for (const row of lvn) {
+    hline(ctx, x0, x1, y(row), alpha('#b6d6ff', 0.55), [2, 3]);
+    if (labels) pill(ctx, x1 - 6, y(row), `LVN ${fmt((row + 0.5) * s.bucket)}`, { bg: C.obsidian, fg: '#b6d6ff', size: 10, align: 'right' });
+  }
+  return { hvn, lvn };
 }

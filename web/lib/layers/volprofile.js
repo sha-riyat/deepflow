@@ -4,7 +4,7 @@
 // POC et value area « en développement ». POC non testés : calque indépendant (drawNakedPocs).
 import { nakedPocs, valueArea } from '@shared/profile.js';
 import { compositeSession } from '@shared/auction.js';
-import { prevAndToday } from './levels.js';
+import { drawNodes, prevAndToday } from './levels.js';
 import { fmt } from '../fmt.js';
 import { C, alpha, pill } from '../theme.js';
 
@@ -114,12 +114,13 @@ export function compositeOf(daily, range) {
 }
 
 export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily = []) {
-  const { width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0 } = opts;
+  const { width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0, nodes = 1 } = opts;
   const y = (p) => scale.yOfPrice(p);
   if (range === 'visible' || range.startsWith('c')) {
     // Plage visible ou composite : profil unique épinglé au bord droit, niveaux sur toute la largeur.
     const s = range === 'visible' ? sessions[sessions.length - 1] : compositeOf(daily, range);
     if (!s || s.poc === null) return;
+    if (nodes) drawNodes(ctx, s, scale, 0, scale.w, { labels: true });
     histogram(ctx, s, scale, scale.w, scale.w * share, -1, { kind, va });
     if (va) {
       hline(ctx, 0, scale.w, y((s.vah + 1) * s.bucket), alpha(C.mist, 0.35), [4, 4]);
@@ -140,6 +141,7 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily
       ctx.fillRect(x0, y((s.vah + 1) * s.bucket), x1 - x0, y(s.val * s.bucket) - y((s.vah + 1) * s.bucket));
     }
     histogram(ctx, s, scale, Math.max(0, x0), width, 1, { kind, va });
+    if (nodes) drawNodes(ctx, s, scale, Math.max(0, x0), x1);
     const pocP = (s.poc + 0.5) * s.bucket;
     if (dev) devLines(ctx, s, scale, items, dev);
     else {

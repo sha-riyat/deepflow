@@ -5,7 +5,7 @@ import { bigMin } from './requests.js';
 import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
-import { auctionLabel, auctionState } from '@shared/auction.js';
+import { SHAPE_LABEL, auctionLabel, auctionState, profileShape } from '@shared/auction.js';
 
 const DAY = 86_400_000;
 
@@ -35,7 +35,8 @@ export function indicatorValues(chart, items) {
   const s = range.startsWith('c') ? compositeOf(data.dailySessions, range) : list[list.length - 1];
   if (L.profile && style !== 'tpo' && s && s.poc !== null) {
     const what = { day: 'Jour', week: 'Semaine', visible: 'Visible', c5: 'Composite 5 j', c10: 'Composite 10 j' }[range] ?? '';
-    out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}`;
+    const shape = profileShape(s);
+    out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}${shape ? ` · forme ${SHAPE_LABEL[shape]}` : ''}`;
   }
   if (L.prev && style !== 'tpo') {
     const { prev, today } = prevAndToday(data.dailySessions);

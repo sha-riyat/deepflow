@@ -1,7 +1,7 @@
-// Tests de la lecture d'enchère : acceptation / rejet, composite.
+// Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, profileShape, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -10,6 +10,24 @@ const prof = (vols, extra = {}) => {
   vols.forEach((v, i) => v > vols[poc] && (poc = i));
   return { rows, poc: 100 + poc, bucket: 1, ...extra };
 };
+
+test('HVN / LVN : deux bosses séparées par un creux, petites bosses filtrées', () => {
+  const bimodal = [1, 3, 8, 10, 8, 3, 1, 1, 2, 7, 12, 7, 2, 1];
+  const n = volumeNodes(prof(bimodal).rows, { smooth: 1 });
+  assert.deepEqual(n.hvn, [103, 110]);
+  assert.equal(n.lvn.length, 1);
+  assert.ok(n.lvn[0] >= 106 && n.lvn[0] <= 107);
+  // Bruit de ± 1 sur une seule bosse : un seul HVN, aucun LVN.
+  const noisy = [2, 4, 6, 9, 8, 9, 10, 9, 6, 4, 2];
+  assert.deepEqual(volumeNodes(prof(noisy).rows, { smooth: 3 }).lvn, []);
+});
+
+test('forme du profil : D, P, b et double distribution', () => {
+  assert.equal(profileShape(prof([1, 2, 4, 8, 10, 8, 4, 2, 1])), 'D');
+  assert.equal(profileShape(prof([1, 1, 1, 1, 2, 4, 9, 12, 8])), 'P');
+  assert.equal(profileShape(prof([8, 12, 9, 4, 2, 1, 1, 1, 1])), 'b');
+  assert.equal(profileShape(prof([1, 3, 8, 10, 8, 3, 1, 1, 2, 7, 12, 7, 2, 1]), undefined), 'double');
+});
 
 test('acceptation / rejet face à la value area de la veille (2 périodes de 30 min)', () => {
   const prev = { bucket: 1, val: 100, vah: 109, poc: 104 }; // VAL 100, VAH 110
