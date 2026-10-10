@@ -168,6 +168,22 @@ test('profils : plage libre (profil visible) et sous-période TPO', async () => 
   assert.equal(p.dev.length, 2);
 });
 
+test('profil de plage fixe : taille de ligne choisie d’après la hauteur réelle des trades', async () => {
+  const { profiles } = await import('../server/queries.js');
+  const tr = new Trades(16);
+  const day = 86_400_000 * 20_000;
+  // Trades de 82 918 à 83 138 (220 $ de hauteur) : à 30 lignes visées, des lignes de 10 $ (pas 50 $).
+  for (const [k, p] of [[1, 82_918], [2, 83_138], [3, 82_975], [4, 82_975], [5, 83_060]]) tr.push(day + k * 60_000, p, 1, 1, k);
+  const store = { getRange: async () => ({ trades: tr, partial: false }), backFrom: null, hasDay: () => true };
+  const s = { mode: 'live', store, cfg: { bucket: 5, footprint: { bucket: 10 } }, now: () => Date.now() };
+  const auto = await profiles(s, { mode: 'range', from: day, to: day + 3_600_000, rows: 30 });
+  assert.equal(auto.bucket, 10);
+  assert.equal(auto.sessions[0].bucket, 10);
+  assert.equal(auto.sessions[0].poc, 8297); // ligne de 82 970 à 82 980 (2 trades)
+  const fixed = await profiles(s, { mode: 'range', from: day, to: day + 3_600_000, bucket: 50 }); // sans `rows` : tranche demandée
+  assert.equal(fixed.bucket, 50);
+});
+
 test('ancrage du VWAP par période : heures entières en 1 h, reste en 1 min', async () => {
   const { vwapAnchor } = await import('../server/queries.js');
   const H = 3_600_000;

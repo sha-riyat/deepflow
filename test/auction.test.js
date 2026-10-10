@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, rangeBucket, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -66,4 +66,12 @@ test('ouverture du jour face à la value area de la veille', () => {
   assert.equal(openLocation(prev, { open: 110 }).where, 'inside'); // sur la VAH : encore dans la valeur
   assert.equal(openLocation(prev, { open: 99.5 }).where, 'below');
   assert.equal(openLocation(prev, null), null);
+});
+
+test('taille des lignes d’un profil de plage : ~30 lignes sur la hauteur, jamais plus fin que la tranche', () => {
+  assert.equal(rangeBucket(82_918, 83_138, 5), 10); // 220 $ / 30 = 7,3 → 10 $ (22 lignes)
+  assert.equal(rangeBucket(82_000, 83_000, 5), 50); // 1 000 $ / 30 = 33 → 50 $
+  assert.equal(rangeBucket(82_990, 83_010, 5), 5); // 20 $ / 30 = 0,7 → la tranche du collecteur
+  assert.equal(rangeBucket(100, 100, 5), 5); // plage sans hauteur
+  assert.equal(rangeBucket(0, 3_000, 10, 30), 100); // 100 $ : multiple de la tranche
 });

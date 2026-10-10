@@ -2,6 +2,7 @@
 // heatmap, open interest, delta spot, tickers.
 import { BarBuilder, BAR_TYPES, klineToWire } from '../shared/bars.js';
 import { SessionProfiler } from '../shared/profile.js';
+import { rangeBucket } from '../shared/auction.js';
 import { PERIODS, periodStart } from '../shared/sessions.js';
 import { keyLevels } from '../shared/keylevels.js';
 import { BinanceRest } from './history/rest.js';
@@ -111,7 +112,7 @@ export async function profiles(s, q) {
   const to = Math.min(num(q.to, now), now);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
   const tpoMs = (TPO_MINUTES.includes(num(q.tpo, 30)) ? num(q.tpo, 30) : 30) * 60_000;
-  if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket, tpoMs });
+  if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket, tpoMs, rows: num(q.rows, 0) });
   const from = Math.floor(Math.max(num(q.from, to - DAY), to - 14 * DAY) / DAY) * DAY;
   if (!profileCache.has(s.store)) profileCache.set(s.store, new Map());
   const cache = profileCache.get(s.store);
@@ -146,10 +147,21 @@ export async function profiles(s, q) {
 }
 
 // Profil unique de la plage visible (3 jours au plus), comme le « visible range » de TradingView.
-async function rangeProfile(s, { from, to, bucket, tpoMs }) {
+// `rows` > 0 : taille de ligne choisie d'après la hauteur réelle des trades de la plage (environ `rows`
+// lignes, jamais plus fines que la tranche du collecteur) ; sinon la tranche demandée.
+async function rangeProfile(s, { from, to, bucket, tpoMs, rows }) {
   const r = await s.store.getRange(from, to, { maxDays: 3 });
-  const prof = new SessionProfiler(bucket, { tpoMs, range: [from, to] });
   const t = r.trades;
+  if (rows > 0 && t.n) {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < t.n; i++) {
+      if (t.p[i] < lo) lo = t.p[i];
+      if (t.p[i] > hi) hi = t.p[i];
+    }
+    bucket = rangeBucket(lo, hi, s.cfg.bucket ?? bucket, rows);
+  }
+  const prof = new SessionProfiler(bucket, { tpoMs, range: [from, to] });
   for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
   return { bucket, partial: r.partial, sessions: prof.list() };
 }

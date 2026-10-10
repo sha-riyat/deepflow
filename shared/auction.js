@@ -194,3 +194,15 @@ export function rowBucket(price, fpBucket, pct = 0.05) {
   const step = [1, 2, 2.5, 5, 10].map((m) => m * k).find((v) => v >= min);
   return Math.max(fpBucket, Math.round(step / fpBucket) * fpBucket);
 }
+
+// Taille des lignes d'un profil à plage fixe : un pas rond (1, 2, 2,5, 5 × 10^k) qui donne environ `rows`
+// lignes sur la hauteur [lo, hi] des trades, multiple de `min` et jamais plus fin que lui. Les 0,05 % du
+// prix de `rowBucket` sont pensés pour une journée : sur une plage de 35 minutes et 220 $, ils ne
+// laissaient que 5 lignes (et décalaient le VAH de 40 $ par rapport à un calcul à 10 $).
+export function rangeBucket(lo, hi, min, rows = 30) {
+  const need = (hi - lo) / rows;
+  if (!(need > 0)) return min;
+  const k = 10 ** Math.floor(Math.log10(need));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * k).find((v) => v >= need * 0.999);
+  return Math.max(min, Number((Math.round(step / min) * min).toPrecision(6)));
+}
