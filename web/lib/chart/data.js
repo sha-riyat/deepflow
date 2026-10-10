@@ -51,7 +51,7 @@ export class DataManager {
     this.spot = { rows: new Map(), param: 0, error: null }; // delta spot par bougie : début -> [achats, ventes]
     this.liqs = []; // [temps, prix, quantité, côté] ; côté -1 = position longue liquidée
     this.liqTo = 0;
-    this.vwapAnchor = null; // sommes du jour avant la première bougie chargée (voir loadVwapAnchor)
+    this.vwapAnchor = null; // sommes de la période (jour, semaine, mois) avant la première bougie chargée (voir loadVwapAnchor)
     this.dailySessions = []; // sessions journalières des 10 derniers jours (nPOC, veille, composite)
   }
 
@@ -244,10 +244,11 @@ export class DataManager {
     }
   }
 
-  // Ancrage du VWAP : volume du jour antérieur à la première bougie chargée (klines Binance).
-  async loadVwapAnchor(t) {
+  // Ancrage du VWAP : volume de la période (jour, semaine, mois) antérieur à la première bougie
+  // chargée (klines Binance).
+  async loadVwapAnchor(t, period = 'day') {
     try {
-      const r = await getJSON(this.url(`/api/vwap?t=${Math.floor(t)}`));
+      const r = await getJSON(this.url(`/api/vwap?t=${Math.floor(t)}&period=${period}`));
       if (this.bars[0]?.t0 !== t) return; // historique prolongé entre-temps : réponse périmée
       this.vwapAnchor = { ...r, first: t };
       this.onChange('vwap');

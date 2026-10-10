@@ -2,6 +2,7 @@
 // heatmap, open interest, delta spot, tickers.
 import { BarBuilder, BAR_TYPES, klineToWire } from '../shared/bars.js';
 import { SessionProfiler } from '../shared/profile.js';
+import { PERIODS, periodStart } from '../shared/sessions.js';
 import { BinanceRest } from './history/rest.js';
 
 const HOUR = 3_600_000;
@@ -152,26 +153,30 @@ async function rangeProfile(s, { from, to, bucket, tpoMs }) {
   return { bucket, partial: r.partial, sessions: prof.list() };
 }
 
-// Ancrage du VWAP journalier : sommes Σ p·q, Σ p²·q et Σ q de 00:00 UTC jusqu'à `t` (début de la
-// première bougie chargée), tirées des klines 1 min (volume en cotation / volume = VWAP exact de la
-// minute). Sans lui, le VWAP du jour ne partirait que de la première bougie chargée.
+// Ancrage du VWAP par période (jour, semaine ou mois UTC) : sommes Σ p·q, Σ p²·q et Σ q du début
+// de la période jusqu'à `t` (début de la première bougie chargée), tirées des klines (volume en
+// cotation / volume = VWAP exact de la kline) : heures entières en 1 h, reste de l'heure en 1 min.
+// Sans lui, le VWAP ne partirait que de la première bougie chargée. Les bandes ignorent la
+// dispersion à l'intérieur de chaque kline (un peu plus étroites que sur les trades).
 export async function vwapAnchor(s, q) {
   const t = Math.floor(Math.min(num(q.t, s.now()), s.now()) / 60_000) * 60_000;
-  const day = Math.floor(t / DAY) * DAY;
-  if (t <= day) return { day, t: day, pv: 0, p2v: 0, v: 0 };
-  const rows = await s.rest.klines(s.cfg.symbol, '1m', { startTime: day, endTime: t - 1, limit: 1500 });
-  let pv = 0;
-  let p2v = 0;
-  let v = 0;
-  for (const k of rows) {
-    const vol = Number(k[5]);
-    if (!(vol > 0)) continue;
-    const quote = Number(k[7]);
-    pv += quote;
-    p2v += (quote * quote) / vol; // VWAP de la minute² × volume (variance intra-minute ignorée)
-    v += vol;
-  }
-  return { day, t, pv, p2v, v };
+  const period = PERIODS.includes(q.period) ? q.period : 'day';
+  const start = periodStart(t, period);
+  const out = { period, start, t, pv: 0, p2v: 0, v: 0 };
+  const add = (rows) => {
+    for (const k of rows) {
+      const vol = Number(k[5]);
+      if (!(vol > 0)) continue;
+      const quote = Number(k[7]);
+      out.pv += quote;
+      out.p2v += (quote * quote) / vol; // VWAP de la kline² × volume
+      out.v += vol;
+    }
+  };
+  const hour = Math.max(start, Math.floor(t / HOUR) * HOUR);
+  if (hour > start) add(await s.rest.klines(s.cfg.symbol, '1h', { startTime: start, endTime: hour - 1, limit: 1000 }));
+  if (t > hour) add(await s.rest.klines(s.cfg.symbol, '1m', { startTime: hour, endTime: t - 1, limit: 60 }));
+  return out;
 }
 
 // Delta du marché spot du même actif (klines spot Binance : volume acheteur taker exact par bougie),

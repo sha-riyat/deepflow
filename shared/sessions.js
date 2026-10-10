@@ -5,6 +5,31 @@ const DAY = 86_400_000;
 const HOUR = 3_600_000;
 export const FUNDING_HOURS = [0, 8, 16];
 
+// Début de la période UTC contenant `t` : jour (00:00), semaine (lundi 00:00, comme Binance) ou
+// mois (le 1er à 00:00). Sert au VWAP par période et aux niveaux d'ouverture.
+export const PERIODS = ['day', 'week', 'month'];
+const MONDAY = 4 * DAY; // 1970-01-01 était un jeudi : premier lundi le 5 janvier
+
+export function periodStart(t, period = 'day') {
+  if (period === 'week') return Math.floor((t - MONDAY) / (7 * DAY)) * 7 * DAY + MONDAY;
+  if (period === 'month') {
+    const d = new Date(t);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+  }
+  return Math.floor(t / DAY) * DAY;
+}
+
+// Début de la période suivante.
+export function periodEnd(t, period = 'day') {
+  const s = periodStart(t, period);
+  if (period === 'week') return s + 7 * DAY;
+  if (period === 'month') {
+    const d = new Date(s);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+  }
+  return s + DAY;
+}
+
 // Dimanche n° `n` du mois `month` (0 = janvier) à 00:00 UTC.
 function nthSunday(year, month, n) {
   const first = new Date(Date.UTC(year, month, 1)).getUTCDay();

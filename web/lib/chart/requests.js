@@ -2,6 +2,7 @@
 // limitées à 4 par seconde.
 import { rowBucket } from '@shared/auction.js';
 import { clockNow } from '../clock.js';
+import { periodStart } from '@shared/sessions.js';
 
 const INDEXED = ['linebreak', 'kagi', 'pnf', 'tpo'];
 const DAY = 86_400_000;
@@ -131,9 +132,10 @@ export function requestData(chart, items) {
     }
   }
   const first = chart.data.bars[0];
-  if (layers.vwap && first && first.t0 % DAY !== 0 && chart.requests.vwap !== first.t0) {
-    chart.requests.vwap = first.t0; // VWAP du jour : ancrage avant la première bougie chargée
-    chart.data.loadVwapAnchor(first.t0);
+  const { period } = chart.settings.opts.vwap;
+  if (layers.vwap && first && first.t0 !== periodStart(first.t0, period) && chart.requests.vwap !== `${period}:${first.t0}`) {
+    chart.requests.vwap = `${period}:${first.t0}`; // VWAP de la période : ancrage avant la première bougie chargée
+    chart.data.loadVwapAnchor(first.t0, period);
   }
   if (items.length && chart.scale.xAt(items[0].t0, items) > -50 && !INDEXED.includes(chart.settings.style)) chart.data.loadOlder();
 }

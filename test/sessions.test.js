@@ -1,7 +1,7 @@
-// Tests des repères horaires : ouverture de New York (heure d'été) et heures de financement.
+// Tests des repères horaires : ouverture de New York (heure d'été), heures de financement, périodes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nextMarkers, nyOpen, timeMarkers, usDst } from '../shared/sessions.js';
+import { nextMarkers, nyOpen, periodEnd, periodStart, timeMarkers, usDst } from '../shared/sessions.js';
 
 const utc = (s) => Date.parse(`${s}Z`);
 
@@ -26,4 +26,16 @@ test('repères d’une plage et prochains repères', () => {
   assert.equal(next.funding, utc('2026-10-10T16:00:00'));
   assert.equal(next.ny, utc('2026-10-12T13:30:00')); // lundi
   assert.equal(nextMarkers(utc('2026-10-09T16:00:00')).funding, utc('2026-10-10T00:00:00')); // à l'heure pile : le suivant
+});
+
+test('périodes UTC : jour, semaine (lundi), mois', () => {
+  const t = utc('2026-10-10T15:42:00'); // samedi
+  assert.equal(periodStart(t), utc('2026-10-10T00:00:00'));
+  assert.equal(periodStart(t, 'week'), utc('2026-10-05T00:00:00')); // lundi
+  assert.equal(periodStart(utc('2026-10-05T00:00:00'), 'week'), utc('2026-10-05T00:00:00'));
+  assert.equal(periodStart(utc('2026-10-04T23:59:00'), 'week'), utc('2026-09-28T00:00:00')); // dimanche : semaine d'avant
+  assert.equal(periodStart(t, 'month'), utc('2026-10-01T00:00:00'));
+  assert.equal(periodEnd(t), utc('2026-10-11T00:00:00'));
+  assert.equal(periodEnd(t, 'week'), utc('2026-10-12T00:00:00'));
+  assert.equal(periodEnd(utc('2026-12-31T10:00:00'), 'month'), utc('2027-01-01T00:00:00'));
 });

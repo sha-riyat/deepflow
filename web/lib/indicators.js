@@ -19,7 +19,7 @@ export const LAYERS = {
   open: { label: 'Ouverture du jour', sub: 'Premier prix de la session UTC, dans ou hors de la valeur de la veille', group: 'levels', color: '#e6e6e6' },
   times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'levels', color: '#ffa16c' },
   naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
-  vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour UTC et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
+  vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour, de la semaine ou du mois (UTC) et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
   alerts: { label: 'Alertes de prix', sub: 'Niveaux surveillés', group: 'trade', color: '#ffa16c' },
 };
 
@@ -54,7 +54,8 @@ export const OPTIONS = {
     show: { label: 'Afficher', choices: [['all', 'Ouverture NY et financement'], ['ny', 'Ouverture NY'], ['funding', 'Financement']] },
   },
   vwap: {
-    bands: { label: 'Bandes', choices: [[2, '±1σ et ±2σ'], [1, '±1σ'], [0, 'Aucune']] },
+    period: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine (lundi)'], ['month', 'Mois']] },
+    bands: { label: 'Bandes', choices: [[2, '±1σ et ±2σ'], [3, '±1σ, ±2σ et ±3σ'], [1, '±1σ'], [0, 'Aucune']] },
   },
 };
 

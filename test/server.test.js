@@ -167,3 +167,25 @@ test('profils : plage libre (profil visible) et sous-période TPO', async () => 
   assert.deepEqual(p.periods.map((x) => x[0]), [0, 1]); // une période par heure
   assert.equal(p.dev.length, 2);
 });
+
+test('ancrage du VWAP par période : heures entières en 1 h, reste en 1 min', async () => {
+  const { vwapAnchor } = await import('../server/queries.js');
+  const H = 3_600_000;
+  const monday = Date.parse('2026-10-05T00:00:00Z');
+  const t = monday + 2 * 86_400_000 + 3 * H + 25 * 60_000; // mercredi 03:25
+  const calls = [];
+  // Kline : [début, o, h, l, c, volume, fin, volume en cotation]
+  const rest = { klines: async (sym, iv, o) => (calls.push([iv, o.startTime, o.endTime]), iv === '1h' ? [[0, 0, 0, 0, 0, '2', 0, '200']] : [[0, 0, 0, 0, 0, '1', 0, '110']]) };
+  const s = { rest, cfg: { symbol: 'BTCUSDT' }, now: () => t + 60_000 };
+  const w = await vwapAnchor(s, { t, period: 'week' });
+  assert.deepEqual(calls, [['1h', monday, t - 25 * 60_000 - 1], ['1m', t - 25 * 60_000, t - 1]]);
+  assert.deepEqual([w.period, w.start, w.pv, w.v], ['week', monday, 310, 3]);
+  assert.equal(w.p2v, 200 * 200 / 2 + 110 * 110);
+  calls.length = 0;
+  const d = await vwapAnchor(s, { t: monday + 2 * 86_400_000 + 20 * 60_000, period: 'inconnue' }); // jour, première heure
+  assert.deepEqual(calls.map((c) => c[0]), ['1m']);
+  assert.equal(d.period, 'day');
+  calls.length = 0;
+  await vwapAnchor(s, { t: monday, period: 'week' }); // début de période : rien à demander
+  assert.equal(calls.length, 0);
+});

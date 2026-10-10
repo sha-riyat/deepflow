@@ -7,11 +7,10 @@ import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
 import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
-import { nextMarkers } from '@shared/sessions.js';
+import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
 import { clockNow } from '../clock.js';
 
-const DAY = 86_400_000;
 
 export function indicatorValues(chart, items) {
   const { layers: L, opts, style } = chart.settings;
@@ -20,16 +19,17 @@ export function indicatorValues(chart, items) {
   const last = data.bars[data.bars.length - 1];
 
   if (L.vwap && last) {
-    // VWAP du jour UTC de la dernière bougie, cumulé comme sur le graphique.
-    const day = Math.floor(last.t0 / DAY);
+    // VWAP de la période (jour, semaine ou mois UTC) de la dernière bougie, cumulé comme sur le graphique.
+    const { period } = opts.vwap;
+    const start = periodStart(last.t0, period);
     let pv = 0;
     let v = 0;
     let i = data.bars.length - 1;
-    for (; i >= 0 && Math.floor(data.bars[i].t0 / DAY) === day; i--) {
+    for (; i >= 0 && periodStart(data.bars[i].t0, period) === start; i--) {
       pv += data.bars[i].pv ?? 0;
       v += data.bars[i].v;
     }
-    const [apv, , av] = vwapStart(data.vwapAnchor, data.bars[i + 1]);
+    const [apv, , av] = vwapStart(data.vwapAnchor, data.bars[i + 1], period);
     pv += apv;
     v += av;
     if (v > 0) out.vwap = fmt(pv / v);
