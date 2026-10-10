@@ -14,6 +14,7 @@ type Chart = {
   scale: { follow: boolean; autoScale: boolean; msPerPx: number; w: number };
   settings: Record<string, unknown>;
   title: string;
+  forgetRequests(): void;
   drawings: {
     onState: ((s: DrawState) => void) | null;
     setTool(tool: string | null): void;
@@ -62,6 +63,7 @@ export function connectStream(h: StreamHandlers): () => void {
   on('reset', () => {
     setLive({ dom: null, mark: null });
     getData().reset();
+    engine.chart?.forgetRequests(); // données vidées : tout est redemandé, même pour une plage identique
     engine.tape?.clear();
     h.onReset();
   });

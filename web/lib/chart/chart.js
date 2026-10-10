@@ -69,7 +69,7 @@ export class Chart {
     this.onValues = null; // (valeurs courantes des indicateurs) -> légende HTML
     this.lastHover = undefined;
     this.lastFollow = undefined;
-    this.requests = { heat: '', bubbles: '', profiles: '', t: 0 };
+    this.forgetRequests();
     this.view = []; // série affichée à la dernière image (dessins)
     // Dessins : masqués dans les vues sans échelle de temps continue.
     this.drawings = new DrawingEditor(this, () => !INDEXED.includes(this.settings.style));
@@ -138,6 +138,12 @@ export class Chart {
     this.heatCanvas.width = Math.round(s.w * dpr);
     this.heatCanvas.height = Math.round(s.h * dpr);
     if (this.W) this.onLayout?.(this.paneRects(), s.h);
+  }
+
+  // Oublie les requêtes de données déjà envoyées (voir requests.js) : après une remise à zéro des
+  // données, une plage identique doit être redemandée.
+  forgetRequests() {
+    this.requests = { heat: '', bubbles: '', profiles: '', t: 0 };
   }
 
   // Remet la vue à zéro après un changement de série ou de style.
