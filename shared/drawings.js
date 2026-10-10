@@ -5,7 +5,7 @@
 import { FIB_LEVELS, anchoredVwap, cleanCalc } from './measures.js';
 
 export const DRAWINGS_VERSION = 1;
-export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3, avwap: 1 }; // type -> nombre de points
+export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3, avwap: 1, vp: 2 }; // type -> nombre de points
 export const POSITIONS = ['long', 'short']; // points : entrée (début), stop et cible (fin)
 export const PRICE_ONLY = ['hline']; // dessins sans heure : affichés aussi dans les vues TPO, Kagi...
 export const DEFAULT_STYLE = { color: '#479ffa', width: 1.5, dash: 'solid' };
@@ -133,6 +133,11 @@ export function shapeOf(d, px, view = { w: 1e6, h: 1e6 }, extra = {}) {
       const [, yt] = px[2];
       const box = (ya) => [Math.min(x, x1), Math.min(y, ya), Math.max(x, x1), Math.max(y, ya)];
       return { segs: [[x, y, x1, y]], areas: [box(yt), box(ys)], handles: [px[0], [x, ys], [x, yt], [x1, y]] };
+    }
+    case 'vp': {
+      // Profil à plage fixe : zone entre les deux points (clic à l'intérieur), sans contour.
+      const [x1, y1] = px[1];
+      return { segs: [], areas: [[Math.min(x, x1), Math.min(y, y1), Math.max(x, x1), Math.max(y, y1)]], handles: px };
     }
     case 'avwap': {
       // Courbe du VWAP (pixels, voir shapeIn) ; segments hors de la vue ignorés.

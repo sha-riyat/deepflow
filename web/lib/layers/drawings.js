@@ -11,7 +11,7 @@ const pad = (n) => String(n).padStart(2, '0');
 // Dessins à afficher : dans les vues sans échelle de temps continue, seulement ceux sans heure.
 const shown = (editor, priceOnly) => editor.visible().filter((d) => !priceOnly || PRICE_ONLY.includes(d.type));
 
-export function drawDrawings(ctx, editor, scale, items, { digits, tf, base, bars }, priceOnly = false) {
+export function drawDrawings(ctx, editor, scale, items, { digits, tf, base, bars, profileOf }, priceOnly = false) {
   for (const d of shown(editor, priceOnly)) {
     const shape = shapeIn(d, { scale, items, bars, tf });
     const { width, dash } = d.style;
@@ -41,7 +41,7 @@ export function drawDrawings(ctx, editor, scale, items, { digits, tf, base, bars
     }
     ctx.stroke();
     ctx.setLineDash([]);
-    decorate(ctx, d, shape, { digits, tf, items, base, editing: editor.editing });
+    decorate(ctx, d, shape, { scale, digits, tf, items, base, profileOf, editing: editor.editing });
     if (d.id !== editor.sel && d !== editor.draft) continue;
     ctx.fillStyle = C.ink;
     ctx.strokeStyle = color;

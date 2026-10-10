@@ -209,6 +209,11 @@ export class DrawingEditor {
     return hit ? (hit.handle >= 0 ? 'grab' : 'move') : null;
   }
 
+  // Dessin en train d'être tracé, déplacé ou étiré (profil à plage fixe : pas de nouvelle requête).
+  moving(d) {
+    return this.draft === d || this.drag?.d === d;
+  }
+
   // Le graphique est occupé par un tracé (le double-clic ne doit pas revenir au direct).
   busy() {
     return Boolean(this.tool || this.draft || this.drag);

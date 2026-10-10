@@ -55,7 +55,7 @@ function devPoints(s) {
 }
 
 // Histogramme d'une session, de x vers la droite (dir = 1) ou vers la gauche (dir = -1).
-function histogram(ctx, s, scale, x, width, dir, { kind, va }) {
+export function histogram(ctx, s, scale, x, width, dir, { kind, va }) {
   const y = (p) => scale.yOfPrice(p);
   let max = 0;
   for (const [, bv, sv] of s.rows) max = Math.max(max, kind === 'delta' ? Math.abs(bv - sv) : bv + sv);

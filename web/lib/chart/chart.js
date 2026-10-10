@@ -18,6 +18,7 @@ import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
 import { drawDrawings, drawDrawingLabels } from '../layers/drawings.js';
 import { DrawingEditor } from '../drawings/editor.js';
+import { RangeProfiles } from '../drawings/profiles.js';
 import { heikinAshi, lineBreak, kagi, pointFigure } from '@shared/transforms.js';
 import { defaultOptions } from '../indicators.js';
 import { C } from '../theme.js';
@@ -70,6 +71,7 @@ export class Chart {
     this.view = []; // série affichée à la dernière image (dessins)
     // Dessins : masqués dans les vues sans échelle de temps continue.
     this.drawings = new DrawingEditor(this, () => !INDEXED.includes(this.settings.style));
+    this.rangeProfiles = new RangeProfiles(this); // profils à plage fixe des dessins
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(root);
     attachInteractions(this);
@@ -277,7 +279,8 @@ export class Chart {
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
     if (L.alerts) drawAlertLines(ctx, s, this.alerts);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
-    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '', bars: this.data.bars }, indexed);
+    const profileOf = (d) => this.rangeProfiles.get(d, this.drawings.moving(d));
+    drawDrawings(ctx, this.drawings, s, items, { digits: this.digits(), tf, base: this.meta.base ?? '', bars: this.data.bars, profileOf }, indexed);
     ctx.restore();
 
     drawPriceAxis(ctx, s, AXIS_W, items[items.length - 1], this.#countdown(items));

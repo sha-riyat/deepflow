@@ -12,6 +12,7 @@ export const TOOLS = {
   long: { label: 'Position longue', key: 'L' },
   short: { label: 'Position courte', key: 'S' },
   avwap: { label: 'VWAP ancré (clic sur une bougie)', key: 'A' },
+  vp: { label: 'Volume Profile à plage fixe', key: 'P' },
 };
 
 // Outil d'un raccourci : la lettre tapée fait foi (claviers AZERTY) ; sur Mac, Option + lettre

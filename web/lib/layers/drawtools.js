@@ -1,8 +1,9 @@
 // Habillage propre à chaque outil de dessin (étiquettes, zones), après le tracé commun de
 // drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle, position longue / courte,
-// VWAP ancré.
+// VWAP ancré, Volume Profile à plage fixe.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
+import { histogram } from './volprofile.js';
 import { compact, fmt, qty, sgn } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
 
@@ -14,7 +15,7 @@ export function colorOf(d) {
 }
 
 // Zones remplies ici plutôt que par le tracé commun.
-export const OWN_FILL = POSITIONS;
+export const OWN_FILL = [...POSITIONS, 'vp'];
 
 // Texte sur un fond sombre arrondi (comme la légende), lisible sur la heatmap ; (x, y) = coin
 // bas du fond, à gauche (align 'left') ou à droite ('right'). Retourne la largeur du fond.
@@ -119,7 +120,38 @@ function avwap(ctx, d, shape) {
   label(ctx, shape.partial ? 'VWAP ancré · historique incomplet' : 'VWAP ancré', x + 6, y - 6, shape.partial ? C.ember : d.style.color);
 }
 
-const DECOR = { fib, text, ruler, long: position, short: position, avwap };
+// Volume Profile à plage fixe : histogramme du volume par prix depuis le bord gauche (30 % de la
+// largeur), POC (prix le plus échangé) et value area (70 % du volume : VAH en haut, VAL en bas)
+// prolongés sur la plage. Profil calculé par le collecteur à partir de chaque trade.
+function vp(ctx, d, shape, { scale, digits, profileOf }) {
+  const [x0, y0, x1, y1] = shape.areas[0];
+  ctx.fillStyle = alpha(d.style.color, 0.05);
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  const r = profileOf?.(d) ?? { loading: true };
+  const note = (text, color = C.graphite) => label(ctx, text, x0, Math.max(y0, 0) - 3, color);
+  if (r.loading) return note('Profil : chargement…');
+  if (r.error) return note(`Profil indisponible : ${r.error}`, C.ember);
+  const s = r.session;
+  if (!s?.rows.length) return note('Aucun trade sur cette plage');
+  histogram(ctx, s, scale, x0, Math.max(24, (x1 - x0) * 0.3), 1, { kind: 'volume', va: 1 });
+  const lines = [['POC', (s.poc + 0.5) * s.bucket, C.ember, []], ['VAH', (s.vah + 1) * s.bucket, C.mist, [4, 3]], ['VAL', s.val * s.bucket, C.mist, [4, 3]]];
+  for (const [name, price, color, dash] of lines) {
+    const y = scale.yOfPrice(price);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
+  }
+  if (r.clipped) note('Plage limitée aux 3 derniers jours de la sélection', C.ember);
+  else if (r.partial) note('Historique en cours de téléchargement', C.ember);
+}
+
+const DECOR = { fib, text, ruler, long: position, short: position, avwap, vp };
 
 export function decorate(ctx, d, shape, opts) {
   DECOR[d.type]?.(ctx, d, shape, opts);

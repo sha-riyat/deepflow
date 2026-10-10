@@ -70,6 +70,11 @@ const GLYPHS: Record<string, ReactNode> = {
       <path d="M5 15c3-1 4-6 7-6s4 4 7 2" />
       <circle cx="5" cy="15" r="1.6" />
     </>
+  ),  vp: (
+    <>
+      <path d="M4 3v18M20 3v18" strokeDasharray="2 2" />
+      <path d="M4 7h5M4 10h9M4 13h12M4 16h7M4 19h4" />
+    </>
   ),
 };
 
