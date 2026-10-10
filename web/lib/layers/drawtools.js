@@ -85,9 +85,9 @@ function ruler(ctx, d, shape, { digits, tf, items }) {
   lines.forEach((l, i) => label(ctx, l, mx - w / 2, bottom + (i + 1) * 17, color, { weight: 600 }));
 }
 
-// Position : zones cible (verte) et stop (rouge), prix et montants ; au centre, R:R et taille de
-// position pour risquer le pourcentage choisi du capital (calcul affiché seulement).
-function position(ctx, d, shape, { digits, base }) {
+// Position : zones cible (verte) et stop (rouge), prix et montants nets de frais ; à droite, R:R et
+// taille de position pour risquer le pourcentage choisi du capital (calcul affiché seulement).
+function position(ctx, d, shape, { digits, base, scale }) {
   const [target, stop] = shape.areas;
   for (const [[x0, y0, x1, y1], color] of [[target, C.growth], [stop, C.loss]]) {
     ctx.fillStyle = alpha(color, 0.16);
@@ -105,13 +105,23 @@ function position(ctx, d, shape, { digits, base }) {
     label(ctx, 'Stop et cible de part et d’autre de l’entrée', left, long ? above(target) : below(target), C.ember, { weight: 600 });
     return;
   }
-  const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · +${compact(st.gain)} $`;
+  const money = (v) => `${v >= 0 ? '+' : '−'}${compact(Math.abs(v))} $`;
+  const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · ${money(st.gain)}${st.gain <= 0 ? ' : les frais mangent le gain' : ''}`;
   const sText = `Stop ${fmt(sl, digits)} · −${fmt(st.stopPct, 2)} % · −${compact(st.riskAmount)} $`;
-  label(ctx, tText, left, long ? above(target) : below(target), C.growth, { weight: 600 });
-  label(ctx, sText, left, long ? below(stop) : above(stop), C.loss, { weight: 600 });
+  // Décalées vers la gauche si elles déborderaient sous l'axe des prix.
+  const fit = (text) => {
+    ctx.font = font(11, 600);
+    return Math.max(0, Math.min(left, scale.w - ctx.measureText(text).width - 12));
+  };
+  label(ctx, tText, fit(tText), long ? above(target) : below(target), st.gain > 0 ? C.growth : C.ember, { weight: 600 });
+  label(ctx, sText, fit(sText), long ? below(stop) : above(stop), C.loss, { weight: 600 });
   const [, yE] = shape.handles[0];
-  const info = `R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %`;
-  label(ctx, info, target[2] + 6, yE + 8.5, C.white, { weight: 600 });
+  const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
+  const info = `R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}`;
+  // À droite de la zone, ou à sa gauche si le texte déborderait sous l'axe des prix.
+  ctx.font = font(11, 600);
+  const right = target[2] + 6 + ctx.measureText(info).width + 10 <= scale.w;
+  label(ctx, info, right ? target[2] + 6 : target[0] - 6, yE + 8.5, C.white, { weight: 600, align: right ? 'left' : 'right' });
 }
 
 // VWAP ancré : nom à l'ancre ; historique incomplet signalé (l'ancre précède les bougies chargées).

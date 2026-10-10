@@ -151,7 +151,15 @@ test('dessins : position longue / courte (taille selon le risque, R:R)', async (
   // Stop du mauvais côté : calcul refusé.
   assert.equal(positionStats({ side: 'long', entry: 100, stop: 101, target: 110, capital: 1000, risk: 1 }).valid, false);
   assert.deepEqual(positionPoints({ t: 0, p: 100 }, 'short', 2, 50), [{ t: 0, p: 100 }, { t: 50, p: 102 }, { t: 50, p: 96 }]);
-  assert.deepEqual(cleanCalc({ capital: -5, risk: 'x' }), { capital: 1000, risk: 1 });
+  assert.deepEqual(cleanCalc({ capital: -5, risk: 'x' }), { capital: 1000, risk: 1, fees: 0.05 });
+  assert.equal(cleanCalc({ capital: 1, risk: 1, fees: 0 }).fees, 0); // sans frais : accepté
+  // Frais de 0,05 % par ordre : la perte au stop reste de 10 $ frais compris, la taille baisse.
+  const net = positionStats({ side: 'long', entry: 100, stop: 99, target: 102, capital: 1000, risk: 1, fees: 0.05 });
+  const qty = 10 / (1 + 0.0005 * 199); // 9,095
+  assert.ok(Math.abs(net.qty - qty) < 1e-9);
+  assert.ok(Math.abs(net.qty * (1 + 0.0005 * 199) - 10) < 1e-9); // perte au stop frais compris
+  assert.ok(Math.abs(net.gain - qty * (2 - 0.0005 * 202)) < 1e-9);
+  assert.ok(Math.abs(net.rr - net.gain / 10) < 1e-12 && net.rr < 2);
   // Poignées : stop et cible ne bougent qu'en prix, la fin qu'en heure.
   const d = { type: 'long', pts: positionPoints({ t: 0, p: 100 }, 'long', 2, 50) };
   assert.deepEqual(setHandle(d, 1, { t: 99, p: 97 })[1], { t: 50, p: 97 });

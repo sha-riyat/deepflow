@@ -40,6 +40,7 @@ export interface DrawState {
 export interface PositionCalc {
   capital: number;
   risk: number; // en % du capital
+  fees: number; // en % de chaque ordre
 }
 
 export interface NoteEdit {

@@ -58,25 +58,25 @@ function StyleMenus({ style, note, set }: { style: Style; note: boolean; set: (p
   );
 }
 
-const parse = (text: string) => {
+const parse = (text: string, zero = false) => {
   const v = Number(text.replace(',', '.').replace(/\s/g, ''));
-  return Number.isFinite(v) && v > 0 ? v : null;
+  return Number.isFinite(v) && (v > 0 || (zero && v === 0)) ? v : null;
 };
 
 // Champ numérique validé à la sortie, par Entrée, ou quand la barre disparaît (un clic sur le
 // graphique désélectionne la position avant que le champ ne perde le focus). Une saisie invalide
-// reprend la valeur courante.
-function NumField({ label, value, unit, onChange }: { label: string; value: number; unit: string; onChange: (v: number) => void }) {
+// reprend la valeur courante. `zero` : zéro accepté (frais).
+function NumField({ label, value, unit, zero = false, onChange }: { label: string; value: number; unit: string; zero?: boolean; onChange: (v: number) => void }) {
   const [text, setText] = useState(String(value));
   const latest = useRef({ text, value, onChange });
   latest.current = { text, value, onChange };
   useEffect(() => () => {
     const { text: t, value: old, onChange: done } = latest.current;
-    const v = parse(t);
+    const v = parse(t, zero);
     if (v !== null && v !== old) done(v);
-  }, []);
+  }, [zero]);
   const commit = () => {
-    const v = parse(text);
+    const v = parse(text, zero);
     if (v !== null) onChange(v);
     else setText(String(value));
   };
@@ -96,6 +96,7 @@ function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
     <>
       <NumField label="Capital" value={calc.capital} unit="$" onChange={(capital) => set({ capital })} />
       <NumField label="Risque" value={calc.risk} unit="%" onChange={(risk) => set({ risk })} />
+      <NumField label="Frais" value={calc.fees} unit="% / ordre" zero onChange={(fees) => set({ fees })} />
       <span className="ds-sep" />
     </>
   );
