@@ -51,7 +51,8 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   Alerte, réglages, plein écran.
 - **Indicateurs** (menu sur deux colonnes) : flux d'ordres (heatmap, bulles de trades, gros prints,
   liquidations, bid/ask, divergences CVD), alertes de prix, vue Market Profile (TPO), profils et niveaux
-  (profil de session, value area de la veille, POC non testés, VWAP), panneaux
+  (profil de session, value area de la veille, ouverture du jour, repères horaires, POC non testés,
+  VWAP), panneaux
   (volume, delta, CVD de session, CVD spot / perp, open interest, liquidations).
 - **Légende** : une ligne par indicateur actif avec sa valeur courante (VWAP, POC et value area,
   liquidations longues / courtes en vue, seuil des gros prints, état de l'enchère…) ; au survol,
@@ -113,6 +114,12 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 - **Value area de la veille** : VAH, VAL et POC de la session précédente prolongés sur la journée,
   avec l'état de l'enchère dans la légende (dans la valeur, sortie, retour, acceptation ou rejet
   après 2 clôtures de 30 min) et l'extrême de la sortie en cours.
+- **Ouverture du jour** : premier prix de la session UTC, en pointillés depuis 00:00, et sa
+  position dans la légende (au-dessus, dans ou sous la valeur de la veille).
+- **Repères horaires** : traits verticaux à l'ouverture de New York (9 h 30 là-bas : 13 h 30 UTC
+  en heure d'été américaine, 14 h 30 en hiver ; du lundi au vendredi, jours fériés non gérés) et aux
+  heures de financement des perpétuels (0 h, 8 h, 16 h UTC) ; délai avant les prochains dans la
+  légende. Les heures de l'axe du temps sont en heure locale, la session reste en UTC.
 - **CVD** : remis à zéro à chaque session UTC ; divergences prix / CVD entre deux sommets ou deux
   creux de la même session ; panneau CVD spot / perp (klines spot du même actif) pour distinguer
   une hausse portée par l'achat réel d'une hausse portée par les seuls dérivés.
