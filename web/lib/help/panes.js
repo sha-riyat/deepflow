@@ -118,10 +118,13 @@ export const PANE_ARTICLES = [
     read: [
       'Le POC d’un range sert de pivot ; ses bords (VAH, VAL) de bornes de rotation.',
       'En Delta, des barres vertes à un prix indiquent que les acheteurs agresseurs y ont dominé, des barres rouges que ce sont les vendeurs : utile pour voir qui a poussé le prix à chaque niveau de la plage.',
+      'HVN (pic de volume, en orange) : prix très échangé, souvent un niveau accepté par le marché ; LVN (creux, en pointillés bleus) : prix traversé vite, où le prix a peu séjourné, souvent un niveau de rejet ou d’accélération. Un LVN au milieu de la zone de valeur sépare deux zones d’acceptation.',
+      'L’étiquette sous la plage donne le volume total, le delta (en valeur et en % du volume), le nombre de bougies et la forme du profil : D (équilibre), P (volume concentré en haut, rachat de shorts), b (volume en bas, liquidation de longs) ou double distribution (deux HVN séparés par un LVN, tendance).',
     ],
     traps: [
       'Trois jours au plus (au-delà, les trois derniers).',
       'Le POC, le VAH et le VAL se calculent toujours sur le volume total, quel que soit le type d’histogramme affiché.',
+      'La forme et les pics / creux dépendent de la taille des lignes (choisie d’après la hauteur de la plage) : une plage très courte ou très étroite en donne peu et peut les rendre peu parlants. Ce sont des repères de lecture, pas des signaux.',
     ],
   },
   {
