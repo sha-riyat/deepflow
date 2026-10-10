@@ -28,10 +28,11 @@ export class DrawingEditor {
     this.magnet = loadMagnet(); // points collés aux prix OHLC des bougies
   }
 
-  // Charge les dessins du symbole affiché quand il change.
+  // Charge les dessins du symbole affiché quand il change. Les dessins faits en replay des archives
+  // forment un jeu à part : le graphique du direct reste propre, l'entraînement aussi.
   sync() {
     const m = this.chart.meta;
-    const key = m ? `${m.market}:${m.symbol}` : '';
+    const key = m ? `${m.archive ? 'replay:' : ''}${m.market}:${m.symbol}` : '';
     if (key === this.key) return;
     this.key = key;
     this.list = key ? loadSet(key) : [];
