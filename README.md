@@ -39,7 +39,7 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 | `npm run dev` | Collecteur + interface en développement |
 | `npm run web:build` puis `npm start` | Version optimisée |
 | `npm run collector` | Collecteur seul |
-| `npm test` | Tests unitaires (flux, bougies, profils, TPO, enchère, footprint, bulles, alertes, historique) |
+| `npm test` | Tests unitaires (flux, bougies, profils, TPO, enchère, footprint, bulles, alertes, historique, dessins) |
 | `npm run verify [-- SYMBOL]` | Compare nos calculs aux données officielles Binance de la veille (réseau requis) |
 
 ## Interface
@@ -61,6 +61,30 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   longues et courtes) et ligne horizontale avec la valeur du panneau à cette hauteur.
 - **Graphique** : historique défilable à l'infini, zoom à la molette ou par les commandes du bas
   (visibles quand la souris s'en approche), compte à rebours de clôture.
+- **Dessins** (barre à gauche, à la TradingView ; raccourci Alt + lettre, les lettres seules
+  ouvrant la recherche de symbole) : ligne de tendance (T), horizontale (H), rayon horizontal (J),
+  verticale (V), rectangle (R), retracement de Fibonacci (F, zone 0,5 – 0,618 colorée), note (N),
+  règle (M : écart en prix et en %, bougies, durée), position longue (L) ou courte (S), VWAP
+  ancré (A) et Volume Profile à plage fixe (P).
+  - Tracé en deux clics ou en glissant ; Échap annule, Suppr efface le dessin sélectionné, la gomme
+    efface tous ceux du symbole. Clic pour sélectionner, glisser pour déplacer, poignées pour
+    étirer ; double-clic sur une note pour la modifier.
+  - Barre flottante du dessin sélectionné : couleur, épaisseur (taille du texte d'une note), trait
+    plein, en tirets ou en pointillés ; le dernier style de chaque outil est repris.
+  - Aimant (bouton de la barre) : les points se collent à l'ouverture, au plus haut, au plus bas ou
+    à la clôture de la bougie la plus proche (à moins de 30 px).
+  - Dessins accrochés à une heure et un prix : ils restent en place au zoom, au défilement et au
+    changement d'unité de temps ; sauvegardés dans le navigateur par marché et par symbole. Dans
+    les vues sans échelle de temps continue (TPO, Kagi, P&F, Line break), seules les horizontales
+    restent affichées.
+  - Position : stop et cible par défaut (rapport gain / risque de 2), à déplacer par les poignées ;
+    affiche le R:R, la taille de position pour risquer le pourcentage choisi du capital (1 % de
+    1 000 $ par défaut), la valeur, le levier implicite et les montants au stop et à la cible.
+    Calcul affiché seulement, sans frais : aucun ordre n'est passé.
+  - VWAP ancré : depuis le début de la bougie cliquée jusqu'au direct, valeur courante sur l'axe ;
+    signalé « historique incomplet » si l'ancre précède les bougies chargées.
+  - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
+    calculés par le collecteur à partir de chaque trade ; 3 jours au plus (au-delà, les 3 derniers).
 - **Bulles de trades** (cercles, à la Bookmap / DeepCharts) : une bulle par créneau de temps
   (environ 8 px, choisi pour tomber dans une seule bougie), placée au VWAP du créneau ; taille
   rapportée à la moyenne des créneaux visibles (échelle racine, linéaire ou logarithmique) ; couleur
@@ -133,17 +157,13 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 
 ## Feuille de route
 
-1. **Outils de dessin** : lignes, horizontales, rayons, rectangles, Fibonacci, texte, règle de
-   mesure, outil position longue / courte (stop, cible, rapport gain / risque), Volume Profile à
-   plage fixe tracé à la souris, VWAP ancré au clic ; dessins sauvegardés par symbole, aimant sur
-   les prix.
-2. **Espace de travail** : grilles de 1, 2 ou 4 graphiques, fenêtres détachables (plusieurs
+1. **Espace de travail** : grilles de 1, 2 ou 4 graphiques, fenêtres détachables (plusieurs
    écrans), symbole et intervalle liés ou indépendants, réticule synchronisé, plusieurs symboles en
    direct (spot et futures), mises en page et modèles d'indicateurs sauvegardés.
-3. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
+2. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
    ranges des sessions Asie / Londres / New York, historique du financement et de la prime perp /
    spot, CVD et volume agrégés sur plusieurs plateformes gratuites (Bybit, OKX).
-4. **Apprentissage** : explication de chaque indicateur dans l'interface, mode replay (rejouer une
+3. **Apprentissage** : explication de chaque indicateur dans l'interface, mode replay (rejouer une
    journée passée bougie par bougie pour s'entraîner).
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
