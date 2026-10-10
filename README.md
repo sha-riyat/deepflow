@@ -16,7 +16,7 @@ l'analyse et l'exécution (sur Binance) restent manuelles.** Ce n'est pas un con
 |---|---|---|
 | `server/` | Collecteur : WebSockets Binance, carnet local, historique (archives Binance Vision + REST), heatmap en mémoire, analyse du flux en direct, alertes, API et flux SSE (port 8787) | Node.js 22, sans dépendance |
 | `shared/` | Construction des bougies, profils et transformations, commune au serveur et au navigateur | JavaScript ES |
-| `web/` | Interface (port 3000) : barre d'outils, graphique, panneaux, recherche de symbole | Next.js 16, React 19, TypeScript, Hugeicons, Inter |
+| `web/` | Interface (port 3000) : barre d'outils, grille de graphiques, panneaux, recherche de symbole | Next.js 16, React 19, TypeScript, Hugeicons, Inter |
 | `web/lib/` | Moteur de graphique Canvas 2D + WebGL2 (heatmap), piloté hors de React | JavaScript ES |
 
 Next.js relaie `/api` et `/stream` vers le collecteur : le navigateur ne parle qu'à `localhost:3000`.
@@ -39,7 +39,7 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
 | `npm run dev` | Collecteur + interface en développement |
 | `npm run web:build` puis `npm start` | Version optimisée |
 | `npm run collector` | Collecteur seul |
-| `npm test` | Tests unitaires (flux, bougies, profils, TPO, enchère, footprint, bulles, alertes, historique, dessins) |
+| `npm test` | Tests unitaires (flux, bougies, profils, TPO, enchère, footprint, bulles, alertes, historique, dessins, replay, sessions, mises en page) |
 | `npm run verify [-- SYMBOL]` | Compare nos calculs aux données officielles Binance de la veille (réseau requis) |
 
 ## Interface
@@ -48,7 +48,8 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   favoris et menu complet (secondes, minutes, heures, jours, bougies ticks, volume, range, delta,
   renko), style (bougies, creuses, barres, Heikin Ashi, volume, ligne, aire, baseline, escalier,
   colonnes, haut-bas, Line break, Kagi, Point & Figure, TPO), footprint (6 modes), Indicateurs,
-  Alerte, réglages, plein écran.
+  Alerte, mises en page, grille de graphiques, Replay, réglages, plein écran. Ces réglages
+  s'appliquent au graphique actif (voir Espace de travail).
 - **Indicateurs** (menu sur deux colonnes) : flux d'ordres (heatmap, bulles de trades, gros prints,
   liquidations, bid/ask, divergences CVD), alertes de prix, vue Market Profile (TPO), profils et niveaux
   (profil de session, value area de la veille, ouverture du jour, repères horaires, POC non testés,
@@ -139,6 +140,32 @@ compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation 
   murs actifs), DOM, Trades, Marchés, Alertes (deux panneaux empilés au plus).
 - **Barre d'état** : plages 1J, 5J, 1M, 3M, 1A, état de l'historique, heure UTC.
 
+## Espace de travail
+
+- **Grilles** (bouton à côté de Replay) : 1 graphique, 2 côte à côte, 2 l'un sous l'autre, 1 grand
+  et 2 petits, ou 4. Chaque graphique a son symbole (spot ou futures), son intervalle, ses
+  indicateurs et ses dessins ; un clic le rend actif (liseré bleu) : barre du haut, barre d'état,
+  panneaux du rail et outils de dessin agissent sur lui. Les graphiques retirés d'une grille sont
+  gardés pour un retour à une grille plus grande.
+- **Plusieurs symboles en direct** : le collecteur suit chaque symbole affiché (8 au plus), et
+  arrête ceux qui ne sont plus regardés depuis 3 minutes (sauf alerte active sur le symbole).
+- **Liens par couleur** (pastille en haut à droite de chaque graphique) : les graphiques d'une même
+  couleur partagent le symbole, l'intervalle, ou les deux (choix dans le même menu). Exemple : deux
+  graphiques bleus en 5 min et 1 h sur le même symbole, qui changent de symbole ensemble.
+- **Réticule synchronisé** : l'heure sous la souris est tracée (trait pointillé vertical) sur les
+  autres graphiques, y compris ceux des fenêtres détachées.
+- **Fenêtres détachables** (menu de la pastille, « Ouvrir dans une nouvelle fenêtre ») : copie du
+  graphique dans une fenêtre à part, à poser sur un autre écran ; elle a sa propre grille, garde
+  son lien de couleur avec la fenêtre principale, et les dessins d'un même symbole sont partagés.
+- **Mises en page et modèles d'indicateurs** (bouton signet) : enregistrer la mise en page
+  (grille, graphiques, liens, panneaux) ou les indicateurs du graphique actif (type de graphique,
+  footprint, indicateurs et leurs réglages, panneaux) sous un nom, et les rappeler en un clic ; un
+  modèle s'applique à n'importe quel symbole et intervalle. **Exporter** crée un fichier `.json`
+  (mises en page, modèles et dessins de tous les symboles) ; **Importer** l'ajoute à l'existant
+  (sauvegarde, autre ordinateur, partage entre amis).
+
+Tout est mémorisé dans le navigateur (`localStorage`) : rien n'est envoyé ailleurs.
+
 ## Replay (entraînement)
 
 Bouton **Replay** de la barre du haut : symbole, jour passé (jusqu'à hier), heure de départ en UTC
@@ -151,8 +178,8 @@ l'heure rejouée).
 - Départ en pause ; commandes dans la barre d'état : lecture / pause, vitesse ×1, ×5, ×20, ×60 ou
   ×300, « 1 bougie » (jusqu'à la clôture de la bougie en cours), « 1 h », « Direct » (fin du replay).
   La journée suivante est enchaînée à minuit, jusqu'à hier.
-- Pendant le replay, le direct est suspendu (le collecteur suit un seul symbole à la fois) et les
-  alertes ne sont pas évaluées.
+- Le replay s'affiche dans le graphique actif ; les autres graphiques restent en direct. Un seul
+  replay à la fois ; les alertes ne sont évaluées que sur le direct.
 - Dessins du replay séparés de ceux du direct.
 - Indisponible en replay : carnet d'ordres (heatmap, DOM), que Binance n'archive pas ;
   liquidations, sauf les jours où le collecteur tournait.
@@ -183,13 +210,10 @@ l'heure rejouée).
 
 ## Feuille de route
 
-1. **Espace de travail** : grilles de 1, 2 ou 4 graphiques, fenêtres détachables (plusieurs
-   écrans), symbole et intervalle liés ou indépendants, réticule synchronisé, plusieurs symboles en
-   direct (spot et futures), mises en page et modèles d'indicateurs sauvegardés.
-2. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
+1. **Indicateurs complémentaires** : bandes du VWAP, ouvertures du jour / de la semaine / du mois,
    ranges des sessions Asie / Londres / New York, historique du financement et de la prime perp /
    spot, CVD et volume agrégés sur plusieurs plateformes gratuites (Bybit, OKX).
-3. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
+2. **Apprentissage** : explication de chaque indicateur dans l'interface, journal de trading
    (notes et captures liées à un graphique). Le replay des archives est en place (voir plus haut).
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
@@ -199,8 +223,8 @@ backtest) a été retiré de l'application et archivé sur la branche `archive/m
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `MARKET` | `futures` | `futures` (USD-M) ou `spot` |
-| `SYMBOL` | `BTCUSDT` | Symbole au démarrage (modifiable dans l'interface) |
+| `MARKET` | `futures` | Marché du symbole par défaut : `futures` (USD-M) ou `spot` |
+| `SYMBOL` | `BTCUSDT` | Symbole par défaut (premier graphique ; chaque graphique choisit le sien) |
 | `BUCKET` / `FP_BUCKET` | auto | Tranches de la heatmap et du footprint (sinon selon le prix) |
 | `HEAT_HOURS` | `4` | Profondeur de la heatmap en mémoire |
 | `RECORD` | désactivé | `1` : enregistre le carnet dans `data/*.ndjson.gz` |
