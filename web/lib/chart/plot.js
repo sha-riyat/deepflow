@@ -33,7 +33,7 @@ export function drawBehind(chart, ctx, items, geo) {
   if (L.naked && !tpo) drawNakedPocs(ctx, nakedList(data.dailySessions, data.bars), s, items);
   // Marques horodatées : sans objet dans la vue TPO (une colonne par jour).
   if (L.oiprof && s.mode === 'time' && chart.meta.market === 'futures') drawOiProfile(ctx, s, items, data.oi, data.bars, O.oiprof);
-  if (L.bubbles && !tpo) drawBubbles(ctx, s, items, data.bubbleRows(), data.bubbles.slot, O.bubbles);
+  if (L.bubbles && !tpo) drawBubbles(ctx, s, items, data.bubbleRows(), data.bubbles.slot, O.bubbles, geo);
   if (L.quotes && s.mode === 'time' && s.msPerPx < 3000) drawQuotes(ctx, s, items, data.ticks);
 }
 
@@ -44,7 +44,7 @@ export function drawAbove(chart, ctx, items, geo) {
   const tpo = st.style === 'tpo';
   if (L.div && !INDEXED.includes(st.style)) drawDivergences(ctx, items, geo, s);
   if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, data.vwapAnchor);
-  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket });
+  if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket }, geo);
   if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, data.liqs, O.liq);
   if (L.alerts) drawAlertLines(ctx, s, chart.alerts);
 }

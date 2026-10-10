@@ -32,6 +32,7 @@ export const OPTIONS = {
   bubbles: {
     filter: { label: 'Afficher', choices: [[1, '≥ moyenne'], [0, 'Toutes'], [2, '≥ 2× moyenne'], [4, '≥ 4× moyenne']] },
     size: { label: 'Taille', choices: [[1, 'Normale'], [0.7, 'Petite'], [1.4, 'Grande']] },
+    align: { label: 'Position horizontale', choices: [['candle', 'Sur la bougie'], ['time', 'Selon l’heure']] },
     density: { label: 'Créneau', choices: [[8, 'Normal (8 px)'], [4, 'Fin (4 px)'], [16, 'Large (16 px)']] },
     color: { label: 'Couleur', choices: [['split', 'Achats / ventes'], ['delta', 'Delta'], ['volume', 'Volume seul']] },
     scale: { label: 'Échelle des tailles', choices: [['sqrt', 'Racine'], ['linear', 'Linéaire'], ['log', 'Logarithmique']] },
@@ -40,6 +41,7 @@ export const OPTIONS = {
     min: { label: 'Seuil', choices: [[-1, 'Selon l’actif (BTC 50 k $, autres 25 k $)'], [0, 'Auto (0,5 % les plus gros)'], [25_000, '≥ 25 k $'], [50_000, '≥ 50 k $'], [100_000, '≥ 100 k $'], [500_000, '≥ 500 k $'], [1_000_000, '≥ 1 M $']] },
     limit: { label: 'Nombre affiché', choices: [[15, '15 plus gros'], [10, '10 plus gros'], [25, '25 plus gros'], [50, '50 plus gros'], [200, '200']] },
     labels: { label: 'Étiquettes', choices: [['big', 'Les 3 plus gros'], ['all', 'Toutes'], ['none', 'Aucune']] },
+    align: { label: 'Position horizontale', choices: [['candle', 'Sur la bougie'], ['time', 'Selon l’heure']] },
     group: { label: 'Regroupement', choices: [['level', 'Par niveau dans la bougie'], ['order', 'Par ordre']] },
   },
   oiprof: {

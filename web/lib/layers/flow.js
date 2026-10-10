@@ -12,15 +12,27 @@ const GROW = {
   log: (k) => Math.log2(1 + k) * 1.4,
 };
 
+// Abscisse d'un instant t : centre de la colonne de sa bougie (`align` = 'candle', si la géométrie est
+// connue et que t tombe dans une bougie chargée) ou position exacte dans le temps.
+function columnX(scale, items, geo, t, align) {
+  if (align === 'candle' && geo) {
+    const i = barIndex(items, t);
+    if (i >= 0) return geo.x(items[i], i);
+  }
+  return scale.xAt(t, items);
+}
+
 // Bulles : une par créneau, centrée sur son milieu et sur son VWAP. Le rayon suit le volume
 // rapporté à la moyenne des créneaux visibles (taille stable d'une vue à l'autre), selon l'échelle
 // choisie. Couleur : camembert achats / ventes, delta (teinte du camp dominant, opacité selon le
 // déséquilibre) ou volume seul. Les plus grosses d'abord, pour que les petites restent visibles.
-export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 1, color = 'split', scale: mode = 'sqrt' } = {}) {
+// Position horizontale : au centre de la bougie qui contient le créneau (`align` = 'candle', comme les
+// plateformes d'order flow : seul le prix varie dans la colonne) ou à l'heure exacte (`align` = 'time').
+export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 1, color = 'split', scale: mode = 'sqrt', align = 'candle' } = {}, geo = null) {
   const vis = [];
   let sum = 0;
   for (const [t0, p, buy, sell] of rows) {
-    const x = scale.xAt(t0 + slot / 2, items);
+    const x = columnX(scale, items, geo, t0 + slot / 2, align);
     if (!(x >= -30 && x <= scale.w + 30)) continue;
     const y = scale.yOfPrice(p);
     if (y < -30 || y > scale.h + 30) continue;
@@ -75,15 +87,16 @@ export function drawBubbles(ctx, scale, items, rows, slot, { filter = 1, size = 
 // Regroupement « par niveau » (par défaut) : les gros ordres du même côté, à la même ligne de prix de la
 // même bougie sont additionnés ; « par ordre » les montre un à un. Seuls les `limit` plus gros de la vue
 // sont dessinés.
+// Position horizontale : centre de la bougie (`align` = 'candle') ou heure exacte ('time').
 // Étiquettes (quantité, « ×n » si plusieurs ordres) : les 3 plus gros, ou toutes, ou aucune ; elles ne se
 // chevauchent jamais.
-export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0 } = {}) {
+export function drawBigPrints(ctx, scale, items, all, { limit = 15, labels = 'big', group = 'level', row = 0, align = 'candle' } = {}, geo = null) {
   const seen = all.filter((b) => {
     const x = scale.xAt(b[0], items);
     return x >= -40 && x <= scale.w + 40;
   });
   const big = groupBigPrints(seen, items, group === 'level' ? row : 0)
-    .map((g) => [scale.xAt(g[0], items), g])
+    .map((g) => [columnX(scale, items, geo, g[0], align), g])
     .sort((a, b) => b[1][2] - a[1][2])
     .slice(0, limit);
   let max = 0;
