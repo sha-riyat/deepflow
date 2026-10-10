@@ -39,3 +39,13 @@ test('footprint : absorption et épuisement lus dans les trades', async () => {
   assert.deepEqual(ex.map((m) => [m.kind, m.side]), [['exhaustion', -1]]);
   assert.deepEqual(flowMarks(fp.slice(0, 3), { o: 1, h: 2, l: 0, c: 1 }, 1), []);
 });
+
+test('divergences prix / CVD sur sommets et creux confirmés', async () => {
+  const { cvdDivergences, sessionCvd } = await import('../shared/cvd.js');
+  // Deux sommets (2 puis 6), le second plus haut mais avec un delta vendeur : divergence baissière.
+  const hs = [1, 2, 5, 2, 1, 2, 6, 2, 1];
+  const ds = [3, 3, 3, -1, -2, -3, -1, 0, 0];
+  const items = hs.map((h, i) => ({ t0: i * 60_000, h, l: h - 1, b: Math.max(ds[i], 0), s: Math.max(-ds[i], 0) }));
+  const div = cvdDivergences(items, sessionCvd(items), 2);
+  assert.deepEqual(div, [{ from: 2, to: 6, type: 'bear' }]);
+});

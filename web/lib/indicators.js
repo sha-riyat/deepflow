@@ -12,6 +12,7 @@ export const LAYERS = {
   bubbles: { label: 'Bulles de trades', sub: 'Volume agressif au VWAP de chaque créneau, part acheteuse en vert', group: 'flow', color: '#4ebe96' },
   big: { label: 'Gros prints', sub: 'Ordres agresseurs les plus gros', group: 'flow', color: '#ffa16c' },
   liq: { label: 'Liquidations', sub: 'Positions liquidées (futures, échantillon Binance)', group: 'flow', color: '#e0685f' },
+  div: { label: 'Divergences CVD', sub: 'Sommets et creux du prix non confirmés par le CVD de session', group: 'flow', color: '#e0685f' },
   quotes: { label: 'Bid / ask', sub: 'Meilleurs prix récents (zoom serré)', group: 'flow', color: '#cccccc' },
   profile: { label: 'Profil de session', sub: 'Volume par prix, POC et value area du jour UTC', group: 'levels', color: '#868f97' },
   prev: { label: 'Value area de la veille', sub: 'VAH, VAL et POC d’hier sur la journée, état d’acceptation ou de rejet', group: 'levels', color: '#479ffa' },

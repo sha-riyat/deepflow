@@ -2,6 +2,7 @@
 import { compact as money, fmt, qty } from '../fmt.js';
 import { optionSummary } from '../indicators.js';
 import { bigMin } from './requests.js';
+import { cvdDivergences, sessionCvd } from '@shared/cvd.js';
 import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
@@ -47,6 +48,11 @@ export function indicatorValues(chart, items) {
     const near = last && list.length ? list.reduce((a, b) => (Math.abs(b.price - last.c) < Math.abs(a.price - last.c) ? b : a)) : null;
     // Sans bougie chargée (changement de série en cours), pas de prix de référence : le nombre seul.
     out.naked = near ? `${list.length} · le plus proche ${fmt(near.price)}` : list.length ? String(list.length) : data.dailySessions.length ? 'aucun' : 'chargement…';
+  }
+  if (L.div && !['linebreak', 'kagi', 'pnf', 'tpo'].includes(style) && items.length >= 12) {
+    const divs = cvdDivergences(items, sessionCvd(items));
+    const lastDiv = divs[divs.length - 1];
+    out.div = lastDiv ? `${divs.length} · dernière ${lastDiv.type === 'bear' ? 'baissière' : 'haussière'}` : 'aucune';
   }
   if (L.bubbles) out.bubbles = style === 'tpo' ? 'masquées en vue TPO' : optionSummary('bubbles', opts.bubbles);
   const min = bigMin(chart);

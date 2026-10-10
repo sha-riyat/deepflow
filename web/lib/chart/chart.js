@@ -12,6 +12,7 @@ import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { drawVwap } from '../layers/vwap.js';
 import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
 import { drawPrevLevels } from '../layers/levels.js';
+import { drawDivergences } from '../layers/divergence.js';
 import { drawTpoView, tpoItems } from '../layers/tpo.js';
 import { drawQuotes, drawSignals, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
@@ -39,7 +40,7 @@ export class Chart {
       gamma: 0.9,
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, naked: true, vwap: false, signals: true, alerts: true, liq: true },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, div: true, naked: true, vwap: false, signals: true, alerts: true, liq: true },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
@@ -263,6 +264,7 @@ export class Chart {
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
     if (fpOn) drawFootprint(ctx, items, geo, s, { ...O.fp, mode: st.fpMode, bucket: this.meta.fpBucket });
+    if (L.div && !INDEXED.includes(st.style)) drawDivergences(ctx, items, geo, s);
     if (L.vwap && !INDEXED.includes(st.style)) drawVwap(ctx, items, geo, s, O.vwap, this.data.vwapAnchor);
     if (L.big && !tpo) drawBigPrints(ctx, s, items, this.data.bigPrints(), O.big);
     if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, this.data.liqs, O.liq);
