@@ -70,7 +70,15 @@ export function TopBar({ prefs, update, onSymbol, onAlert }: Props) {
 
   return (
     <header id="topbar">
-      <span className="logo">deepflow</span>
+      <span className="logo">
+        {/* Profil de volume stylisé : le POC (niveau le plus échangé) en orange. Voir assets/logo*.svg */}
+        <svg width="18" height="18" viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="10" y="10" width="18" height="9" rx="3" fill="#479ffa" />
+          <rect x="10" y="27" width="44" height="10" rx="3" fill="#ffa16c" />
+          <rect x="10" y="45" width="28" height="9" rx="3" fill="#479ffa" />
+        </svg>
+        deepflow
+      </span>
       <button type="button" className="symbol-btn" onClick={onSymbol} title="Rechercher un symbole (tapez au clavier)">
         <Icon icon={Search01Icon} size={16} />
         <span>{meta?.symbol ?? '—'}</span>

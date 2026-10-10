@@ -1,7 +1,8 @@
 /* Barres, graphique, légende, menus, fenêtre modale, bandeaux. */
 /* ---------- Barre du haut ---------- */
 #topbar { display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 8px; border-bottom: 1px solid var(--line); }
-.logo { padding: 0 10px 0 6px; font-weight: 700; font-size: 15px; letter-spacing: -0.04em; }
+.logo { display: inline-flex; align-items: center; gap: 7px; padding: 0 10px 0 6px; font-weight: 700; font-size: 15px; letter-spacing: -0.04em; }
+.logo svg { flex: none; }
 
 .symbol-btn {
   display: inline-flex;
