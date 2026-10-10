@@ -88,7 +88,7 @@ check('TPO de la session', session.periods.length === 48 && tpo.val <= tpo.poc &
   `${session.periods.length} périodes, POC ${tpo.poc * tpo.bucket}, VA ${tpo.val * tpo.bucket}–${(tpo.vah + 1) * tpo.bucket}, ${tpo.singles.length} simple(s) impression(s)`);
 
 // 3 ter. Bulles par minute : VWAP (volume en quote / volume) et volume acheteur des klines.
-const fake = { mode: 'live', store: { getRange: async () => ({ trades, partial: false }) }, flow: { bigThreshold: Infinity } };
+const fake = { mode: 'live', store: { getRange: async () => ({ trades, partial: false }) }, flow: { bigThreshold: Infinity }, now: () => Date.now() };
 const bub = new Map((await bubbles(fake, { from: day, to: day + DAY, slot: 60_000 })).rows.map((r) => [r[0], r]));
 let vwapBad = 0;
 let buyBad = 0;
@@ -103,7 +103,7 @@ check('Bulles 1 min : VWAP et volume acheteur vs klines', vwapBad / klines.lengt
 
 // 3 quater. VWAP du jour ancré : klines avant midi + trades après midi = VWAP des klines du jour.
 const noon = day + 12 * 3_600_000;
-const anchor = await vwapAnchor({ mode: 'live', rest, cfg: { symbol } }, { t: noon });
+const anchor = await vwapAnchor({ mode: 'live', rest, cfg: { symbol }, now: () => Date.now() }, { t: noon });
 let [apv, av] = [anchor.pv, anchor.v];
 for (let i = 0; i < trades.n; i++) {
   if (trades.t[i] < noon) continue;
