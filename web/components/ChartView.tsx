@@ -4,7 +4,7 @@
 // panneaux et le bouton « Direct ». Un clic le rend actif (barres et outils agissent sur lui).
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, MinusSignIcon, PlusSignIcon, RefreshCwIcon,
+  ArrowLeft01Icon, ArrowRight01Icon, ArrowRightDoubleIcon, Cancel01Icon, HelpCircleIcon, MinusSignIcon, PlusSignIcon, RefreshCwIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon, MenuButton } from './ui';
@@ -18,6 +18,7 @@ import { paneOf, syncCrosshair } from '@/lib/engine';
 import { usePane } from '@/lib/pane';
 import { useLive, type DrawState, type UiPrefs } from '@/lib/store';
 import { LINKS, LINK_MODES, type PaneSpec } from '@/lib/layout';
+import { helpId, openHelp } from '@/lib/help/index.js';
 
 interface NavChart {
   zoom(f: number): void;
@@ -166,6 +167,9 @@ export function ChartView({ spec, source, active, compact, onActivate, update, l
         {panes.map((p) => (
           <div key={p.kind} className="lg-row pane-ctl" style={{ top: p.y + 4 }}>
             <span className="acts">
+              <button type="button" title="Comprendre ce panneau" onClick={() => openHelp(helpId(p.kind, 'pane'))}>
+                <Icon icon={HelpCircleIcon} size={14} />
+              </button>
               <button type="button" title={`Retirer ${(PANES as Record<string, string>)[p.kind]}`}
                 onClick={() => update({ panes: prefs.panes.filter((x) => x !== p.kind) }, 'layout')}>
                 <Icon icon={Cancel01Icon} size={14} />

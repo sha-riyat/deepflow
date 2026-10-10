@@ -12,6 +12,7 @@ import { StatusBar } from './StatusBar';
 import { SymbolSearch } from './SymbolSearch';
 import { FlowPanel } from './panels/FlowPanel';
 import { AlertsPanel } from './panels/AlertsPanel';
+import { LearnPanel } from './panels/LearnPanel';
 import { MarketsPanel } from './panels/MarketsPanel';
 import { DomPanel, TapePanel } from './panels/LivePanels';
 import { activate, dropPane, engine, paneOf } from '@/lib/engine';
@@ -41,6 +42,7 @@ export default function Workspace() {
   const [preset, setPreset] = useState<{ price: number; n: number } | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [replay, setReplay] = useState<Set<string>>(new Set()); // graphiques branchés sur le replay
+  const [topic, setTopic] = useState<{ id: string; n: number } | null>(null); // fiche d'aide demandée
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
   const visible = layout.panes.slice(0, GRIDS[layout.grid].n);
@@ -219,6 +221,17 @@ export default function Workspace() {
     };
   }, [refresh, toast]);
 
+  // « ? » d'une légende ou d'un panneau : fiche ouverte dans le panneau Apprendre.
+  useEffect(() => {
+    const open = (e: Event) => {
+      setTopic({ id: (e as CustomEvent<string>).detail, n: Date.now() });
+      const rail = layoutRef.current.rail;
+      if (!rail.open.includes('learn')) setRail({ ...rail, open: toggleOpen(rail.open, 'learn') });
+    };
+    window.addEventListener('deepflow-help', open);
+    return () => window.removeEventListener('deepflow-help', open);
+  }, [setRail]);
+
   // Clavier : lettres -> recherche de symbole ; flèches -> contraste de la heatmap ; dessins :
   // Alt + lettre -> outil, Échap -> annulation, Suppr -> suppression du dessin sélectionné.
   useEffect(() => {
@@ -255,6 +268,7 @@ export default function Workspace() {
     if (id === 'dom') return <DomPanel />;
     if (id === 'tape') return <TapePanel />;
     if (id === 'markets') return <MarketsPanel onSelect={selectSymbol} />;
+    if (id === 'learn') return <LearnPanel topic={topic} />;
     return <AlertsPanel preset={preset} />;
   };
 

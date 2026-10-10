@@ -3,7 +3,7 @@
 // plus sont empilés (le plus ancien est remplacé) ; largeur et partage se règlent à la souris.
 import type { ReactNode } from 'react';
 import {
-  Activity01Icon, Cancel01Icon, LayoutListIcon, LeftToRightListStar01Icon, Notification03Icon, TransactionHistoryIcon,
+  Activity01Icon, BookOpen01Icon, Cancel01Icon, LayoutListIcon, LeftToRightListStar01Icon, Notification03Icon, TransactionHistoryIcon,
 } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { Icon } from './ui';
@@ -15,6 +15,7 @@ export const PANELS: Record<string, [string, IconSvgElement]> = {
   tape: ['Trades', TransactionHistoryIcon],
   markets: ['Marchés', LeftToRightListStar01Icon],
   alerts: ['Alertes', Notification03Icon],
+  learn: ['Apprendre', BookOpen01Icon],
 };
 
 type RailState = RailLayout;

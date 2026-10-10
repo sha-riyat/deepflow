@@ -2,13 +2,14 @@
 // Légende du graphique : symbole, OHLC de la bougie survolée, puis une ligne par indicateur actif
 // avec sa valeur courante et, au survol, ses réglages et le bouton pour le retirer.
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown01Icon, Cancel01Icon, Layers01Icon, SlidersHorizontalIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, Cancel01Icon, HelpCircleIcon, Layers01Icon, SlidersHorizontalIcon } from '@hugeicons/core-free-icons';
 import { Icon, OptionRows, type OptDefs } from './ui';
 import { LAYERS, OPTIONS, TPO_OPTIONS } from '@/lib/indicators.js';
 import { fmt, qty } from '@/lib/fmt.js';
 import type { UiPrefs } from '@/lib/store';
 import { usePane, type Pane } from '@/lib/pane';
 import { seriesLabel } from './TopBar';
+import { helpId, openHelp } from '@/lib/help/index.js';
 
 export interface Bar {
   o: number;
@@ -30,9 +31,10 @@ interface RowProps {
   opts?: Record<string, number | string>;
   setOpt: (key: string, v: number | string) => void;
   onRemove: () => void;
+  help?: string | null; // fiche du panneau Apprendre
 }
 
-function LegendRow({ color, label, value, defs, opts, setOpt, onRemove }: RowProps) {
+function LegendRow({ color, label, value, defs, opts, setOpt, onRemove, help }: RowProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -48,6 +50,11 @@ function LegendRow({ color, label, value, defs, opts, setOpt, onRemove }: RowPro
         <span>{label}</span>
         {value && <span className="val">{value}</span>}
         <span className="acts">
+          {help && (
+            <button type="button" title="Comprendre cet indicateur" onClick={() => openHelp(help)}>
+              <Icon icon={HelpCircleIcon} size={14} />
+            </button>
+          )}
           {defs && (
             <button type="button" title="Réglages" className={open ? 'on' : ''} onClick={() => setOpen(!open)}>
               <Icon icon={SlidersHorizontalIcon} size={14} />
@@ -106,13 +113,13 @@ export function Legend({ pane, prefs, update, bar, values, compact = false }: { 
         )}
         {!collapsed && tpo && (
           <LegendRow color="#479ffa" label="Market Profile (TPO)" value="POC · VA au nombre de TPO" defs={TPO_OPTIONS as OptDefs}
-            opts={prefs.opts.tpo} setOpt={setOpt('tpo')} onRemove={() => update({ style: 'candles' }, 'style')} />
+            opts={prefs.opts.tpo} setOpt={setOpt('tpo')} onRemove={() => update({ style: 'candles' }, 'style')} help="tpo" />
         )}
         {!collapsed && active.map((k) => {
           const d = (LAYERS as Record<string, { label: string; color: string }>)[k];
           return (
             <LegendRow key={k} color={d.color} label={d.label} value={values[k]} defs={(OPTIONS as Record<string, OptDefs>)[k]}
-              opts={prefs.opts[k]} setOpt={setOpt(k)} onRemove={() => update({ layers: { ...prefs.layers, [k]: false } }, 'view')} />
+              opts={prefs.opts[k]} setOpt={setOpt(k)} onRemove={() => update({ layers: { ...prefs.layers, [k]: false } }, 'view')} help={helpId(k)} />
           );
         })}
       </div>

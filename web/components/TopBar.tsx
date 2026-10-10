@@ -18,6 +18,7 @@ import { fmt } from '@/lib/fmt.js';
 import { FP_OPTIONS, GROUPS, LAYERS } from '@/lib/indicators.js';
 import { useLive, type UiPrefs } from '@/lib/store';
 import { GRIDS } from '@/lib/layout';
+import { FOOTPRINT_HELP } from '@/lib/help/index.js';
 
 export const TYPES: Record<string, string> = { tick: 'Ticks', volume: 'Volume', range: 'Range', delta: 'Delta', renko: 'Renko' };
 export const INTERVALS: Record<number, string> = {
@@ -149,7 +150,7 @@ export function TopBar({ prefs, update, onSymbol, onAlert, grid, onGrid, presets
             <div>
               <div className="pop-title">Affichage dans les bougies</div>
               {Object.entries(FP_MODES as Record<string, string>).map(([k, label]) => (
-                <MenuItem key={k} label={label} on={prefs.fpMode === k}
+                <MenuItem key={k} label={label} on={prefs.fpMode === k} sub={(FOOTPRINT_HELP as Record<string, string>)[k]}
                   onClick={() => update({ fpMode: k }, (prefs.fpMode === 'off') !== (k === 'off') ? 'series' : 'view')} />
               ))}
             </div>

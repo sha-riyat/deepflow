@@ -99,3 +99,20 @@ label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2)
 .al-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
 .al-item button { display: inline-flex; border: none; background: none; color: var(--text-3); cursor: pointer; border-radius: 4px; padding: 3px; }
 .al-item button:hover { color: var(--sell); background: var(--hover); }
+
+/* Panneau Apprendre */
+.learn { display: grid; gap: 2px; }
+.learn-search { margin: 4px 4px 6px; }
+.learn .pop-item span { flex: 1; }
+.learn-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.learn-dot.fact, .learn-level.fact { background: rgba(78, 190, 150, 0.85); }
+.learn-dot.rule, .learn-level.rule { background: rgba(255, 161, 108, 0.85); }
+.learn-dot.context, .learn-level.context { background: rgba(71, 159, 250, 0.85); }
+.learn-article { padding: 2px 6px 10px; font-size: 13px; line-height: 1.5; color: var(--text-2); }
+.learn-article h3 { margin: 8px 0 6px; font-size: 15px; color: var(--text); }
+.learn-article h4 { margin: 12px 0 4px; font-size: 12px; color: var(--text-3); }
+.learn-article ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.learn-article .traps li::marker { color: var(--ember); }
+.learn-level { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; color: var(--bg); }
+.learn-back { gap: 4px; padding: 0 6px; }
+.learn-note { margin-top: 14px; font-size: 11px; }
