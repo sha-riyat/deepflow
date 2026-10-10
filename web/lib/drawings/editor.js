@@ -1,40 +1,13 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
-// redimensionnement par les poignées, style, suppression. Les dessins sont sauvegardés par marché et
-// par symbole dans le stockage du navigateur ; le dernier style choisi pour chaque outil est retenu.
+// redimensionnement par les poignées, style, suppression. Sauvegarde par marché et par symbole, et
+// dernier style de chaque outil : storage.js.
 import { cleanCalc, positionPoints } from '@shared/measures.js';
 import {
-  DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, textSize, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, setHandle, shapeOf, toPixel,
+  DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeOf, textSize, toPixel,
 } from '@shared/drawings.js';
+import { loadCalc, loadSet, loadStyles, saveCalc, saveSet, saveStyles } from './storage.js';
 
-const KEY = 'deepflow.drawings';
-const STYLES_KEY = 'deepflow.drawings.styles'; // outil -> dernier style choisi
-const CALC_KEY = 'deepflow.drawings.calc'; // capital et risque du dernier outil position
-
-function store(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // stockage indisponible
-  }
-}
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
-
-function readStyles() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(STYLES_KEY) ?? '{}');
-    return Object.fromEntries(Object.keys(DRAW_TYPES).filter((t) => raw?.[t]).map((t) => [t, cleanStyle(raw[t])]));
-  } catch {
-    return {};
-  }
-}
-
-function readAll() {
-  try {
-    return parseDrawings(localStorage.getItem(KEY));
-  } catch {
-    return {}; // stockage indisponible (navigation privée)
-  }
-}
 
 export class DrawingEditor {
   // enabled() : faux dans les vues sans échelle de temps continue (TPO, Kagi, P&F, Line break).
@@ -50,12 +23,8 @@ export class DrawingEditor {
     this.drag = null;
     this.editing = null; // identifiant de la note en cours de saisie
     this.onState = null; // (état résumé) -> barres de dessin et de style, saisie des notes
-    this.styles = readStyles();
-    try {
-      this.calc = cleanCalc(JSON.parse(localStorage.getItem(CALC_KEY) ?? 'null'));
-    } catch {
-      this.calc = cleanCalc(null);
-    }
+    this.styles = loadStyles();
+    this.calc = loadCalc();
   }
 
   // Charge les dessins du symbole affiché quand il change.
@@ -64,7 +33,7 @@ export class DrawingEditor {
     const key = m ? `${m.market}:${m.symbol}` : '';
     if (key === this.key) return;
     this.key = key;
-    this.list = key ? readAll()[key] ?? [] : [];
+    this.list = key ? loadSet(key) : [];
     this.sel = null;
     this.draft = null;
     this.drag = null;
@@ -102,7 +71,7 @@ export class DrawingEditor {
     if (!d) return;
     d.style = cleanStyle({ ...d.style, ...patch });
     this.styles[d.type] = d.style;
-    store(STYLES_KEY, this.styles);
+    saveStyles(this.styles);
     this.#save();
   }
 
@@ -112,7 +81,7 @@ export class DrawingEditor {
     if (!d?.calc) return;
     d.calc = cleanCalc({ ...d.calc, ...patch });
     this.calc = d.calc;
-    store(CALC_KEY, this.calc);
+    saveCalc(this.calc);
     this.#save();
   }
 
@@ -266,15 +235,7 @@ export class DrawingEditor {
   }
 
   #save() {
-    if (this.key) {
-      const all = readAll();
-      all[this.key] = this.list;
-      try {
-        localStorage.setItem(KEY, serializeDrawings(all));
-      } catch {
-        // stockage indisponible : dessins non mémorisés
-      }
-    }
+    if (this.key) saveSet(this.key, this.list);
     this.#changed();
   }
 
