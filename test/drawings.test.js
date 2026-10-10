@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  indexOfTime, timeOfIndex, toPixel, fromPixel, movePoints, shapeOf, hitTest, distToSegment, parseDrawings, serializeDrawings,
+  indexOfTime, timeOfIndex, toPixel, fromPixel, movePoints, shapeOf, hitTest, distToSegment, parseDrawings, serializeDrawings, cleanStyle,
 } from '../shared/drawings.js';
 
 // Échelle minimale (mêmes formules que web/lib/chart/scale.js).
@@ -53,14 +53,20 @@ test('dessins : clic sur une ligne, sur une poignée, à côté', () => {
 });
 
 test('dessins : sauvegarde versionnée, lecture tolérante', () => {
-  const d = { id: 'a', type: 'trend', pts: [{ t: 1, p: 2 }, { t: 3, p: 4 }], style: { color: '#fff' } };
+  const d = { id: 'a', type: 'trend', pts: [{ t: 1, p: 2 }, { t: 3, p: 4 }], style: { color: '#ffffff' } };
   const sets = parseDrawings(serializeDrawings({ 'futures:BTCUSDT': [d], 'spot:ETHUSDT': [] }));
   assert.deepEqual(Object.keys(sets), ['futures:BTCUSDT']); // jeux vides non écrits
-  assert.equal(sets['futures:BTCUSDT'][0].style.color, '#fff');
+  assert.equal(sets['futures:BTCUSDT'][0].style.color, '#ffffff');
   assert.equal(sets['futures:BTCUSDT'][0].style.width, 1.5); // style complété par défaut
   assert.equal(JSON.parse(serializeDrawings(sets)).v, 1);
   const bad = JSON.stringify({ v: 1, sets: { k: [d, { id: 'b', type: 'inconnu', pts: [] }, { ...d, id: 'c', pts: [{ t: 1, p: null }, { t: 1, p: 1 }] }] } });
   assert.deepEqual(parseDrawings(bad).k.map((x) => x.id), ['a']);
   assert.deepEqual(parseDrawings('{pas du json'), {});
   assert.deepEqual(parseDrawings(null), {});
+});
+
+test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () => {
+  assert.deepEqual(cleanStyle({ color: '#E0685F', width: 3, dash: 'dot' }), { color: '#E0685F', width: 3, dash: 'dot' });
+  assert.deepEqual(cleanStyle({ color: 'red; x', width: 40, dash: 'wavy' }), { color: '#479ffa', width: 1.5, dash: 'solid' });
+  assert.deepEqual(cleanStyle(undefined), cleanStyle({}));
 });

@@ -1,12 +1,22 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
-// redimensionnement par les poignées, suppression. Les dessins sont sauvegardés par marché et par
-// symbole dans le stockage du navigateur.
+// redimensionnement par les poignées, style, suppression. Les dessins sont sauvegardés par marché et
+// par symbole dans le stockage du navigateur ; le dernier style choisi pour chaque outil est retenu.
 import {
-  DEFAULT_STYLE, DRAW_TYPES, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, shapeOf, toPixel,
+  DRAW_TYPES, cleanStyle, fromPixel, hitTest, movePoints, parseDrawings, serializeDrawings, shapeOf, toPixel,
 } from '@shared/drawings.js';
 
 const KEY = 'deepflow.drawings';
+const STYLES_KEY = 'deepflow.drawings.styles'; // outil -> dernier style choisi
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
+
+function readStyles() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STYLES_KEY) ?? '{}');
+    return Object.fromEntries(Object.keys(DRAW_TYPES).filter((t) => raw?.[t]).map((t) => [t, cleanStyle(raw[t])]));
+  } catch {
+    return {};
+  }
+}
 
 function readAll() {
   try {
@@ -28,7 +38,8 @@ export class DrawingEditor {
     this.draft = null; // dessin en cours de création
     this.downAt = null;
     this.drag = null;
-    this.onState = null; // (état résumé) -> barre de dessin
+    this.onState = null; // (état résumé) -> barres de dessin et de style
+    this.styles = readStyles();
   }
 
   // Charge les dessins du symbole affiché quand il change.
@@ -67,6 +78,20 @@ export class DrawingEditor {
     return true;
   }
 
+  // Style du dessin sélectionné (couleur, épaisseur, trait), retenu pour les prochains dessins de cet outil.
+  setStyle(patch) {
+    const d = this.list.find((x) => x.id === this.sel);
+    if (!d) return;
+    d.style = cleanStyle({ ...d.style, ...patch });
+    this.styles[d.type] = d.style;
+    try {
+      localStorage.setItem(STYLES_KEY, JSON.stringify(this.styles));
+    } catch {
+      // stockage indisponible
+    }
+    this.#save();
+  }
+
   removeSelected() {
     if (!this.sel) return false;
     this.list = this.list.filter((d) => d.id !== this.sel);
@@ -97,7 +122,7 @@ export class DrawingEditor {
     }
     if (this.tool) {
       const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-      this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: { ...DEFAULT_STYLE } };
+      this.draft = { id, type: this.tool, pts: Array.from({ length: DRAW_TYPES[this.tool] }, () => ({ ...pt })), style: cleanStyle(this.styles[this.tool]) };
       this.downAt = p;
       this.#changed();
       return true;
@@ -194,6 +219,7 @@ export class DrawingEditor {
 
   #changed() {
     this.chart.invalidate();
-    this.onState?.({ tool: this.tool, sel: Boolean(this.sel), count: this.list.length });
+    const sel = this.list.find((d) => d.id === this.sel);
+    this.onState?.({ tool: this.tool, sel: Boolean(sel), style: sel?.style ?? null, count: this.list.length });
   }
 }

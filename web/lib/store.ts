@@ -18,10 +18,17 @@ export interface Live {
   draw: DrawState;
 }
 
-// Outils de dessin : outil actif (null = curseur), sélection, nombre de dessins du symbole.
+// Outils de dessin : outil actif (null = curseur), sélection et son style, nombre de dessins du symbole.
+export interface DrawStyle {
+  color: string;
+  width: number;
+  dash: string;
+}
+
 export interface DrawState {
   tool: string | null;
   sel: boolean;
+  style: DrawStyle | null;
   count: number;
 }
 
@@ -36,7 +43,7 @@ let state: Live = {
   dataStatus: '',
   following: true,
   mark: null,
-  draw: { tool: null, sel: false, count: 0 },
+  draw: { tool: null, sel: false, style: null, count: 0 },
 };
 const listeners = new Set<() => void>();
 

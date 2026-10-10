@@ -36,6 +36,30 @@
 /* Barre des outils de dessin (boutons du rail, voir panels.css) */
 #drawbar { grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-right: 1px solid var(--line); }
 #drawbar .rail-btn:disabled { color: var(--text-4); background: none; cursor: default; }
+
+/* Style du dessin sélectionné : barre flottante en haut du tracé */
+#drawstyle {
+  position: absolute;
+  top: 8px;
+  left: calc((100% - 84px) / 2);
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+#drawstyle .popover { min-width: 150px; }
+#drawstyle .swatch { display: block; width: 16px; height: 16px; border-radius: 4px; }
+.ds-sep { width: 1px; height: 18px; margin: 0 2px; background: var(--line); }
+.swatches { display: grid; grid-template-columns: repeat(4, 22px); gap: 6px; padding: 4px; }
+.swatches button { width: 22px; height: 22px; padding: 0; border: 2px solid transparent; border-radius: 6px; cursor: pointer; }
+.swatches button.on { border-color: var(--text); }
 #chart { position: absolute; inset: 0; }
 #chart canvas { position: absolute; left: 0; top: 0; display: block; }
 #chart canvas.main,

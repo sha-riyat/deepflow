@@ -8,14 +8,18 @@ export function drawDrawings(ctx, editor, scale, items) {
   for (const d of editor.visible()) {
     const shape = shapeOf(d, d.pts.map((pt) => toPixel(scale, items, pt)));
     const { color, width, dash } = d.style;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.setLineDash(DASH[dash] ?? []);
     ctx.beginPath();
     for (const [x1, y1, x2, y2] of shape.segs) {
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
     }
+    // Liseré sombre sous le trait : lisible au-dessus de la heatmap et des profils.
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.lineWidth = width + 2.5;
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(DASH[dash] ?? []);
     ctx.stroke();
     ctx.setLineDash([]);
     if (d.id !== editor.sel && d !== editor.draft) continue;
