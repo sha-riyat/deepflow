@@ -227,3 +227,17 @@ export function profileTotals(s) {
   const volume = buy + sell;
   return { volume, buy, sell, delta: buy - sell, deltaPct: volume > 0 ? ((buy - sell) / volume) * 100 : 0 };
 }
+
+// Prix du plus fort delta acheteur et du plus fort delta vendeur d'un profil (lignes [ligne, achats,
+// ventes]) : { buy: { row, delta } | null, sell: { row, delta } | null }. Ce sont les lignes où un camp a le
+// plus dominé ; `null` si aucune ligne n'a un delta positif (buy) ou négatif (sell).
+export function deltaExtremes(rows) {
+  let buy = null;
+  let sell = null;
+  for (const [row, b, v] of rows) {
+    const delta = b - v;
+    if (delta > 0 && (!buy || delta > buy.delta)) buy = { row, delta };
+    if (delta < 0 && (!sell || delta < sell.delta)) sell = { row, delta };
+  }
+  return { buy, sell };
+}

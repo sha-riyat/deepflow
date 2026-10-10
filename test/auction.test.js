@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, openLocation, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, deltaExtremes, openLocation, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -116,4 +116,11 @@ test('profil dessiné comme zone de référence : acceptation puis rejet, pério
   const inside = auctionState(ref, after([[0, 103, 107, 105]]), t0 + 30 * MIN + 1);
   assert.equal(auctionLabel(inside, 'du profil'), 'dans la valeur du profil');
   assert.equal(auctionLabel(inside), 'dans la valeur de la veille');
+});
+
+test('delta maximal d’un profil : ligne du plus fort delta acheteur et du plus fort delta vendeur', () => {
+  const rows = [[10, 6, 2], [11, 1, 9], [12, 8, 1], [13, 3, 3], [14, 2, 4]]; // deltas +4, -8, +7, 0, -2
+  assert.deepEqual(deltaExtremes(rows), { buy: { row: 12, delta: 7 }, sell: { row: 11, delta: -8 } });
+  assert.deepEqual(deltaExtremes([[1, 5, 1], [2, 4, 2]]), { buy: { row: 1, delta: 4 }, sell: null }); // aucun delta vendeur
+  assert.deepEqual(deltaExtremes([]), { buy: null, sell: null });
 });

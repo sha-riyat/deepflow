@@ -29,6 +29,7 @@ export interface DrawStyle {
   extend?: boolean; // profil à plage fixe : POC, VAH et VAL prolongés vers la droite
   nodes?: boolean; // profil à plage fixe : pics et creux (HVN / LVN), affichés sauf si faux
   totals?: boolean; // profil à plage fixe : étiquette de totaux, affichée sauf si faux
+  deltaMax?: boolean; // profil à plage fixe : niveaux de delta maximal, masqués sauf si vrai
 }
 
 export interface DrawState {

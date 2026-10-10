@@ -3,7 +3,7 @@
 // VWAP ancré, Volume Profile à plage fixe.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
-import { SHAPE_LABEL, auctionLabel, auctionState, profileShape, profileTotals } from '@shared/auction.js';
+import { SHAPE_LABEL, auctionLabel, auctionState, deltaExtremes, profileShape, profileTotals } from '@shared/auction.js';
 import { clockNow } from '../clock.js';
 import { histogram } from './volprofile.js';
 import { drawNodes } from './levels.js';
@@ -138,8 +138,9 @@ function avwap(ctx, d, shape) {
 // du volume : VAH en haut, VAL en bas) prolongés sur la plage, pics (HVN) et creux (LVN) de volume, et en
 // dessous une étiquette de totaux (volume, delta, bougies, forme du profil). Avec `style.extend`, POC,
 // VAH et VAL sont prolongés jusqu'au bord droit et l'état de l'enchère par rapport à la zone de valeur
-// (acceptation ou rejet, 2 clôtures de 30 min) est indiqué. Profil calculé par le collecteur à partir
-// de chaque trade.
+// (acceptation ou rejet, 2 clôtures de 30 min) est indiqué. Avec `style.deltaMax`, les prix du plus fort
+// delta acheteur et du plus fort delta vendeur sont tracés comme des niveaux. Profil calculé par le
+// collecteur à partir de chaque trade.
 function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   const [x0, y0, x1, y1] = shape.areas[0];
   ctx.fillStyle = alpha(d.style.color, 0.05);
@@ -166,6 +167,25 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
     ctx.setLineDash([]);
     if (ext) label(ctx, `${name} ${fmt(price, digits)}`, scale.w - 4, y + 8.5, color, { size: 10, align: 'right' });
     else label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
+  }
+  if (d.style.deltaMax === true) {
+    const ex = deltaExtremes(s.rows);
+    for (const [name, e, color] of [['Δ max achat', ex.buy, C.growth], ['Δ max vente', ex.sell, C.loss]]) {
+      if (!e) continue;
+      const price = (e.row + 0.5) * s.bucket;
+      const y = scale.yOfPrice(price);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.25;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x0, y);
+      ctx.lineTo(xr, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const text = `${name} ${fmt(price, digits)} (${e.delta >= 0 ? '+' : ''}${qty(e.delta)})`;
+      if (ext) label(ctx, text, scale.w - 4, y - 2, color, { size: 10, align: 'right' });
+      else label(ctx, text, x1 + 4, y - 2, color, { size: 10 });
+    }
   }
   const nodes = d.style.nodes === false ? undefined : drawNodes(ctx, s, scale, x0, x1, { labels: true });
   const t = profileTotals(s);

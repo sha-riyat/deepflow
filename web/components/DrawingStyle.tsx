@@ -141,13 +141,15 @@ function SettingsPanel({ id, type, style, calc, set }: { id: string | null; type
     defs.extend = { label: 'Niveaux prolongés vers la droite', choices: [['off', 'Non'], ['on', 'Oui']] };
     defs.nodes = { label: 'Pics et creux de volume (HVN / LVN)', choices: [['on', 'Affichés'], ['off', 'Masqués']] };
     defs.totals = { label: 'Étiquette de totaux', choices: [['on', 'Affichée'], ['off', 'Masquée']] };
+    defs.deltaMax = { label: 'Niveaux de delta maximal (plus fort achat, plus forte vente)', choices: [['off', 'Masqués'], ['on', 'Affichés']] };
   }
   const values: Record<string, number | string> = {
     width: style.width, dash: style.dash, kind: style.kind ?? 'volume',
     extend: style.extend ? 'on' : 'off', nodes: style.nodes === false ? 'off' : 'on', totals: style.totals === false ? 'off' : 'on',
+    deltaMax: style.deltaMax ? 'on' : 'off',
   };
-  const change = (key: string, v: number | string) => set({ [key]: ['extend', 'nodes', 'totals'].includes(key) ? v === 'on' : v } as Partial<Style>);
-  const reset = () => set({ color: DEFAULT_STYLE.color, width: DEFAULT_STYLE.width, dash: DEFAULT_STYLE.dash, kind: undefined, extend: undefined, nodes: undefined, totals: undefined });
+  const change = (key: string, v: number | string) => set({ [key]: ['extend', 'nodes', 'totals', 'deltaMax'].includes(key) ? v === 'on' : v } as Partial<Style>);
+  const reset = () => set({ color: DEFAULT_STYLE.color, width: DEFAULT_STYLE.width, dash: DEFAULT_STYLE.dash, kind: undefined, extend: undefined, nodes: undefined, totals: undefined, deltaMax: undefined });
   return (
     <div className="ds-panel">
       <div className="pop-title">Réglages · {TOOL_NAMES[type] ?? type}</div>

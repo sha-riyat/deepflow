@@ -83,6 +83,10 @@ test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () 
   assert.equal(cleanStyle({ nodes: false, totals: false }).totals, false);
   assert.equal('nodes' in cleanStyle({ nodes: true }), false);
   assert.equal('totals' in cleanStyle({}), false);
+  // Niveaux de delta maximal : masqués par défaut, conservés seulement s'ils valent vrai.
+  assert.equal(cleanStyle({ deltaMax: true }).deltaMax, true);
+  assert.equal('deltaMax' in cleanStyle({ deltaMax: false }), false);
+  assert.equal('deltaMax' in cleanStyle({}), false);
 });
 
 test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du tracé', () => {
