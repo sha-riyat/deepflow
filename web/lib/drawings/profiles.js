@@ -15,7 +15,9 @@ export class RangeProfiles {
     this.byId = new Map(); // dessin -> dernier résultat affiché
   }
 
-  // Résultat pour un dessin : { session, partial, clipped } | { error } | { loading: true }.
+  // Résultat pour un dessin : { session, partial, clipped, after } | { error } | { loading: true }. `after` :
+  // profil de la fin de la plage jusqu'à maintenant (pour l'état d'acceptation ou de rejet), demandé
+  // seulement si le dessin prolonge ses niveaux et que la plage est terminée.
   get(d, moving) {
     const [from, end] = [d.pts[0].t, d.pts[1].t].sort((a, b) => a - b);
     const now = clockNow();
@@ -25,19 +27,29 @@ export class RangeProfiles {
     const entry = this.cache.get(key);
     if (entry?.result) {
       this.byId.set(d.id, entry.result);
-      return entry.result;
+      return d.style.extend && !live && entry.result.session ? { ...entry.result, after: this.#after(d.id, end, now, entry.result.session.bucket) } : entry.result;
     }
     if (!entry && !moving && to > from) this.#load(key, from, to);
     return this.byId.get(d.id) ?? { loading: true };
   }
 
-  async #load(key, from, to) {
+  // Profil de [fin de la plage, maintenant], rafraîchi toutes les 15 s, avec la taille de ligne de la plage.
+  #after(id, end, now, bucket) {
+    const key = `${end}:apres:${bucket}:${Math.floor(Date.now() / RETRY_MS)}`;
+    const entry = this.cache.get(key);
+    if (entry?.result) return entry.result;
+    if (!entry && now > end) this.#load(key, end, now, { bucket });
+    return null;
+  }
+
+  async #load(key, from, to, size = { rows: 30 }) {
     const entry = {};
     this.cache.set(key, entry);
     if (this.cache.size > 80) this.cache.delete(this.cache.keys().next().value);
     try {
-      // `rows` : le collecteur choisit la taille des lignes d'après la hauteur de la plage (≈ 30 lignes).
-      const q = new URLSearchParams({ mode: 'range', from: Math.floor(from), to: Math.floor(to), rows: 30, tpo: 30 });
+      // `rows` : le collecteur choisit la taille des lignes d'après la hauteur de la plage (≈ 30 lignes) ;
+      // `bucket` : taille imposée (profil d'après la plage).
+      const q = new URLSearchParams({ mode: 'range', from: Math.floor(from), to: Math.floor(to), ...size, tpo: 30 });
       const res = await fetch(this.chart.data.url(`/api/profile?${q}`));
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);

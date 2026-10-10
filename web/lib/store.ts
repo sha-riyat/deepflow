@@ -26,6 +26,7 @@ export interface DrawStyle {
   width: number;
   dash: string;
   kind?: string; // profil à plage fixe : volume, achats / ventes ou delta
+  extend?: boolean; // profil à plage fixe : POC, VAH et VAL prolongés vers la droite
 }
 
 export interface DrawState {

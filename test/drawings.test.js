@@ -74,6 +74,10 @@ test('dessins : style vérifié, valeurs inconnues remplacées par défaut', () 
   assert.equal(cleanStyle({ kind: 'bidask' }).kind, 'bidask');
   assert.equal('kind' in cleanStyle({ kind: 'n’importe quoi' }), false);
   assert.equal('kind' in cleanStyle({ color: '#ffffff' }), false);
+  // Niveaux prolongés (profil à plage fixe) : conservés seulement s'ils valent vrai.
+  assert.equal(cleanStyle({ extend: true }).extend, true);
+  assert.equal('extend' in cleanStyle({ extend: false }), false);
+  assert.equal('extend' in cleanStyle({ extend: 'oui' }), false);
 });
 
 test('dessins : horizontale, rayon et verticale prolongés jusqu’aux bords du tracé', () => {

@@ -26,6 +26,15 @@ function StyleMenus({ style, note, profile, set }: { style: Style; note: boolean
   return (
     <>
       {profile && (
+        <MenuButton title="Prolonger le POC, le VAH et le VAL vers la droite, avec l’état d’acceptation ou de rejet" caret label={<span className="ds-size">{style.extend ? 'Prolongé' : 'Non prolongé'}</span>}>
+          {(close) => [[false, 'Non prolongé'], [true, 'Prolongé vers la droite']].map(([v, text]) => (
+            <button key={String(v)} type="button" className={`pop-item${Boolean(style.extend) === v ? ' on' : ''}`} onClick={() => (set({ extend: v as boolean }), close())}>
+              <span>{text as string}</span>
+            </button>
+          ))}
+        </MenuButton>
+      )}
+      {profile && (
         <MenuButton title="Type de profil" caret label={<span className="ds-size">{KIND_LABELS[style.kind ?? 'volume']}</span>}>
           {(close) => PROFILE_KINDS.map((k) => (
             <button key={k} type="button" className={`pop-item${k === (style.kind ?? 'volume') ? ' on' : ''}`} onClick={() => (set({ kind: k }), close())}>

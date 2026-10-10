@@ -3,7 +3,8 @@
 // VWAP ancré, Volume Profile à plage fixe.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
-import { SHAPE_LABEL, profileShape, profileTotals } from '@shared/auction.js';
+import { SHAPE_LABEL, auctionLabel, auctionState, profileShape, profileTotals } from '@shared/auction.js';
+import { clockNow } from '../clock.js';
 import { histogram } from './volprofile.js';
 import { drawNodes } from './levels.js';
 import { compact, fmt, qty, sgn } from '../fmt.js';
@@ -135,8 +136,10 @@ function avwap(ctx, d, shape) {
 // Volume Profile à plage fixe : histogramme par prix depuis le bord gauche (30 % de la largeur) en
 // volume, en achats / ventes ou en delta (`style.kind`), POC (prix le plus échangé) et value area (70 %
 // du volume : VAH en haut, VAL en bas) prolongés sur la plage, pics (HVN) et creux (LVN) de volume, et en
-// dessous une étiquette de totaux (volume, delta, bougies, forme du profil). Profil calculé par le
-// collecteur à partir de chaque trade.
+// dessous une étiquette de totaux (volume, delta, bougies, forme du profil). Avec `style.extend`, POC,
+// VAH et VAL sont prolongés jusqu'au bord droit et l'état de l'enchère par rapport à la zone de valeur
+// (acceptation ou rejet, 2 clôtures de 30 min) est indiqué. Profil calculé par le collecteur à partir
+// de chaque trade.
 function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   const [x0, y0, x1, y1] = shape.areas[0];
   ctx.fillStyle = alpha(d.style.color, 0.05);
@@ -148,6 +151,8 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   const s = r.session;
   if (!s?.rows.length) return note('Aucun trade sur cette plage');
   histogram(ctx, s, scale, x0, Math.max(24, (x1 - x0) * 0.3), 1, { kind: d.style.kind ?? 'volume', va: 1 });
+  const ext = d.style.extend === true;
+  const xr = ext ? scale.w : x1; // fin des lignes : bord droit si prolongées
   const lines = [['POC', (s.poc + 0.5) * s.bucket, C.ember, []], ['VAH', (s.vah + 1) * s.bucket, C.mist, [4, 3]], ['VAL', s.val * s.bucket, C.mist, [4, 3]]];
   for (const [name, price, color, dash] of lines) {
     const y = scale.yOfPrice(price);
@@ -156,10 +161,11 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
     ctx.setLineDash(dash);
     ctx.beginPath();
     ctx.moveTo(x0, y);
-    ctx.lineTo(x1, y);
+    ctx.lineTo(xr, y);
     ctx.stroke();
     ctx.setLineDash([]);
-    label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
+    if (ext) label(ctx, `${name} ${fmt(price, digits)}`, scale.w - 4, y + 8.5, color, { size: 10, align: 'right' });
+    else label(ctx, `${name} ${fmt(price, digits)}`, x1 + 4, y + 8.5, color, { size: 10 });
   }
   const nodes = drawNodes(ctx, s, scale, x0, x1, { labels: true });
   const t = profileTotals(s);
@@ -170,7 +176,12 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
   // Décalée vers la gauche si elle dépasserait le bord droit du graphique.
   ctx.font = font(10, 500);
   const lx = Math.max(4, Math.min(x0, scale.w - ctx.measureText(total).width - 14));
-  label(ctx, total, lx, y1 + 16 <= scale.h ? y1 + 16 : Math.max(y0, 0) + 16, C.mist, { size: 10 });
+  const ly = y1 + 16 <= scale.h ? y1 + 16 : Math.max(y0, 0) + 16;
+  label(ctx, total, lx, ly, C.mist, { size: 10 });
+  if (ext && r.after?.session) {
+    const st = auctionState(s, r.after.session, clockNow(), 2);
+    label(ctx, `Depuis la fin de la plage : ${auctionLabel(st, 'du profil')}`, lx, ly + 17, C.mist, { size: 10 });
+  }
   if (r.clipped) note('Plage limitée aux 3 derniers jours de la sélection', C.ember);
   else if (r.partial) note('Historique en cours de téléchargement', C.ember);
 }

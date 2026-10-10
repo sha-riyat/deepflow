@@ -149,14 +149,15 @@ export function openLocation(prev, today) {
 
 export const OPEN_LABEL = { above: 'au-dessus de la valeur de la veille', inside: 'dans la valeur de la veille', below: 'sous la valeur de la veille' };
 
-export function auctionLabel(st) {
+// `ref` : de quoi la zone de valeur est la référence (« de la veille », « du profil »).
+export function auctionLabel(st, ref = 'de la veille') {
   if (!st) return '';
   const where = st.side > 0 ? 'au-dessus de la VAH' : 'sous la VAL';
   if (st.state === 'accepted') return `acceptation ${where} (${st.count} × 30 min)`;
   if (st.state === 'rejected') return `rejet ${st.side > 0 ? 'par le haut' : 'par le bas'}, retour dans la valeur (${st.count} × 30 min)`;
   if (st.state === 'outside') return `sortie ${where} en cours (${st.count}/2)`;
   if (st.state === 'returning') return `retour dans la valeur en cours (${st.count}/2)`;
-  return 'dans la valeur de la veille';
+  return `dans la valeur ${ref}`;
 }
 
 // Profil composite : fusion de sessions (rows, POC, value area recalculés). `n` dernières

@@ -97,3 +97,23 @@ test('HVN / LVN : le pic est sur la ligne de plus gros volume, pas sur son voisi
   assert.ok(!hvn.includes(18), 'pas sur la ligne creuse voisine (46)');
   assert.deepEqual(lvn, [6]); // le creux de 23, entre les deux pics
 });
+
+test('profil dessiné comme zone de référence : acceptation puis rejet, périodes de 30 min depuis la fin de la plage', () => {
+  const MIN = 60_000;
+  // Profil d'une plage : value area 100–110 (VAH ligne 109, VAL ligne 100), POC 104, lignes de 1.
+  const ref = { vah: 109, val: 100, poc: 104, bucket: 1 };
+  // Suite de la plage qui démarre à 10:07 (pas alignée sur une demi-heure) : périodes [k, bas, haut, clôture].
+  const t0 = Date.parse('2026-10-10T10:07:00Z');
+  const after = (periods) => ({ t0, tpoMs: 30 * MIN, bucket: 1, periods });
+  // Deux clôtures de suite au-dessus de la VAH (110) : acceptation.
+  const acc = auctionState(ref, after([[0, 108, 112, 111], [1, 110, 113, 112]]), t0 + 2 * 30 * MIN + 1);
+  assert.deepEqual([acc.state, acc.side, acc.count], ['accepted', 1, 2]);
+  assert.equal(auctionLabel(acc, 'du profil'), 'acceptation au-dessus de la VAH (2 × 30 min)');
+  // Sortie par le haut puis deux clôtures de retour dans la valeur : rejet.
+  const rej = auctionState(ref, after([[0, 108, 113, 111], [1, 105, 111, 107], [2, 104, 108, 106]]), t0 + 3 * 30 * MIN + 1);
+  assert.deepEqual([rej.state, rej.side], ['rejected', 1]);
+  // Sans sortie : dans la valeur du profil (et non « de la veille »).
+  const inside = auctionState(ref, after([[0, 103, 107, 105]]), t0 + 30 * MIN + 1);
+  assert.equal(auctionLabel(inside, 'du profil'), 'dans la valeur du profil');
+  assert.equal(auctionLabel(inside), 'dans la valeur de la veille');
+});
