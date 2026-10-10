@@ -21,9 +21,44 @@ l'analyse et l'exécution (sur Binance) restent manuelles.** Ce n'est pas un con
 
 Next.js relaie `/api` et `/stream` vers le collecteur : le navigateur ne parle qu'à `localhost:3000`.
 
-## Lancer
+## Installation pas à pas
 
-Node.js 22.4 ou plus récent.
+Chacun installe deepflow sur son ordinateur : rien à héberger, aucun compte. L'historique est
+téléchargé depuis Binance au fil de l'utilisation (dossier `data/`). Binance peut être bloqué dans
+certains pays (erreur 451) : il faut alors un accès qui l'autorise.
+
+### Windows
+
+1. Installer **Node.js** (version LTS, 22 ou plus récente) depuis https://nodejs.org : télécharger
+   l'installateur Windows, puis « Suivant » jusqu'au bout (options par défaut).
+2. Récupérer deepflow : sur la page GitHub du projet, bouton **Code** puis **Download ZIP**, et
+   extraire le dossier (clic droit → « Extraire tout ») à un endroit simple, par exemple
+   `Documents\deepflow`. Avec Git : `git clone` du dépôt.
+3. Double-cliquer sur **`deepflow.cmd`** dans ce dossier. La première fois, il installe
+   l'interface puis la construit (quelques minutes, connexion Internet requise) ; ensuite le
+   démarrage prend quelques secondes. Le navigateur s'ouvre sur http://localhost:3000.
+4. Laisser la fenêtre noire ouverte pendant l'utilisation ; la fermer (ou Ctrl+C) arrête deepflow.
+
+Si Windows affiche « Windows a protégé votre ordinateur », cliquer sur « Informations
+complémentaires » puis « Exécuter quand même » (le fichier ne fait que lancer `node`).
+
+### Mac
+
+1. Installer **Node.js** (version LTS) depuis https://nodejs.org (paquet `.pkg`), ou avec nvm.
+2. Récupérer deepflow (Download ZIP puis double-clic pour extraire, ou `git clone`).
+3. Double-cliquer sur **`deepflow.command`**. Si macOS refuse (« développeur non identifié ») :
+   clic droit sur le fichier → **Ouvrir** → **Ouvrir**, une seule fois. Si le fichier n'est pas
+   exécutable (cas d'un ZIP), dans le Terminal : `chmod +x deepflow.command`.
+4. Même fonctionnement qu'à Windows : laisser la fenêtre du Terminal ouverte.
+
+### Mettre à jour
+
+Remplacer le dossier par la nouvelle version (en gardant `data/` si on veut conserver le cache
+d'historique), ou `git pull`. Au lancement suivant, le lanceur reconstruit l'interface si besoin.
+Dessins, mises en page et journal restent dans le navigateur (exportables depuis le menu Mises
+en page et le panneau Journal) ; les alertes sont dans `data/`.
+
+### Pour développer
 
 ```bash
 nvm use
@@ -31,11 +66,9 @@ npm install --prefix web
 npm run dev
 ```
 
-Ouvrir http://localhost:3000. Chacun installe deepflow sur son ordinateur (rien à héberger, aucun
-compte) ; l'historique est téléchargé depuis Binance au fil de l'utilisation (dossier `data/`).
-
 | Commande | Rôle |
 |---|---|
+| `npm run launch` | Lanceur (ce que font `deepflow.cmd` et `deepflow.command`) |
 | `npm run dev` | Collecteur + interface en développement |
 | `npm run web:build` puis `npm start` | Version optimisée |
 | `npm run collector` | Collecteur seul |
@@ -247,8 +280,8 @@ l'heure rejouée).
 
 ## Feuille de route
 
-1. **Installation** : guide pas à pas pour Windows et Mac, script de lancement, vérification d'une
-   installation neuve.
+1. **Suites possibles** : graphique de replay plus fin (ticks), plus de plateformes pour le CVD,
+   historique Bybit / OKX, notes du journal reliées aux dessins.
 
 Le moteur de signaux automatiques (stratégie « Value Area de la veille », limites de risque,
 backtest) a été retiré de l'application et archivé sur la branche `archive/moteur-strategie`.
