@@ -71,6 +71,7 @@ export const FP_OPTIONS = {
   outline: { label: 'Cases en déséquilibre', choices: [[1, 'Encadrées'], [0, 'Texte coloré seul']] },
   candle: { label: 'Bougie', choices: [['left', 'À gauche'], ['center', 'Au centre (bid | ask)']] },
   auctions: { label: 'Enchères inachevées', choices: [[1, 'Marquées'], [0, 'Masquées']] },
+  marks: { label: 'Absorption (A) et épuisement (E)', choices: [[1, 'Marqués'], [0, 'Masqués']] },
   rows: { label: 'Lignes', choices: [['auto', 'Regroupées au dézoom'], ['fixed', 'Taille fixe']] },
 };
 

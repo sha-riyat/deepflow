@@ -1,9 +1,9 @@
 // Zones prolongées du footprint (déséquilibres empilés, enchères inachevées) et regroupement de
 // lignes au dézoom. Les calculs sur les cellules sont dans shared/footprint.js.
 import { C, alpha } from '../theme.js';
-import { imbalances, mergeRows, stacks, unfinished } from '@shared/footprint.js';
+import { flowMarks, imbalances, mergeRows, stacks, unfinished } from '@shared/footprint.js';
 
-export { imbalances, mergeRows, stacks, unfinished };
+export { flowMarks, imbalances, mergeRows, stacks, unfinished };
 
 const MULTS = [1, 2, 4, 5, 10, 20, 25, 50, 100];
 

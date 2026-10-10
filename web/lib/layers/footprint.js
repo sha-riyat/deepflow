@@ -5,7 +5,7 @@
 import { footprintStats } from '@shared/bars.js';
 import { qty } from '../fmt.js';
 import { C, alpha, font } from '../theme.js';
-import { drawFootprintZones, imbalances, mergeRows, rowMult } from './fpmarks.js';
+import { drawFootprintZones, flowMarks, imbalances, mergeRows, rowMult } from './fpmarks.js';
 
 export const FP_MODES = {
   off: 'Désactivé',
@@ -31,7 +31,7 @@ function drawCandle(ctx, b, x, y, wide) {
 }
 
 export function drawFootprint(ctx, items, geo, scale, opts) {
-  const { mode, bucket, ratio = 3, zeros = 'ignore', stack = 3, outline = 1, candle = 'left', auctions = 1, rows = 'auto' } = opts;
+  const { mode, bucket, ratio = 3, zeros = 'ignore', stack = 3, outline = 1, candle = 'left', auctions = 1, rows = 'auto', marks = 1 } = opts;
   const [i0, i1] = geo.range;
   const y = (p) => scale.yOfPrice(p);
   const baseH = Math.abs(y(0) - y(bucket));
@@ -129,6 +129,24 @@ export function drawFootprint(ctx, items, geo, scale, opts) {
     // Bougie : fine au centre entre bid et ask, ou sur le bord gauche.
     if (centered) drawCandle(ctx, b, mid, y, 4);
     else drawCandle(ctx, b, x - half + 2, y, 4);
+    // Absorption (A) et épuisement (E) : pastille à gauche de la ligne concernée.
+    if (marks) {
+      for (const m of flowMarks(fp, b, step)) {
+        const yy = y((m.row + 0.5) * step);
+        const color = m.side > 0 ? C.growth : C.loss;
+        ctx.fillStyle = m.kind === 'absorption' ? color : C.obsidian;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.roundRect(x - half - 9, yy - 7, 14, 14, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = font(10, 700);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = m.kind === 'absorption' ? C.ink : color;
+        ctx.fillText(m.kind === 'absorption' ? 'A' : 'E', x - half - 2, yy + 0.5);
+      }
+    }
     // Value area de la bougie : trait vertical sur le bord droit.
     ctx.fillStyle = alpha(C.mist, 0.5);
     ctx.fillRect(x + half - 1, y((st.vah + 1) * step), 1.5, y(st.val * step) - y((st.vah + 1) * step));
