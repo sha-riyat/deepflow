@@ -114,9 +114,15 @@ export const PANE_ARTICLES = [
     group: 'Dessins',
     title: 'Volume Profile à plage fixe',
     level: 'fact',
-    what: 'Profil de volume sur la plage tracée à la souris : POC et value area d’un mouvement précis (une impulsion, un range).',
-    read: ['Le POC d’un range sert de pivot ; ses bords (VAH, VAL) de bornes de rotation.'],
-    traps: ['Trois jours au plus (au-delà, les trois derniers).'],
+    what: 'Profil de volume sur la plage tracée à la souris : POC et value area d’un mouvement précis (une impulsion, un range). La barre de style du dessin choisit le type d’histogramme : Volume (total échangé à chaque prix), Achats / ventes (la part des acheteurs agresseurs en vert et des vendeurs en rouge) ou Delta (achats moins ventes à chaque prix).',
+    read: [
+      'Le POC d’un range sert de pivot ; ses bords (VAH, VAL) de bornes de rotation.',
+      'En Delta, des barres vertes à un prix indiquent que les acheteurs agresseurs y ont dominé, des barres rouges que ce sont les vendeurs : utile pour voir qui a poussé le prix à chaque niveau de la plage.',
+    ],
+    traps: [
+      'Trois jours au plus (au-delà, les trois derniers).',
+      'Le POC, le VAH et le VAL se calculent toujours sur le volume total, quel que soit le type d’histogramme affiché.',
+    ],
   },
   {
     id: 'method',
