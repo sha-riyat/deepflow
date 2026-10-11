@@ -23,11 +23,15 @@ export const LAYERS = {
   orb: { label: 'Range d’ouverture (ORB)', sub: 'Plus haut et plus bas des premières minutes après l’ouverture (UTC, Londres ou New York), milieu et extensions', group: 'levels', color: '#7dd3c0' },
   keys: { label: 'Niveaux clés', sub: 'Ouvertures de la semaine et du mois, plus hauts et plus bas de la veille, de la semaine et du mois précédents', group: 'levels', color: '#a78bfa' },
   sessions: { label: 'Sessions Asie / Londres / NY', sub: 'Range de chaque session (heures de bureau locales, heure d’été comprise), du lundi au vendredi', group: 'time', color: '#e8c35a' },
+  hours: { label: 'Mes heures de trading', sub: 'Grise le graphique hors de vos heures, en heure de l’ordinateur', group: 'time', color: '#b6d6ff' },
   times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'time', color: '#ffa16c' },
   naked: { label: 'POC non testés', sub: 'POC des 7 dernières sessions, prolongés jusqu’au retest', group: 'levels', color: '#ffa16c' },
   vwap: { label: 'VWAP', sub: 'Moyenne pondérée du jour, de la semaine ou du mois (UTC) et bandes d’écart-type', group: 'levels', color: '#e6e6e6' },
   alerts: { label: 'Alertes de prix', sub: 'Niveaux surveillés', group: 'trade', color: '#ffa16c' },
 };
+
+// Heures pleines 0 à 23 (celle du réglage par défaut en tête : défaut = premier choix).
+const hourChoices = (first) => [first, ...Array.from({ length: 24 }, (_, h) => h).filter((h) => h !== first)].map((h) => [h, `${String(h).padStart(2, '0')} h`]);
 
 // Réglages : clé -> { label, choices: [[valeur, libellé], ...] }.
 export const OPTIONS = {
@@ -76,6 +80,10 @@ export const OPTIONS = {
     anchor: { label: 'Ouverture', choices: [['ny', 'New York'], ['london', 'Londres'], ['utc', '00:00 UTC']] },
     minutes: { label: 'Durée du range', choices: [[15, '15 min'], [5, '5 min'], [30, '30 min'], [60, '1 h']] },
     ext: { label: 'Extensions', choices: [[1, '×1,5 et ×2'], [0, 'Range seul']] },
+  },
+  hours: {
+    start: { label: 'De', choices: hourChoices(8) },
+    end: { label: 'À', choices: hourChoices(18) },
   },
   keys: {
     show: { label: 'Afficher', choices: [['all', 'Ouvertures et hauts / bas'], ['opens', 'Ouvertures (semaine, mois)'], ['prev', 'Hauts / bas précédents']] },

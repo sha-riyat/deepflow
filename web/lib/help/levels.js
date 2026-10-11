@@ -145,4 +145,16 @@ export const LEVEL_ARTICLES = [
     read: ['Volatilité accrue autour de l’ouverture de New York ; mouvements de positionnement avant un financement élevé.'],
     traps: [],
   },
+  {
+    id: 'hours',
+    group: 'Profils et niveaux',
+    title: 'Mes heures de trading',
+    level: 'context',
+    what: 'Plage horaire personnelle (heure de l’ordinateur, heure d’été comprise, peut passer minuit) : le graphique est grisé en dehors. La légende indique si l’on est dans ou hors de ses heures.',
+    read: [
+      'Choisissez des heures où vous êtes disponible et attentif, et où le marché bouge (ouvertures de Londres ou de New York).',
+      'Le grisé aide à ne pas trader par ennui hors de ces heures : les vidéos insistent sur ne trader que des moments précis.',
+    ],
+    traps: ['Début = fin : aucune plage, rien n’est grisé. Les heures sont celles de votre ordinateur, pas l’UTC du graphique.'],
+  },
 ];
