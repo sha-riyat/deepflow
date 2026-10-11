@@ -2,7 +2,8 @@
 // pixels et test du clic (mesures des outils : measures.js). Un dessin est accroché à des points
 // (heure, prix) et non à des pixels : il garde sa place au zoom, au défilement et au changement
 // d'unité de temps.
-import { FIB_LEVELS, anchoredVwap, cleanCalc } from './measures.js';
+import { FIB_LEVELS, anchoredVwap } from './measures.js';
+import { cleanCalc } from './position.js';
 
 export const DRAWINGS_VERSION = 1;
 export const DRAW_TYPES = { trend: 2, hline: 1, hray: 1, vline: 1, rect: 2, fib: 2, text: 1, ruler: 2, long: 3, short: 3, avwap: 1, vp: 2 }; // type -> nombre de points

@@ -42,6 +42,7 @@ export interface ChartLike {
     setStyle(patch: Partial<DrawStyle>): void;
     setText(text: string | null): void;
     setCalc(patch: Partial<PositionCalc>, id?: string): void;
+    manageStop(action: string, arg?: number): boolean;
     escape(): boolean;
     removeSelected(): boolean;
     clear(): void;

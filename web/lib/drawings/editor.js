@@ -1,10 +1,12 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
 // redimensionnement par les poignées, style, suppression. Sauvegarde par marché et par symbole, et
 // dernier style de chaque outil : storage.js.
-import { cleanCalc, positionPoints, snapToBar } from '@shared/measures.js';
+import { snapToBar } from '@shared/measures.js';
+import { breakEvenPrice, calcDefaults, cleanCalc, moveStop, positionPoints, resetStop, shiftCalc, stopForR } from '@shared/position.js';
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
+import { clockNow } from '../clock.js';
 import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles, watchSets } from './storage.js';
 
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
@@ -105,9 +107,28 @@ export class DrawingEditor {
     const d = this.list.find((x) => x.id === id);
     if (!d?.calc) return;
     d.calc = cleanCalc({ ...d.calc, ...patch });
-    this.calc = d.calc;
+    this.calc = calcDefaults(d.calc);
     saveCalc(this.calc);
     this.#save();
+  }
+
+  // Gestion du stop de la position sélectionnée : 'be' (point mort, frais compris), 'lock' (`arg` : R à
+  // verrouiller) ou 'reset' (retour au stop initial). Le stop ne va que vers le gain : faux s'il ne
+  // change pas.
+  manageStop(action, arg) {
+    const d = this.list.find((x) => x.id === this.sel);
+    if (!d?.calc || !POSITIONS.includes(d.type)) return false;
+    let next;
+    if (action === 'reset') next = resetStop(d.pts, d.calc);
+    else {
+      const price = action === 'be' ? breakEvenPrice(d.type, d.pts[0].p, d.calc.fees) : stopForR(d.type, d.pts[0].p, d.calc.stop0 ?? d.pts[1].p, arg, d.calc.fees);
+      next = moveStop(d.type, d.pts, d.calc, price, clockNow());
+    }
+    if (!next) return false;
+    d.pts = next.pts;
+    d.calc = next.calc;
+    this.#save();
+    return true;
   }
 
   // Fin de saisie d'une note : texte validé, ou null pour annuler. Une note vide est retirée.
@@ -191,7 +212,7 @@ export class DrawingEditor {
     }
     const d = this.list[hit.index];
     this.sel = d.id;
-    this.drag = { d, handle: hit.handle, from: p, orig: d.pts.map((q) => ({ ...q })), moved: false };
+    this.drag = { d, handle: hit.handle, from: p, orig: d.pts.map((q) => ({ ...q })), origCalc: d.calc, moved: false };
     this.#changed();
     return true;
   }
@@ -205,7 +226,11 @@ export class DrawingEditor {
       g.moved = true;
       const pt = g.d.type === 'avwap' ? this.#anchor(this.#point(p), p) : this.#point(p);
       if (g.handle >= 0) g.d.pts = setHandle(g.d, g.handle, pt);
-      else g.d.pts = movePoints(this.chart.scale, this.#items(), g.orig, p.x - g.from.x, p.y - g.from.y);
+      else {
+        g.d.pts = movePoints(this.chart.scale, this.#items(), g.orig, p.x - g.from.x, p.y - g.from.y);
+        // Position déplacée en bloc : stop initial et historique du stop suivent.
+        if (g.origCalc) g.d.calc = shiftCalc(g.origCalc, g.d.pts[0].t - g.orig[0].t, g.d.pts[0].p - g.orig[0].p);
+      }
       this.chart.invalidate();
     }
   }
@@ -214,7 +239,10 @@ export class DrawingEditor {
     // Tracé en glissant : le relâchement pose le dernier point ; sinon on attend le second clic.
     if (this.draft && this.downAt && Math.hypot(p.x - this.downAt.x, p.y - this.downAt.y) >= CLICK_PX) this.#finish();
     this.downAt = null;
-    if (this.drag?.moved) this.#save();
+    const g = this.drag;
+    // Stop d'une position déjà gérée (point mort, gain verrouillé) déplacé à la main : mémorisé aussi.
+    if (g?.moved && g.handle === 1 && g.d.calc?.stop0 != null) g.d.calc = cleanCalc({ ...g.d.calc, moves: [...(g.d.calc.moves ?? []), { t: clockNow(), p: g.d.pts[1].p }] });
+    if (g?.moved) this.#save();
     this.drag = null;
   }
 

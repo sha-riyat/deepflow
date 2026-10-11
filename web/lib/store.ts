@@ -48,6 +48,8 @@ export interface PositionCalc {
   capital: number;
   risk: number; // en % du capital
   fees: number; // en % de chaque ordre
+  stop0?: number; // stop initial, une fois le stop déplacé (point mort, gain verrouillé)
+  moves?: { t: number; p: number }[]; // historique des déplacements du stop
 }
 
 export interface NoteEdit {

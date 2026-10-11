@@ -2,7 +2,8 @@
 // drawings.js : niveaux et prix du Fibonacci, notes, mesures de la règle, position longue / courte,
 // VWAP ancré, Volume Profile à plage fixe.
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
-import { fibLevels, formatDuration, positionStats, rulerStats } from '@shared/measures.js';
+import { fibLevels, formatDuration, rulerStats } from '@shared/measures.js';
+import { positionStats } from '@shared/position.js';
 import { SHAPE_LABEL, auctionLabel, auctionState, deltaExtremes, profileShape, profileTotals } from '@shared/auction.js';
 import { clockNow } from '../clock.js';
 import { histogram } from './volprofile.js';
@@ -88,16 +89,46 @@ function ruler(ctx, d, shape, { digits, tf, items }) {
   lines.forEach((l, i) => label(ctx, l, mx - w / 2, bottom + (i + 1) * 17, color, { weight: 600 }));
 }
 
+// Stop initial en pointillés et déplacements du stop en escalier (point mort, gain verrouillé).
+function stopHistory(ctx, d, shape, scale, items) {
+  const [left, , right] = [shape.areas[0][0], 0, shape.areas[0][2]];
+  const y0 = scale.yOfPrice(d.calc.stop0);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = alpha(C.loss, 0.55);
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(left, y0);
+  ctx.lineTo(right, y0);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (!d.calc.moves?.length) return;
+  ctx.strokeStyle = alpha(C.growth, 0.85);
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.moveTo(left, y0);
+  let y = y0;
+  for (const m of d.calc.moves) {
+    const x = Math.min(right, Math.max(left, scale.xAt(m.t, items)));
+    ctx.lineTo(x, y);
+    y = scale.yOfPrice(m.p);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(right, y);
+  ctx.stroke();
+}
+
 // Position : zones cible (verte) et stop (rouge), prix et montants nets de frais ; à droite, R:R et
 // taille de position pour risquer le pourcentage choisi du capital (calcul affiché seulement).
-function position(ctx, d, shape, { digits, base, scale }) {
+function position(ctx, d, shape, { digits, base, scale, items = [] }) {
   const [target, stop] = shape.areas;
-  for (const [[x0, y0, x1, y1], color] of [[target, C.growth], [stop, C.loss]]) {
+  const [entry, sl, tp] = d.pts.map((q) => q.p);
+  const st = positionStats({ side: d.type, entry, stop: sl, target: tp, ...d.calc });
+  const locked = st.valid && st.lockedR > 0; // stop au-delà de l'entrée, côté gain
+  for (const [[x0, y0, x1, y1], color] of [[target, C.growth], [stop, locked ? C.growth : C.loss]]) {
     ctx.fillStyle = alpha(color, 0.16);
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
-  const [entry, sl, tp] = d.pts.map((q) => q.p);
-  const st = positionStats({ side: d.type, entry, stop: sl, target: tp, ...d.calc });
+  if (st.valid && d.calc.stop0 != null) stopHistory(ctx, d, shape, scale, items);
   // Étiquettes hors des zones (lisibles même sur une petite position) : cible au-delà de sa zone,
   // stop au-delà de la sienne, résumé à droite de la ligne d'entrée.
   const left = target[0];
@@ -110,14 +141,18 @@ function position(ctx, d, shape, { digits, base, scale }) {
   }
   const money = (v) => `${v >= 0 ? '+' : '−'}${compact(Math.abs(v))} $`;
   const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · ${money(st.gain)}${st.gain <= 0 ? ' : les frais mangent le gain' : ''}`;
-  const sText = `Stop ${fmt(sl, digits)} · −${fmt(st.stopPct, 2)} % · −${compact(st.riskAmount)} $`;
+  const sText = locked
+    ? `Stop ${fmt(sl, digits)} · +${fmt(st.lockedR, 2)} R verrouillé${st.lockedR >= 1.005 ? 's' : ''} · ${money(st.lockedR * st.riskAmount)}`
+    : st.stopPct <= 0 || st.riskNow >= st.riskAmount * 0.999
+      ? `Stop ${fmt(sl, digits)} · −${fmt(st.stopPct, 2)} % · −${compact(st.riskNow)} $`
+      : `Stop ${fmt(sl, digits)} · point mort proche · risque restant −${compact(st.riskNow)} $`;
   // Décalées vers la gauche si elles déborderaient sous l'axe des prix.
   const fit = (text) => {
     ctx.font = font(11, 600);
     return Math.max(0, Math.min(left, scale.w - ctx.measureText(text).width - 12));
   };
   label(ctx, tText, fit(tText), long ? above(target) : below(target), st.gain > 0 ? C.growth : C.ember, { weight: 600 });
-  label(ctx, sText, fit(sText), long ? below(stop) : above(stop), C.loss, { weight: 600 });
+  label(ctx, sText, fit(sText), long ? below(stop) : above(stop), locked ? C.growth : C.loss, { weight: 600 });
   const [, yE] = shape.handles[0];
   const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
   const info = `R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}`;

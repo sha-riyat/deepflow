@@ -109,6 +109,33 @@ function NumField({ label, value, unit, zero = false, onChange }: { label: strin
   );
 }
 
+// Gestion du stop : point mort (frais compris), gain verrouillé en R, retour au stop initial. Le stop ne
+// se déplace que vers le gain ; sinon un message le dit.
+function StopMenu({ calc }: { calc: PositionCalc }) {
+  const [msg, setMsg] = useState('');
+  const run = (close: () => void, action: string, arg?: number) => {
+    const ok = engine.chart?.drawings.manageStop(action, arg);
+    setMsg(ok ? '' : action === 'reset' ? 'Le stop est déjà le stop initial' : 'Le stop est déjà plus protecteur');
+    close();
+  };
+  const items: [string, string, number?][] = [['be', 'Point mort (frais compris)'], ['lock', 'Verrouiller +0,5 R', 0.5], ['lock', 'Verrouiller +1 R', 1], ['lock', 'Verrouiller +2 R', 2]];
+  return (
+    <>
+      <MenuButton title="Déplacer le stop vers le gain : point mort, gain verrouillé" caret label={<span className="ds-size">Stop</span>}>
+        {(close) => (
+          <>
+            {items.map(([action, text, arg]) => (
+              <button key={text} type="button" className="pop-item" onClick={() => run(close, action, arg)}><span>{text}</span></button>
+            ))}
+            {calc.stop0 != null && <button type="button" className="pop-item" onClick={() => run(close, 'reset')}><span>Revenir au stop initial</span></button>}
+          </>
+        )}
+      </MenuButton>
+      {msg && <span className="ds-note">{msg}</span>}
+    </>
+  );
+}
+
 function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
   const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
   return (
@@ -116,6 +143,7 @@ function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
       <NumField label="Capital" value={calc.capital} unit="$" onChange={(capital) => set({ capital })} />
       <NumField label="Risque" value={calc.risk} unit="%" onChange={(risk) => set({ risk })} />
       <NumField label="Frais" value={calc.fees} unit="% / ordre" zero onChange={(fees) => set({ fees })} />
+      <StopMenu calc={calc} />
       <span className="ds-sep" />
     </>
   );

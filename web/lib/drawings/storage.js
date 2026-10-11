@@ -1,7 +1,7 @@
 // Sauvegarde des dessins dans le stockage du navigateur : dessins par marché et par symbole (format
 // versionné, voir shared/drawings.js), dernier style de chaque outil, capital et risque de l'outil
 // position, aimant. Un stockage indisponible (navigation privée) ne bloque rien : rien n'est mémorisé.
-import { cleanCalc } from '@shared/measures.js';
+import { calcDefaults } from '@shared/position.js';
 import { DRAW_TYPES, cleanStyle, parseDrawings, serializeDrawings } from '@shared/drawings.js';
 
 const KEY = 'deepflow.drawings';
@@ -76,7 +76,7 @@ export function loadStyles() {
 }
 
 export const saveStyles = (styles) => write(STYLES_KEY, JSON.stringify(styles));
-export const loadCalc = () => cleanCalc(readJSON(CALC_KEY));
+export const loadCalc = () => calcDefaults(readJSON(CALC_KEY));
 export const saveCalc = (calc) => write(CALC_KEY, JSON.stringify(calc));
 export const loadMagnet = () => readJSON(MAGNET_KEY) === true;
 export const saveMagnet = (on) => write(MAGNET_KEY, JSON.stringify(on));
