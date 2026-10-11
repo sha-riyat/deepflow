@@ -27,7 +27,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (vérifié, à valider) |
 | 2 | Gros trades façon Deep Trades | forte | moyen (fait, à valider ; points 1, 2, 3, 5, 6 ; le point 4 reporté) |
 | 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen (points 1 à 8 faits ; 9 reporté) |
-| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (points 1 à 3 faits ; 4 à 7 à faire) |
+| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (points 1 à 4 faits ; 5 à 7 à faire) |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
 | 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen |
@@ -146,6 +146,9 @@ Sources : 15, 18, 20, 21 (ORB 15 / 30 min), 14 (pas de trade avant l'ouverture),
    Londres, comme `sessionAt`), mode `sessions` de `/api/profile` (`server/sessionprofiles.js`, 7 jours, cache des
    séances finies), choix « Séances Asie / Londres / NY » dans le profil, fond teinté et nom de la séance. Vérifié à
    l'écran avec des séances simulées (dimanche : aucune séance réelle) ; le calcul serveur est couvert par un test.
+   **Point 4 fait** : `valueRelation(prev, today)` et `RELATION_LABEL` (`shared/auction.js`, testés) ; relation
+   ajoutée à la légende du calque `prev` (« en cours », la value area du jour se construit), explication dans la
+   fiche d'aide. Vérifié à l'écran avec une veille simulée.
 2. **Position de l'ouverture** (vidéo 18) : dans la value area de la veille, dans le range de la veille mais hors
    value area, hors du range ; mesurée à 00:00 UTC et à l'ouverture de New York. Étend `openLocation`
    (`shared/auction.js`). Lecture : ouverture dans la valeur → journée de rotation probable.
