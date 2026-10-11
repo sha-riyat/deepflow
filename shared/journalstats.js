@@ -71,3 +71,47 @@ export function edgeStats(list) {
 
 // Taux de réussite minimal pour un payoff donné (courbe d'équilibre du graphique).
 export const breakEvenWinRate = (payoff) => 1 / (1 + payoff);
+
+// ---------- Ventilation par setup, note, heure, jour ----------
+
+export const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+// Dimensions de ventilation : clé de regroupement (et rang pour trier) d'un trade. L'heure et le jour
+// sont ceux de l'entrée (à défaut de la saisie), en UTC comme les séances de deepflow.
+const DIMENSIONS = {
+  setup: (e) => [e.setup || '(sans setup)', 0],
+  grade: (e) => [e.grade ?? '(sans note)', e.grade ?? 'Z'],
+  hour: (e) => {
+    const h = new Date(e.tIn ?? e.t).getUTCHours();
+    return [`${String(h).padStart(2, '0')} h UTC`, h];
+  },
+  weekday: (e) => {
+    const d = new Date(e.tIn ?? e.t).getUTCDay();
+    return [WEEKDAYS[d], (d + 6) % 7]; // lundi en premier
+  },
+};
+
+// Statistiques par groupe de trades clôturés : [{ key, trades, wins, winRate, avgR, totalR }]. Setups
+// triés du plus gagnant au plus perdant ; notes, heures et jours dans leur ordre naturel.
+export function breakdown(list, dim) {
+  const keyOf = DIMENSIONS[dim];
+  if (!keyOf) return [];
+  const groups = new Map();
+  for (const e of list) {
+    const r = tradeR(e);
+    if (r === null) continue;
+    const [key, rank] = keyOf(e);
+    const g = groups.get(key) ?? { key, rank, rs: [] };
+    g.rs.push(r);
+    groups.set(key, g);
+  }
+  const rows = [...groups.values()].map(({ key, rank, rs }) => ({
+    key, rank, trades: rs.length, wins: rs.filter((r) => r > 0).length,
+    winRate: rs.filter((r) => r > 0).length / rs.length, avgR: sum(rs) / rs.length, totalR: sum(rs),
+  }));
+  rows.sort(dim === 'setup' ? (a, b) => b.totalR - a.totalR : (a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
+  return rows.map(({ rank: _rank, ...r }) => r);
+}
+
+// Trades réels ou rejoués ('replay'), ou tous : l'entraînement en replay ne se mélange pas au réel.
+export const bySource = (list, source) => (source === 'all' ? list : list.filter((e) => e.replay === (source === 'replay')));

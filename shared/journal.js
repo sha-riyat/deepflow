@@ -77,6 +77,7 @@ export function cleanEntry(raw) {
     grade: GRADES.includes(raw.grade) ? raw.grade : null, // note du setup A / B / C
     errors: [...new Set(Array.isArray(raw.errors) ? raw.errors.filter((k) => k in ERRORS) : [])],
     snap: cleanSnapshot(raw.snap),
+    replay: raw.replay === true, // trade pris sur un replay des archives (entraînement)
     tIn: num(raw.tIn), // heure d'entrée et de sortie (excursions)
     tOut: num(raw.tOut),
     mae: num(raw.mae),
@@ -149,14 +150,14 @@ export function journalStats(list) {
 
 // Export CSV (séparateur « ; », lisible par un tableur en français), sans les captures.
 export function toCsv(list) {
-  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note', 'erreurs', 'MAE', 'MFE'];
+  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note', 'erreurs', 'MAE', 'MFE', 'replay'];
   const cell = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const rows = list.map((e) => {
     const r = tradeR(e);
-    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade, e.errors.map((k) => ERRORS[k]).join(' + '), e.mae === null ? '' : e.mae.toFixed(2), e.mfe === null ? '' : e.mfe.toFixed(2)];
+    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade, e.errors.map((k) => ERRORS[k]).join(' + '), e.mae === null ? '' : e.mae.toFixed(2), e.mfe === null ? '' : e.mfe.toFixed(2), e.replay ? 'oui' : ''];
   });
   return [cols, ...rows].map((r) => r.map(cell).join(';')).join('\n');
 }

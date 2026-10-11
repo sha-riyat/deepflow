@@ -1,7 +1,7 @@
 // Tests du journal de trading : résultat en R, statistiques, export CSV.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { breakEvenWinRate, edgeStats, equityCurve, errorCosts, longestLosingStreak, maxDrawdown } from '../shared/journalstats.js';
+import { bySource, breakEvenWinRate, breakdown, edgeStats, equityCurve, errorCosts, longestLosingStreak, maxDrawdown } from '../shared/journalstats.js';
 import { SETUPS, cleanEntry, entrySnapshot, excursions, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
@@ -48,9 +48,9 @@ test('journal : statistiques en R', () => {
 test('journal : export CSV', () => {
   const csv = toCsv([e({ t: 0, entry: 100, stop: 99, exit: 102, setup: 'Rejet VAH', notes: 'a;b "c"' })]);
   const [head, row] = csv.split('\n');
-  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note;erreurs;MAE;MFE');
-  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";;;;');
-  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A;;;'));
+  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note;erreurs;MAE;MFE;replay');
+  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";;;;;');
+  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A;;;;'));
 });
 
 test('journal : étiquettes d’erreur et coût cumulé en R', () => {
@@ -68,7 +68,7 @@ test('journal : étiquettes d’erreur et coût cumulé en R', () => {
   assert.equal(c.rows[0].avgR, -1);
   assert.deepEqual(c.clean, { count: 1, totalR: 3, avgR: 3 });
   assert.deepEqual(errorCosts([]), { rows: [], clean: { count: 0, totalR: 0, avgR: null } });
-  assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures;;'));
+  assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures;;;'));
 });
 
 test('journal : instantané de la bougie au moment de la saisie', () => {
@@ -143,4 +143,35 @@ test('journal : courbe de capital en R, repli maximal, série de pertes, équili
   assert.equal(breakEvenWinRate(2), 1 / 3);
   assert.deepEqual(edgeStats([T(1, 102)]), { trades: 1, winRate: 1, avgWin: 2, avgLoss: null, payoff: null, breakEven: null });
   assert.equal(edgeStats([]).winRate, null);
+});
+
+test('journal : ventilation par setup, note, heure, jour et séparation replay / réel', () => {
+  const H = 3_600_000;
+  const mon = Date.UTC(2026, 9, 5); // lundi
+  const T = (o) => e({ entry: 100, stop: 99, ...o });
+  const list = [
+    T({ tIn: mon + 9 * H, exit: 102, setup: 'Absorption', grade: 'A' }), // +2, lundi 09 h
+    T({ tIn: mon + 9 * H + 600_000, exit: 99, setup: 'Absorption', grade: 'B' }), // −1, lundi 09 h
+    T({ tIn: mon + 86_400_000 + 14 * H, exit: 99, setup: 'Cassure', grade: 'A' }), // −1, mardi 14 h
+    T({ tIn: mon + 2 * 86_400_000 + 14 * H, exit: 103 }), // +3, mercredi 14 h, sans setup ni note
+    T({ tIn: mon, setup: 'Absorption' }), // ouvert : ignoré
+  ];
+  const by = (dim) => breakdown(list, dim).map((r) => [r.key, r.trades, r.totalR]);
+  assert.deepEqual(by('setup'), [['(sans setup)', 1, 3], ['Absorption', 2, 1], ['Cassure', 1, -1]]); // du plus gagnant au plus perdant
+  assert.deepEqual(by('grade'), [['A', 2, 1], ['B', 1, -1], ['(sans note)', 1, 3]]);
+  assert.deepEqual(by('hour'), [['09 h UTC', 2, 1], ['14 h UTC', 2, 2]]);
+  assert.deepEqual(by('weekday'), [['lundi', 2, 1], ['mardi', 1, -1], ['mercredi', 1, 3]]);
+  const abs = breakdown(list, 'setup').find((r) => r.key === 'Absorption');
+  assert.deepEqual([abs.wins, abs.winRate, abs.avgR], [1, 0.5, 0.5]);
+  assert.deepEqual(breakdown(list, 'inconnue'), []);
+  assert.deepEqual(breakdown([], 'setup'), []);
+  // dimanche passe en dernier dans la semaine
+  assert.deepEqual(breakdown([T({ tIn: mon - 86_400_000, exit: 102 }), T({ tIn: mon, exit: 102 })], 'weekday').map((r) => r.key), ['lundi', 'dimanche']);
+  // replay / réel
+  const mixed = [T({ exit: 102, replay: true }), T({ exit: 99 }), T({ exit: 103, replay: true })];
+  assert.equal(bySource(mixed, 'replay').length, 2);
+  assert.equal(bySource(mixed, 'real').length, 1);
+  assert.equal(bySource(mixed, 'all').length, 3);
+  assert.equal(e({}).replay, false);
+  assert.equal(e({ replay: 'oui' }).replay, false); // seulement un vrai booléen
 });
