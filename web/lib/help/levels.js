@@ -105,7 +105,7 @@ export const LEVEL_ARTICLES = [
     group: 'Profils et niveaux',
     title: 'VWAP et bandes',
     level: 'fact',
-    what: 'Prix moyen pondéré par le volume depuis le début du jour, de la semaine ou du mois. Les bandes sont à 1, 2 et 3 écarts-types.',
+    what: 'Prix moyen pondéré par le volume depuis le début du jour, de la semaine, du mois ou de l’ouverture de New York (13 h 30 ou 14 h 30 UTC selon l’heure d’été, du lundi au vendredi ; le week-end, le VWAP du vendredi continue). Les bandes sont à 1, 2 et 3 écarts-types.',
     read: [
       'Au-dessus du VWAP, les acheteurs de la période sont en moyenne gagnants ; en dessous, perdants.',
       'Les bandes ±2σ marquent un prix étiré : retour vers le VWAP fréquent en journée d’équilibre.',

@@ -96,7 +96,7 @@ export const OPTIONS = {
     extend: { label: 'Plus haut et plus bas', choices: [[1, 'Prolongés jusqu’à la fin du jour'], [0, 'Dans la session seulement']] },
   },
   vwap: {
-    period: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine (lundi)'], ['month', 'Mois']] },
+    period: { label: 'Période', choices: [['day', 'Jour UTC'], ['week', 'Semaine (lundi)'], ['month', 'Mois'], ['ny', 'Ouverture New York']] },
     bands: { label: 'Bandes', choices: [[2, '±1σ et ±2σ'], [3, '±1σ, ±2σ et ±3σ'], [1, '±1σ'], [0, 'Aucune']] },
   },
 };
