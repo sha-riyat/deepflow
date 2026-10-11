@@ -5,10 +5,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Delete02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
+import { JournalBreakdown } from './JournalBreakdown';
 import { JournalCharts } from './JournalCharts';
 import { JournalForm } from './JournalForm';
 import { ERRORS, journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
-import { errorCosts } from '@shared/journalstats.js';
+import { bySource, errorCosts } from '@shared/journalstats.js';
 import { fmt } from '@/lib/fmt.js';
 import { deleteEntry, download, listEntries, putEntry, type JournalEntry } from '@/lib/journal';
 
@@ -54,7 +55,7 @@ function Entry({ e, open, onToggle, onEdit, onDelete }: { e: JournalEntry; open:
         <span className="muted">{date(e.t)}</span>
         <b>{e.symbol}</b>
         <span className={`tag ${e.side === 'long' ? 'pos' : 'neg'}`}>{e.side === 'long' ? 'Long' : 'Short'}</span>
-        <span className="journal-setup">{e.grade && <b className="tag">{e.grade}</b>} {e.setup}</span>
+        <span className="journal-setup">{e.replay && <b className="tag">replay</b>} {e.grade && <b className="tag">{e.grade}</b>} {e.setup}</span>
         <b className={r === null ? 'muted' : r >= 0 ? 'pos' : 'neg'}>{r === null ? 'en cours' : `${signed(r)} R`}</b>
       </button>
       {open && (
@@ -92,11 +93,13 @@ export function JournalPanel() {
   const [edit, setEdit] = useState<JournalEntry | 'new' | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [source, setSource] = useState<'all' | 'real' | 'replay'>('all');
   const reload = useCallback(() => listEntries().then(setList, () => setError('Journal indisponible : stockage du navigateur bloqué.')), []);
   useEffect(() => {
     reload();
   }, [reload]);
 
+  const shown: JournalEntry[] = bySource(list, source);
   if (edit) {
     return (
       <JournalForm entry={edit === 'new' ? null : edit} onCancel={() => setEdit(null)}
@@ -112,10 +115,19 @@ export function JournalPanel() {
         </button>
       </div>
       {error && <p className="neg pop-note">{error}</p>}
-      <Stats list={list} />
-      <JournalCharts list={list} />
-      <Errors list={list} />
-      {list.map((e) => (
+      <div className="jf-row" title="Les trades pris en replay des archives (entraînement) restent séparés du réel">
+        <span className="muted">Trades</span>
+        <div className="seg">
+          {([['all', 'Tous'], ['real', 'Réel'], ['replay', 'Replay']] as const).map(([k, label]) => (
+            <button key={k} type="button" className={source === k ? 'on' : ''} onClick={() => setSource(k)}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <Stats list={shown} />
+      <JournalCharts list={shown} />
+      <JournalBreakdown list={shown} />
+      <Errors list={shown} />
+      {shown.map((e: JournalEntry) => (
         <Entry key={e.id} e={e} open={open === e.id} onToggle={() => setOpen(open === e.id ? null : e.id)} onEdit={() => setEdit(e)}
           onDelete={() => window.confirm(`Supprimer le trade ${e.symbol} du ${date(e.t)} ?`) && deleteEntry(e.id).then(reload)} />
       ))}

@@ -56,8 +56,9 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
   const save = (ev: React.FormEvent) => {
     ev.preventDefault();
     // Contexte de la bougie au moment de la saisie (à la première sauvegarde seulement, replay : heure rejouée).
+    const replay = entry ? entry.replay : Boolean(getLive().meta?.archive); // pris sur un replay des archives ?
     const snap = entry?.snap ?? (chart ? entrySnapshot(chart.data.bars, clockNow()) : null);
-    const e = cleanEntry({ ...entry, ...d, errors, snap, tIn: fromInput(d.tIn), tOut: fromInput(d.tOut), id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
+    const e = cleanEntry({ ...entry, ...d, errors, snap, replay, tIn: fromInput(d.tIn), tOut: fromInput(d.tOut), id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
     if (!e) return setMsg('Symbole requis.');
     if (e.entry === null || e.stop === null) return setMsg('Entrée et stop requis : le résultat se mesure en multiples du risque (R).');
     // MAE / MFE : seulement si les bougies chargées couvrent le trade (sinon on garde l'ancienne valeur).
