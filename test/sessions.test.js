@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  marketSessions, nextMarkers, nyOpen, periodEnd, periodStart, sessionAt, sessionRanges, timeMarkers, ukDst, usDst,
+  marketSessions, nextMarkers, nyOpen, periodEnd, periodStart, sessionAt, sessionRanges, sessionSegments, timeMarkers, ukDst, usDst,
 } from '../shared/sessions.js';
 
 const utc = (s) => Date.parse(`${s}Z`);
@@ -77,4 +77,19 @@ test('session d’un instant : New York prime sur Londres, heures d’été suiv
   assert.equal(sessionAt(utc('2026-12-01T12:30:00')), 'london');
   assert.equal(sessionAt(utc('2026-12-01T13:00:00')), 'ny');
   assert.equal(sessionAt(utc('2026-10-10T14:00:00')), 'off'); // samedi
+});
+
+test('séances sans chevauchement : la séance qui ouvre le plus tard l’emporte, rien le week-end', () => {
+  const H = 3_600_000;
+  const day = Date.UTC(2026, 9, 8); // jeudi : Londres 7 h – 16 h, New York 12 h – 21 h (heure d'été des deux côtés)
+  const seg = (d, list) => list.map(([kind, a, b]) => ({ kind, t0: d + a * H, t1: d + b * H }));
+  assert.deepEqual(sessionSegments(day, day + 86_399_000), seg(day, [['asia', 0, 7], ['london', 7, 12], ['ny', 12, 21]]));
+  const winter = Date.UTC(2026, 11, 3); // jeudi : Londres 8 h – 17 h, New York 13 h – 22 h
+  assert.deepEqual(sessionSegments(winter, winter + 86_399_000), seg(winter, [['asia', 0, 8], ['london', 8, 13], ['ny', 13, 22]]));
+  assert.deepEqual(sessionSegments(Date.UTC(2026, 9, 10), Date.UTC(2026, 9, 11, 23)), []); // samedi et dimanche
+  // plage qui coupe : seules les séances qui touchent [from, to]
+  const part = sessionSegments(day + 13 * H, day + 14 * H);
+  assert.deepEqual(part.map((s) => s.kind), ['ny']);
+  // chaque instant d'une séance est bien attribué à cette séance par sessionAt
+  for (const s of sessionSegments(day, day + 5 * 86_400_000)) assert.equal(sessionAt((s.t0 + s.t1) / 2), s.kind);
 });

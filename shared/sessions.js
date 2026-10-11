@@ -125,6 +125,28 @@ export function marketSessions(from, to, kinds = MARKET_SESSIONS) {
   return out.sort((a, b) => a.t0 - b.t0);
 }
 
+// Découpe de [from, to] en séances qui ne se chevauchent pas, pour les profils par séance : dans un
+// chevauchement, la séance qui ouvre le plus tard l'emporte (comme sessionAt). Hors des heures de
+// bureau et le week-end, pas de séance. { kind, t0, t1 }, triées par début.
+export function sessionSegments(from, to) {
+  const out = [];
+  for (let d = Math.floor(from / DAY) * DAY; d <= to; d += DAY) {
+    const wd = new Date(d).getUTCDay();
+    if (wd === 0 || wd === 6) continue;
+    const cuts = [...new Set(MARKET_SESSIONS.flatMap((k) => sessionHours(d, k)))].sort((a, b) => a - b);
+    for (let i = 0; i + 1 < cuts.length; i++) {
+      const kind = sessionAt(d + ((cuts[i] + cuts[i + 1]) / 2) * HOUR);
+      if (kind === 'off') continue;
+      const t0 = d + cuts[i] * HOUR;
+      const t1 = d + cuts[i + 1] * HOUR;
+      const last = out[out.length - 1];
+      if (last && last.kind === kind && last.t1 === t0) last.t1 = t1;
+      else out.push({ kind, t0, t1 });
+    }
+  }
+  return out.filter((s) => s.t1 > from && s.t0 <= to);
+}
+
 // Plus haut et plus bas de chaque session d'après les bougies qui y commencent ; sessions sans
 // bougie écartées. `done` : session terminée à `now`.
 export function sessionRanges(bars, list, now) {
