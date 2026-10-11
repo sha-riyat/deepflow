@@ -176,6 +176,11 @@ npm run dev
   Open-Test-Drive (petit test d'un côté puis départ de l'autre), Open-Rejection-Reverse (départ
   rejeté, retour au-delà de l'ouverture), Open-Auction (rotation, pas de direction). Règle
   simplifiée : lecture indicative.
+- **Range d'ouverture (ORB)** : plus haut et plus bas des 5, 15, 30 ou 60 premières minutes après
+  l'ouverture de New York, de Londres ou de 00:00 UTC (heures de bureau locales, heure d'été
+  comprise ; pas d'ouverture New York ni Londres le week-end), prolongés vers la droite avec le
+  milieu en pointillés et, en option, les extensions 1,5 × et 2 ×. La fenêtre est encadrée pendant
+  sa formation.
 - **Niveaux clés** : ouvertures de la semaine (lundi) et du mois, plus haut et plus bas de la
   veille, de la semaine et du mois précédents (bougies journalières Binance), chacun depuis le
   début de la période où il sert.
