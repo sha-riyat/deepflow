@@ -4,6 +4,7 @@
 import { POSITIONS, indexOfTime, textBox } from '@shared/drawings.js';
 import { fibLevels, formatDuration, rulerStats } from '@shared/measures.js';
 import { positionStats } from '@shared/position.js';
+import { timeMarkers } from '@shared/sessions.js';
 import { SHAPE_LABEL, auctionLabel, auctionState, deltaExtremes, profileShape, profileTotals } from '@shared/auction.js';
 import { clockNow } from '../clock.js';
 import { histogram } from './volprofile.js';
@@ -122,7 +123,9 @@ function stopHistory(ctx, d, shape, scale, items) {
 function position(ctx, d, shape, { digits, base, scale, items = [] }) {
   const [target, stop] = shape.areas;
   const [entry, sl, tp] = d.pts.map((q) => q.p);
-  const st = positionStats({ side: d.type, entry, stop: sl, target: tp, ...d.calc });
+  const [t0, t1] = [d.pts[0].t, d.pts[1].t].sort((a, b) => a - b);
+  const fundings = timeMarkers(t0, t1, { ny: false }).length; // financements (0 h, 8 h, 16 h UTC) traversés
+  const st = positionStats({ side: d.type, entry, stop: sl, target: tp, fundings, ...d.calc });
   const locked = st.valid && st.lockedR > 0; // stop au-delà de l'entrée, côté gain
   for (const [[x0, y0, x1, y1], color] of [[target, C.growth], [stop, locked ? C.growth : C.loss]]) {
     ctx.fillStyle = alpha(color, 0.16);
@@ -184,7 +187,8 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
   const [, yE] = shape.handles[0];
   const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
   const avg = st.entries > 1 ? `prix moyen ${fmt(st.avg, digits)} (${st.entries} entrées) · ` : '';
-  const info = `${avg}R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}`;
+  const fund = fundings ? ` · financement ${st.fundingCost > 0 ? '−' : '+'}${fmt(Math.abs(st.fundingCost), 2)} $ (${fundings} × 8 h)` : '';
+  const info = `${avg}R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}${fund}`;
   // À droite de la zone, ou à sa gauche si le texte déborderait sous l'axe des prix.
   ctx.font = font(11, 600);
   const w = ctx.measureText(info).width + 10;
