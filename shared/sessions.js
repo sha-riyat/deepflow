@@ -6,12 +6,23 @@ const DAY = 86_400_000;
 const HOUR = 3_600_000;
 export const FUNDING_HOURS = [0, 8, 16];
 
-// Début de la période UTC contenant `t` : jour (00:00), semaine (lundi 00:00, comme Binance) ou
-// mois (le 1er à 00:00). Sert au VWAP par période et aux niveaux d'ouverture.
-export const PERIODS = ['day', 'week', 'month'];
+// Début de la période UTC contenant `t` : jour (00:00), semaine (lundi 00:00, comme Binance),
+// mois (le 1er à 00:00) ou ouverture de New York (voir lastNyOpen). Sert au VWAP par période et aux niveaux d'ouverture.
+export const PERIODS = ['day', 'week', 'month', 'ny'];
 const MONDAY = 4 * DAY; // 1970-01-01 était un jeudi : premier lundi le 5 janvier
 
+// Ouverture de New York : période « ny », du dernier jour ouvré (ouverture ≤ t) à la suivante ; le
+// week-end continue donc celle du vendredi.
+function lastNyOpen(t) {
+  for (let d = Math.floor(t / DAY) * DAY, n = 0; n < 6; d -= DAY, n++) {
+    const o = nyOpen(d);
+    if (o !== null && o <= t) return o;
+  }
+  return Math.floor(t / DAY) * DAY;
+}
+
 export function periodStart(t, period = 'day') {
+  if (period === 'ny') return lastNyOpen(t);
   if (period === 'week') return Math.floor((t - MONDAY) / (7 * DAY)) * 7 * DAY + MONDAY;
   if (period === 'month') {
     const d = new Date(t);
@@ -23,6 +34,12 @@ export function periodStart(t, period = 'day') {
 // Début de la période suivante.
 export function periodEnd(t, period = 'day') {
   const s = periodStart(t, period);
+  if (period === 'ny') {
+    for (let d = Math.floor(s / DAY) * DAY + DAY; ; d += DAY) {
+      const o = nyOpen(d);
+      if (o !== null) return o;
+    }
+  }
   if (period === 'week') return s + 7 * DAY;
   if (period === 'month') {
     const d = new Date(s);

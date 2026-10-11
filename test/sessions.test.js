@@ -93,3 +93,18 @@ test('séances sans chevauchement : la séance qui ouvre le plus tard l’emport
   // chaque instant d'une séance est bien attribué à cette séance par sessionAt
   for (const s of sessionSegments(day, day + 5 * 86_400_000)) assert.equal(sessionAt((s.t0 + s.t1) / 2), s.kind);
 });
+
+test('période « ny » : de l’ouverture de New York à la suivante, le week-end continue celle du vendredi', () => {
+  const H = 3_600_000;
+  const thu = Date.UTC(2026, 9, 8); // heure d'été américaine : ouverture 13 h 30 UTC
+  assert.equal(periodStart(thu + 15 * H, 'ny'), thu + 13.5 * H);
+  assert.equal(periodStart(thu + 10 * H, 'ny'), thu - 24 * H + 13.5 * H); // avant l'ouverture : celle de la veille
+  assert.equal(periodStart(thu + 13.5 * H, 'ny'), thu + 13.5 * H); // à l'ouverture : la nouvelle période
+  const fri = thu + 86_400_000;
+  assert.equal(periodStart(fri + 2 * 86_400_000 + 5 * H, 'ny'), fri + 13.5 * H); // lundi 05:00 : vendredi
+  assert.equal(periodStart(fri + 86_400_000 + 12 * H, 'ny'), fri + 13.5 * H); // samedi
+  assert.equal(periodEnd(fri + 20 * H, 'ny'), fri + 3 * 86_400_000 + 13.5 * H); // lundi 13:30
+  assert.equal(periodEnd(thu + 15 * H, 'ny'), fri + 13.5 * H);
+  const winter = Date.UTC(2026, 11, 3);
+  assert.equal(periodStart(winter + 20 * H, 'ny'), winter + 14.5 * H); // heure d'hiver : 14 h 30
+});
