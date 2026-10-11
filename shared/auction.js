@@ -140,14 +140,27 @@ export function auctionState(prev, today, now = Date.now(), need = 2) {
 // Position de l'ouverture du jour (premier prix de la session UTC) face à la value area de la
 // veille. Lecture de Dalton : une ouverture dans la valeur annonce plutôt une journée de rotation
 // entre VAH et VAL, une ouverture hors de la valeur un déséquilibre possible (tendance).
-export function openLocation(prev, today) {
-  if (!prev || prev.vah === null || !today) return null;
+// `price` : le prix d'ouverture à situer (par défaut celui de 00:00 UTC ; voir nyOpenPrice pour
+// celui de New York). `zone` précise où l'on est : dans la value area, dans le range de la veille
+// (plus haut / plus bas) mais hors value area, ou hors du range.
+export function openLocation(prev, today, price = today?.open) {
+  if (!prev || prev.vah === null || !today || !Number.isFinite(price)) return null;
   const vah = (prev.vah + 1) * prev.bucket;
   const val = prev.val * prev.bucket;
-  return { open: today.open, where: today.open > vah ? 'above' : today.open < val ? 'below' : 'inside' };
+  const where = price > vah ? 'above' : price < val ? 'below' : 'inside';
+  const zone = where === 'inside' ? 'value' : price <= prev.hi && price >= prev.lo ? 'range' : 'out';
+  return { open: price, where, zone };
 }
 
-export const OPEN_LABEL = { above: 'au-dessus de la valeur de la veille', inside: 'dans la valeur de la veille', below: 'sous la valeur de la veille' };
+// Libellé complet d'une position : « dans la valeur de la veille », « dans le range de la veille,
+// au-dessus de la valeur », « au-dessus du range de la veille ».
+export function openZoneLabel(loc) {
+  if (!loc) return '';
+  const up = loc.where === 'above';
+  if (loc.zone === 'value') return 'dans la valeur de la veille';
+  if (loc.zone === 'range') return `dans le range de la veille, ${up ? 'au-dessus de' : 'sous'} la valeur`;
+  return `${up ? 'au-dessus du' : 'sous le'} range de la veille`;
+}
 
 // `ref` : de quoi la zone de valeur est la référence (« de la veille », « du profil »).
 export function auctionLabel(st, ref = 'de la veille') {

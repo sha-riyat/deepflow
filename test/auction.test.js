@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, deltaExtremes, openLocation, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, deltaExtremes, openLocation, openZoneLabel, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -61,11 +61,20 @@ test('profil composite : volumes fusionnés, POC et value area recalculés', () 
 });
 
 test('ouverture du jour face à la value area de la veille', () => {
-  const prev = { bucket: 1, val: 100, vah: 109 }; // VAL 100, VAH 110
-  assert.deepEqual(openLocation(prev, { open: 112 }), { open: 112, where: 'above' });
+  const prev = { bucket: 1, val: 100, vah: 109, lo: 95, hi: 118 }; // VAL 100, VAH 110, range 95 – 118
+  assert.deepEqual(openLocation(prev, { open: 112 }), { open: 112, where: 'above', zone: 'range' });
   assert.equal(openLocation(prev, { open: 110 }).where, 'inside'); // sur la VAH : encore dans la valeur
-  assert.equal(openLocation(prev, { open: 99.5 }).where, 'below');
+  assert.equal(openLocation(prev, { open: 110 }).zone, 'value');
+  assert.deepEqual(openLocation(prev, { open: 99.5 }), { open: 99.5, where: 'below', zone: 'range' });
+  assert.equal(openLocation(prev, { open: 120 }).zone, 'out'); // au-dessus du plus haut de la veille
+  assert.equal(openLocation(prev, { open: 94 }).zone, 'out');
+  assert.equal(openLocation(prev, { open: 118 }).zone, 'range'); // sur le plus haut : encore dans le range
+  assert.equal(openLocation(prev, { open: 1 }, 112).zone, 'range'); // prix donné : l'ouverture du jour est ignorée
   assert.equal(openLocation(prev, null), null);
+  assert.equal(openLocation(prev, { open: 1 }, NaN), null);
+  assert.equal(openZoneLabel(openLocation(prev, { open: 105 })), 'dans la valeur de la veille');
+  assert.equal(openZoneLabel(openLocation(prev, { open: 112 })), 'dans le range de la veille, au-dessus de la valeur');
+  assert.equal(openZoneLabel(openLocation(prev, { open: 90 })), 'sous le range de la veille');
 });
 
 test('taille des lignes d’un profil de plage : ~30 lignes sur la hauteur, jamais plus fin que la tranche', () => {
