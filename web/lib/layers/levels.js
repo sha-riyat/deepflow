@@ -27,7 +27,7 @@ export function prevAndToday(daily, now = clockNow()) {
 
 // Value area d'hier tracée de 00:00 UTC aujourd'hui jusqu'au bord droit, avec l'extrême de la
 // sortie (stop du Setup 1 : au-delà de cet extrême) quand une sortie a eu lieu.
-export function drawPrevLevels(ctx, daily, scale, items) {
+export function drawPrevLevels(ctx, daily, scale, items, { nodes = 0 } = {}) {
   const { prev, today } = prevAndToday(daily);
   if (!prev || prev.vah === null) return null;
   const st = today ? auctionState(prev, today) : null;
@@ -45,6 +45,8 @@ export function drawPrevLevels(ctx, daily, scale, items) {
   for (const [label, price, color] of [['VAH J-1', vah, '#7fbcff'], ['POC J-1', poc, C.ember], ['VAL J-1', val, '#7fbcff']]) {
     pill(ctx, x0 + 6, y(price), `${label} ${fmt(price)}`, { bg: C.obsidian, fg: color, size: 10 });
   }
+  // HVN (pics de volume) et LVN (creux) d'hier prolongés : zones où le prix a ralenti ou traversé vite.
+  if (nodes) drawNodes(ctx, prev, scale, x0, scale.w, { labels: true });
   if (st && st.extreme !== null && st.state !== 'inside') {
     hline(ctx, x0, scale.w, y(st.extreme), alpha(C.mist, 0.5), [2, 4]);
     ctx.font = font(10);

@@ -27,7 +27,7 @@ export function drawBehind(chart, ctx, items, geo) {
   const tpo = st.style === 'tpo';
   if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
   else if (L.profile) drawVolumeProfiles(ctx, data.profiles, s, items, O.profile, data.dailySessions);
-  if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items);
+  if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items, O.prev);
   if (L.open && !tpo) drawDayOpen(ctx, data.dailySessions, s, items);
   if (L.ib && !tpo) drawIb(ctx, data.dailySessions, s, items, clockNow(), O.ib);
   if (L.orb && !tpo) drawOrb(ctx, data, s, items, clockNow(), O.orb);

@@ -76,6 +76,9 @@ export const OPTIONS = {
   ib: {
     ext: { label: 'Extensions', choices: [[1, '×1,5 et ×2'], [2, '×1,5, ×2 et ×3'], [0, 'IB seule']] },
   },
+  prev: {
+    nodes: { label: 'HVN / LVN d’hier', choices: [[0, 'Masqués'], [1, 'Prolongés sur la journée']] },
+  },
   orb: {
     anchor: { label: 'Ouverture', choices: [['ny', 'New York'], ['london', 'Londres'], ['utc', '00:00 UTC']] },
     minutes: { label: 'Durée du range', choices: [[15, '15 min'], [5, '5 min'], [30, '30 min'], [60, '1 h']] },

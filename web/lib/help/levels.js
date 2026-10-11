@@ -39,6 +39,7 @@ export const LEVEL_ARTICLES = [
     read: [
       'Acceptation au-dessus de la VAH : le marché cherche plus haut, on suit plutôt le mouvement.',
       'Rejet (retour dans la valeur) : le prix tend à traverser la value area vers l’autre bord (« règle des 80 % », empirique).',
+      'Option « HVN / LVN d’hier » : les pics (HVN, prix acceptés où le prix a ralenti) et creux (LVN, prix rejetés traversés vite) du profil d’hier sont prolongés sur la journée ; un LVN est souvent un endroit de réaction ou de traversée rapide.',
       'Relation des deux value areas, dans la légende : plus haute ou plus basse (tendance, la valeur a migré), chevauche en haut ou en bas (migration partielle, hésitation), intérieure (équilibre, le marché se resserre), extérieure (élargissement, l’intérêt s’étend des deux côtés).',
     ],
     traps: [
