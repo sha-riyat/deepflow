@@ -7,6 +7,7 @@ export const DEFAULT_CALC = { capital: 1000, risk: 1, fees: 0.05 };
 
 export const MAX_MOVES = 30;
 export const MAX_ADDS = 5; // renforts d'une position
+export const FUNDING_DEFAULT = 0.01; // financement des perpétuels Binance : 0,01 % par période de 8 h (taux de base)
 export const FEE_WARN = 3; // la cible doit valoir au moins 3 fois les frais aller-retour
 
 // Réglages d'une position : capital, risque, frais, et seulement s'ils sont valides les champs
@@ -18,6 +19,8 @@ export function cleanCalc(c) {
   const stop0 = Number(c?.stop0);
   const moves = Array.isArray(c?.moves) ? c.moves.filter((m) => Number.isFinite(m?.t) && m.p > 0).slice(-MAX_MOVES).map((m) => ({ t: m.t, p: m.p })) : [];
   const adds = Array.isArray(c?.adds) ? c.adds.map(Number).filter((p) => p > 0).slice(0, MAX_ADDS) : [];
+  const rate = c?.funding == null ? NaN : Number(c.funding);
+  const funding = rate >= 0 && rate <= 1 ? rate : null; // % par période de 8 h
   // Sortie partielle : `pct` % de la position sortis à `r` fois le risque initial, le reste à la cible.
   const pct = Number(c?.partial?.pct);
   const r = Number(c?.partial?.r);
@@ -27,6 +30,7 @@ export function cleanCalc(c) {
     risk: risk > 0 && risk <= 100 ? risk : DEFAULT_CALC.risk,
     fees: fees >= 0 && fees <= 1 ? fees : DEFAULT_CALC.fees,
     ...(c?.stop0 != null && stop0 > 0 ? { stop0 } : {}),
+    ...(funding !== null ? { funding } : {}),
     ...(partial ? { partial } : {}),
     ...(adds.length ? { adds } : {}),
     ...(moves.length ? { moves } : {}),
@@ -35,8 +39,8 @@ export function cleanCalc(c) {
 
 // Réglages à garder pour la prochaine position : ceux du compte, pas ceux d'une position précise.
 export function calcDefaults(c) {
-  const { capital, risk, fees } = cleanCalc(c);
-  return { capital, risk, fees };
+  const { capital, risk, fees, funding } = cleanCalc(c);
+  return { capital, risk, fees, ...(funding !== undefined ? { funding } : {}) };
 }
 
 // Points d'une nouvelle position : entrée au clic, stop à `dist` du prix, cible à 2 × `dist`
@@ -55,7 +59,7 @@ export const averageEntry = (entry, adds = []) => (adds.length ? (entry + adds.r
 // par unité. Gain à la cible et R:R (gain / montant risqué) nets de frais. Un stop déplacé change
 // `riskNow` (perte restante au stop courant) et `lockedR` (en R, > 0 : gain verrouillé). Avec des
 // renforts (`adds`, prix d'entrées de même taille que la première), tout part du prix moyen.
-export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null, adds = [] }) {
+export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null, adds = [], funding = FUNDING_DEFAULT, fundings = 0 }) {
   const e = averageEntry(entry, adds);
   const k = side === 'long' ? 1 : -1;
   const f = fees / 100;
@@ -83,6 +87,9 @@ export function positionStats({ side, entry, stop, target, capital, risk, fees =
     lockedR: Math.max(0, -lossNow) / riskAmount,
     gain,
     fees: qty * f * (e + exit), // frais si la cible est atteinte (et la part sortie à TP1)
+    // Financement estimé sur `fundings` périodes de 8 h traversées : > 0, c'est un coût pour un long (taux
+    // positif) et un gain pour un court ; l'inverse si le taux est négatif.
+    fundingCost: qty * e * (funding / 100) * fundings * k,
     tp1: share ? tp1 : null,
     share,
     stopPct: (k * (e - stop) / e) * 100, // < 0 : stop au-delà de l'entrée, côté gain

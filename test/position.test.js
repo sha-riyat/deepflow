@@ -157,3 +157,19 @@ test('avertissement frais : cible inférieure à 3 fois les frais aller-retour',
   assert.deepEqual([free.feeMultiple, free.feeWarn], [Infinity, false]); // sans frais : rien à signaler
   assert.equal(FEE_WARN, 3);
 });
+
+test('financement : coût estimé selon le nombre de périodes de 8 h traversées', () => {
+  const base = { entry: 100, stop: 98, target: 106, capital: 1000, risk: 1 }; // qté 5, notionnel 500 $
+  const long = positionStats({ ...base, side: 'long', fundings: 3 }); // taux par défaut 0,01 %
+  near(long.fundingCost, 500 * 0.0001 * 3); // 0,15 $ à payer
+  const short = positionStats({ ...base, side: 'short', stop: 102, target: 94, fundings: 3 });
+  near(short.fundingCost, -500 * 0.0001 * 3); // un court encaisse
+  near(positionStats({ ...base, side: 'long', funding: 0.05, fundings: 2 }).fundingCost, 500 * 0.0005 * 2);
+  assert.equal(positionStats({ ...base, side: 'long' }).fundingCost, 0); // aucune période traversée
+  // réglage : 0 à 1 %, absent s'il est invalide ; gardé dans les valeurs par défaut du compte
+  assert.equal(cleanCalc({ funding: 0.03 }).funding, 0.03);
+  assert.equal(cleanCalc({ funding: 0 }).funding, 0);
+  for (const bad of [-1, 2, 'x', null]) assert.equal('funding' in cleanCalc({ funding: bad }), false);
+  assert.deepEqual(calcDefaults({ capital: 500, risk: 2, fees: 0.1, funding: 0.03, stop0: 1 }), { capital: 500, risk: 2, fees: 0.1, funding: 0.03 });
+  assert.equal('funding' in calcDefaults({}), false);
+});
