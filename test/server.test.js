@@ -168,6 +168,29 @@ test('profils : plage libre (profil visible) et sous-période TPO', async () => 
   assert.equal(p.dev.length, 2);
 });
 
+test('profils par séance : un profil par séance de bureau, sans chevauchement, rien le week-end', async () => {
+  const { profiles } = await import('../server/queries.js');
+  const H = 3_600_000;
+  const day = Date.UTC(2026, 9, 8); // jeudi : Asie 0–7 h, Londres 7–12 h, New York 12–21 h (heures UTC)
+  const tr = new Trades(16);
+  [[1, 100.5, 1], [9, 110.5, 2], [15, 120.5, 1], [16, 120.5, 3], [23, 130.5, 5]].forEach(([h, p, q], i) => tr.push(day + h * H, p, q, 1, i + 1));
+  const inRange = (from, to) => {
+    const part = new Trades(16);
+    for (let i = 0; i < tr.n; i++) if (tr.t[i] >= from && tr.t[i] < to) part.push(tr.t[i], tr.p[i], tr.q[i], tr.s[i], tr.id[i]);
+    return part;
+  };
+  const store = { forEachChunk: async (from, to, opts, fn) => (fn(inRange(from, to)), false), backFrom: null, hasDay: () => true };
+  const s = { mode: 'live', store, cfg: { footprint: { bucket: 1 } }, now: () => Date.now() };
+  const r = await profiles(s, { mode: 'sessions', from: day, to: day + 24 * H - 1, bucket: 1 });
+  assert.deepEqual(r.sessions.map((x) => [x.kind, x.t0 - day, x.t1 - day, x.total, x.poc]), [
+    ['asia', 0, 7 * H, 1, 100],
+    ['london', 7 * H, 12 * H, 2, 110],
+    ['ny', 12 * H, 21 * H, 4, 120], // le trade de 23 h (hors des heures de bureau) n'est dans aucune séance
+  ]);
+  const sat = Date.UTC(2026, 9, 10);
+  assert.deepEqual((await profiles(s, { mode: 'sessions', from: sat, to: sat + 12 * H, bucket: 1 })).sessions, []);
+});
+
 test('profil de plage fixe : taille de ligne choisie d’après la hauteur réelle des trades', async () => {
   const { profiles } = await import('../server/queries.js');
   const tr = new Trades(16);

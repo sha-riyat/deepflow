@@ -5,6 +5,7 @@ import { SessionProfiler } from '../shared/profile.js';
 import { rangeBucket } from '../shared/auction.js';
 import { PERIODS, periodStart } from '../shared/sessions.js';
 import { keyLevels } from '../shared/keylevels.js';
+import { sessionProfiles } from './sessionprofiles.js';
 import { BinanceRest } from './history/rest.js';
 
 const HOUR = 3_600_000;
@@ -112,6 +113,7 @@ export async function profiles(s, q) {
   const to = Math.min(num(q.to, now), now);
   const bucket = num(q.bucket, s.cfg.footprint.bucket);
   const tpoMs = (TPO_MINUTES.includes(num(q.tpo, 30)) ? num(q.tpo, 30) : 30) * 60_000;
+  if (q.mode === 'sessions') return sessionProfiles(s, { from: num(q.from, to - DAY), to, bucket, tpoMs });
   if (q.mode === 'range') return rangeProfile(s, { from: num(q.from, to - HOUR), to, bucket, tpoMs, rows: num(q.rows, 0) });
   const from = Math.floor(Math.max(num(q.from, to - DAY), to - 14 * DAY) / DAY) * DAY;
   if (!profileCache.has(s.store)) profileCache.set(s.store, new Map());
