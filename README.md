@@ -198,6 +198,9 @@ npm run dev
   en heure d'été américaine, 14 h 30 en hiver ; du lundi au vendredi, jours fériés non gérés) et aux
   heures de financement des perpétuels (0 h, 8 h, 16 h UTC) ; délai avant les prochains dans la
   légende. Les heures de l'axe du temps sont en heure locale, la session reste en UTC.
+- **Mes heures de trading** : plage horaire personnelle (heure locale de l'ordinateur, heure d'été
+  comprise, peut passer minuit) ; le graphique est grisé en dehors, et la légende dit si l'on est dans
+  ou hors de ses heures.
 - **CVD** : remis à zéro à chaque session UTC ; divergences prix / CVD entre deux sommets ou deux
   creux de la même session ; panneau CVD spot / perp (klines spot du même actif) pour distinguer
   une hausse portée par l'achat réel d'une hausse portée par les seuls dérivés ; panneau CVD
