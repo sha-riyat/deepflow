@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Delete02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
 import { JournalBreakdown } from './JournalBreakdown';
+import { JournalBudget } from './JournalBudget';
 import { JournalCharts } from './JournalCharts';
 import { JournalForm } from './JournalForm';
 import { ERRORS, journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
@@ -123,6 +124,7 @@ export function JournalPanel() {
           ))}
         </div>
       </div>
+      <JournalBudget list={bySource(list, 'real')} />
       <Stats list={shown} />
       <JournalCharts list={shown} />
       <JournalBreakdown list={shown} />

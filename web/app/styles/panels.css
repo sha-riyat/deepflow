@@ -145,3 +145,5 @@ label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2)
 .journal-chart svg { width: 100%; height: auto; color: var(--text-3); }
 .journal-breakdown { display: grid; gap: 4px; }
 .jb-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: baseline; }
+.journal-budget { display: grid; gap: 4px; }
+.journal-budget input { width: 56px; height: 22px; padding: 0 4px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--bg); color: var(--text); font: 500 12px var(--font); text-align: right; }
