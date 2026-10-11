@@ -146,24 +146,30 @@ export async function profiles(s, q) {
   return { bucket, partial, sessions };
 }
 
-// Profil unique de la plage visible (3 jours au plus), comme le « visible range » de TradingView.
-// `rows` > 0 : taille de ligne choisie d'après la hauteur réelle des trades de la plage (environ `rows`
-// lignes, jamais plus fines que la tranche du collecteur) ; sinon la tranche demandée.
+// Profil unique d'une plage libre (profil visible, profil à plage fixe dessiné) : 10 jours au plus,
+// comme le « visible range » de TradingView. Les trades sont lus jour par jour, sans jamais réunir la
+// plage en mémoire. `rows` > 0 : taille de ligne choisie d'après la hauteur réelle des trades de la
+// plage (environ `rows` lignes, jamais plus fines que la tranche du collecteur), ce qui demande une
+// première lecture pour trouver le plus haut et le plus bas ; sinon la tranche demandée.
+export const RANGE_DAYS = 10;
 async function rangeProfile(s, { from, to, bucket, tpoMs, rows }) {
-  const r = await s.store.getRange(from, to, { maxDays: 3 });
-  const t = r.trades;
-  if (rows > 0 && t.n) {
+  const opts = { maxDays: RANGE_DAYS };
+  if (rows > 0) {
     let lo = Infinity;
     let hi = -Infinity;
-    for (let i = 0; i < t.n; i++) {
-      if (t.p[i] < lo) lo = t.p[i];
-      if (t.p[i] > hi) hi = t.p[i];
-    }
-    bucket = rangeBucket(lo, hi, s.cfg.bucket ?? bucket, rows);
+    await s.store.forEachChunk(from, to, opts, (t) => {
+      for (let i = 0; i < t.n; i++) {
+        if (t.p[i] < lo) lo = t.p[i];
+        if (t.p[i] > hi) hi = t.p[i];
+      }
+    });
+    if (hi >= lo) bucket = rangeBucket(lo, hi, s.cfg.bucket ?? bucket, rows);
   }
   const prof = new SessionProfiler(bucket, { tpoMs, range: [from, to] });
-  for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
-  return { bucket, partial: r.partial, sessions: prof.list() };
+  const partial = await s.store.forEachChunk(from, to, opts, (t) => {
+    for (let i = 0; i < t.n; i++) prof.push(t.t[i], t.p[i], t.q[i], t.s[i]);
+  });
+  return { bucket, partial, sessions: prof.list() };
 }
 
 // Ancrage du VWAP par période (jour, semaine ou mois UTC) : sommes Σ p·q, Σ p²·q et Σ q du début

@@ -65,9 +65,17 @@ export class TradeStore extends EventEmitter {
 
   // Trades de [from, to), limités à `maxDays` jours. `partial` signale un trou en cours de rattrapage.
   async getRange(from, to, { maxDays = 3 } = {}) {
-    from = Math.max(from, to - maxDays * DAY);
-    if (this.memStart === null) return { trades: new Trades(1), partial: true };
     const parts = [];
+    const partial = await this.forEachChunk(from, to, { maxDays }, (t) => parts.push(t));
+    return { trades: parts.length ? Trades.concat(parts) : new Trades(1), partial };
+  }
+
+  // Mêmes trades que getRange, remis à `fn` par morceaux (un jour d'archive à la fois, puis la
+  // mémoire) : plusieurs jours ne sont jamais réunis en mémoire (un jour de BTC pèse des dizaines de
+  // Mo). Renvoie `partial`.
+  async forEachChunk(from, to, { maxDays = 3 } = {}, fn) {
+    from = Math.max(from, to - maxDays * DAY);
+    if (this.memStart === null) return true;
     let partial = false;
     if (from < this.memStart) {
       if (this.offline) partial = true;
@@ -78,12 +86,12 @@ export class TradeStore extends EventEmitter {
       } else {
         for (let d = Math.floor(from / DAY) * DAY; d < Math.min(to, this.backFrom); d += DAY) {
           const day = await this.day(d);
-          parts.push(day.slice(Math.max(from, d), Math.min(to, d + DAY)));
+          fn(day.slice(Math.max(from, d), Math.min(to, d + DAY)));
         }
       }
     }
-    parts.push(this.#memory(Math.max(from, this.memStart), to));
-    return { trades: Trades.concat(parts), partial };
+    fn(this.#memory(Math.max(from, this.memStart), to));
+    return partial;
   }
 
   #memory(from, to) {

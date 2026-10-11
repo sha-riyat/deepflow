@@ -205,7 +205,7 @@ function vp(ctx, d, shape, { scale, digits, profileOf, items = [] }) {
     const st = auctionState(s, r.after.session, clockNow(), 2);
     label(ctx, `Depuis la fin de la plage : ${auctionLabel(st, 'du profil')}`, lx, totals ? ly + 17 : ly, C.mist, { size: 10 });
   }
-  if (r.clipped) note('Plage limitée aux 3 derniers jours de la sélection', C.ember);
+  if (r.clipped) note('Plage limitée aux 10 derniers jours de la sélection', C.ember);
   else if (r.partial) note('Historique en cours de téléchargement', C.ember);
 }
 

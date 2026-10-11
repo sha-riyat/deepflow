@@ -158,7 +158,7 @@ test('profils : plage libre (profil visible) et sous-période TPO', async () => 
   const day = 86_400_000 * 20_000;
   tr.push(day + 1_000, 100.5, 2, 1, 1);
   tr.push(day + 3_700_000, 101.5, 1, -1, 2);
-  const store = { getRange: async () => ({ trades: tr, partial: false }), backFrom: null, hasDay: () => true };
+  const store = { getRange: async () => ({ trades: tr, partial: false }), forEachChunk: async (from, to, opts, fn) => (fn(tr), false), backFrom: null, hasDay: () => true };
   const s = { mode: 'live', store, cfg: { footprint: { bucket: 1 } }, now: () => Date.now() };
   const r = await profiles(s, { mode: 'range', from: day, to: day + 7_200_000, bucket: 1, tpo: 60 });
   assert.equal(r.sessions.length, 1);
@@ -174,7 +174,7 @@ test('profil de plage fixe : taille de ligne choisie d’après la hauteur réel
   const day = 86_400_000 * 20_000;
   // Trades de 82 918 à 83 138 (220 $ de hauteur) : à 30 lignes visées, des lignes de 10 $ (pas 50 $).
   for (const [k, p] of [[1, 82_918], [2, 83_138], [3, 82_975], [4, 82_975], [5, 83_060]]) tr.push(day + k * 60_000, p, 1, 1, k);
-  const store = { getRange: async () => ({ trades: tr, partial: false }), backFrom: null, hasDay: () => true };
+  const store = { getRange: async () => ({ trades: tr, partial: false }), forEachChunk: async (from, to, opts, fn) => (fn(tr), false), backFrom: null, hasDay: () => true };
   const s = { mode: 'live', store, cfg: { bucket: 5, footprint: { bucket: 10 } }, now: () => Date.now() };
   const auto = await profiles(s, { mode: 'range', from: day, to: day + 3_600_000, rows: 30 });
   assert.equal(auto.bucket, 10);
@@ -267,4 +267,24 @@ test('autres plateformes : rien en replay, plage bornée au présent', async () 
   book.add('bybit', { t: 600_000, q: 1, side: 1 });
   const r = venues({ venues: { book, status: { bybit: 'connecté' } }, now: () => 300_000 }, { from: 0, to: 900_000 });
   assert.deepEqual(r.rows.map((x) => x[0]), [60_000]);
+});
+
+test('historique : plage lue par morceaux, un jour d’archive à la fois', async () => {
+  const { TradeStore, DAY } = await import('../server/history/store.js');
+  const store = new TradeStore({ market: 'futures', symbol: 'TESTUSDT', dir: tmp(), rest: { aggTrades: () => new Promise(() => {}) } });
+  store.appendLive(22 * DAY + 5, 100, 1, 1, 1); // le direct démarre à minuit + 5 ms : jours antérieurs = archives
+  for (const d of [19, 20, 21]) {
+    const day = new Trades(8);
+    day.push(d * DAY + 1000, 100 + d, 1, 1, d);
+    day.push(d * DAY + 2000, 100 + d, 2, -1, d + 100);
+    store.days.set(d * DAY, day);
+  }
+  const sizes = [];
+  const partial = await store.forEachChunk(19 * DAY, 22 * DAY, { maxDays: 10 }, (t) => sizes.push(t.n));
+  assert.equal(partial, false);
+  assert.deepEqual(sizes, [2, 2, 2, 0]); // trois jours, puis la mémoire (vide avant le direct)
+  // getRange réunit les mêmes morceaux ; maxDays borne la plage aux derniers jours.
+  assert.equal((await store.getRange(19 * DAY, 22 * DAY, { maxDays: 10 })).trades.n, 6);
+  assert.equal((await store.getRange(19 * DAY, 22 * DAY, { maxDays: 2 })).trades.n, 4);
+  store.stop();
 });

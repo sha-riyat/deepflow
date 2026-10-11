@@ -1,11 +1,11 @@
 // Profils de volume à plage fixe (outil de dessin) : demandés au collecteur (profil d'une plage,
-// 3 jours au plus) et gardés en mémoire. Une plage qui touche le direct est rafraîchie toutes les
+// 10 jours au plus) et gardés en mémoire. Une plage qui touche le direct est rafraîchie toutes les
 // 15 s ; un résultat incomplet (historique en cours de téléchargement) ou en erreur est redemandé
 // après 15 s. Pendant qu'on déplace ou étire le dessin, son dernier profil reste affiché.
 import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
-const MAX_SPAN = 3 * DAY; // limite du collecteur (profil de plage)
+const MAX_SPAN = 10 * DAY; // limite du collecteur (RANGE_DAYS dans server/queries.js)
 const RETRY_MS = 15_000;
 
 export class RangeProfiles {
