@@ -194,9 +194,18 @@ export async function vwapAnchor(s, q) {
       out.v += vol;
     }
   };
-  const hour = Math.max(start, Math.floor(t / HOUR) * HOUR);
-  if (hour > start) add(await s.rest.klines(s.cfg.symbol, '1h', { startTime: start, endTime: hour - 1, limit: 1000 }));
-  if (t > hour) add(await s.rest.klines(s.cfg.symbol, '1m', { startTime: hour, endTime: t - 1, limit: 60 }));
+  // Heures pleines en 1 h, le reste en 1 min ; un ancrage qui n'est pas à l'heure pile (ouverture
+  // de New York, 13 h 30) commence par des minutes jusqu'à l'heure pleine suivante.
+  const minutes = async (from, to) => add(await s.rest.klines(s.cfg.symbol, '1m', { startTime: from, endTime: to - 1, limit: 60 }));
+  const full = Math.ceil(start / HOUR) * HOUR;
+  const hour = Math.floor(t / HOUR) * HOUR;
+  if (t <= full) {
+    if (t > start) await minutes(start, t);
+  } else {
+    if (full > start) await minutes(start, full);
+    if (hour > full) add(await s.rest.klines(s.cfg.symbol, '1h', { startTime: full, endTime: hour - 1, limit: 1000 }));
+    if (t > hour) await minutes(hour, t);
+  }
   return out;
 }
 

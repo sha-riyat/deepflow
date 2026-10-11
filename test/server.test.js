@@ -229,6 +229,23 @@ test('ancrage du VWAP par période : heures entières en 1 h, reste en 1 min', a
   assert.equal(calls.length, 0);
 });
 
+test('ancrage du VWAP à l’ouverture de New York : minutes jusqu’à l’heure pleine, puis heures, puis minutes', async () => {
+  const { vwapAnchor } = await import('../server/queries.js');
+  const H = 3_600_000;
+  const thu = Date.UTC(2026, 9, 8); // ouverture 13 h 30 UTC
+  const open = thu + 13.5 * H;
+  const calls = [];
+  const rest = { klines: async (sym, iv, o) => (calls.push([iv, o.startTime, o.endTime]), [[0, 0, 0, 0, 0, '1', 0, '100']]) };
+  const run = async (t) => (calls.length = 0, vwapAnchor({ rest, cfg: { symbol: 'BTCUSDT' }, now: () => t + 60_000 }, { t, period: 'ny' }));
+  const w = await run(thu + 15 * H + 20 * 60_000);
+  assert.deepEqual(calls, [['1m', open, thu + 14 * H - 1], ['1h', thu + 14 * H, thu + 15 * H - 1], ['1m', thu + 15 * H, thu + 15 * H + 20 * 60_000 - 1]]);
+  assert.deepEqual([w.period, w.start, w.v], ['ny', open, 3]);
+  await run(open + 15 * 60_000); // encore dans la première demi-heure : minutes seulement
+  assert.deepEqual(calls, [['1m', open, open + 15 * 60_000 - 1]]);
+  await run(open); // à l'ouverture : rien à demander
+  assert.equal(calls.length, 0);
+});
+
 test('niveaux clés : bougies journalières jusqu’à aujourd’hui, calcul gardé pour la journée', async () => {
   const { levels } = await import('../server/queries.js');
   const today = Date.parse('2026-10-07T00:00:00Z');
