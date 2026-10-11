@@ -27,7 +27,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (vérifié, à valider) |
 | 2 | Gros trades façon Deep Trades | forte | moyen (fait, à valider ; points 1, 2, 3, 5, 6 ; le point 4 reporté) |
 | 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen (points 1 à 8 faits ; 9 reporté) |
-| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (point 1 fait ; 2 à 7 à faire) |
+| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (points 1 et 2 faits ; 3 à 7 à faire) |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
 | 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen |
@@ -138,6 +138,10 @@ Sources : 15, 18, 20, 21 (ORB 15 / 30 min), 14 (pas de trade avant l'ouverture),
    calcul `orbStart` / `orbWindow` / `orbRange` dans `shared/opening.js` (testé) ; bougies d'une minute de la fenêtre
    chargées par `loadOpeningRange`, rafraîchies toutes les 30 s pendant la formation. Vérifié à l'écran sur un
    enregistrement fictif (ancre UTC) ; New York et Londres couverts par le test unitaire seulement.
+   **Point 2 fait** : `openLocation(prev, today, price)` renvoie aussi `zone` (value / range / out) et `openZoneLabel`
+   donne le libellé ; `nyOpenPrice` (dernier prix de la période de 30 min qui précède l'ouverture de New York, à un
+   tick près) ; légende du calque `open`. Vérifié à l'écran avec une veille fictive (00:00 UTC) ; la position à New
+   York n'est couverte que par le test unitaire (dimanche).
 2. **Position de l'ouverture** (vidéo 18) : dans la value area de la veille, dans le range de la veille mais hors
    value area, hors du range ; mesurée à 00:00 UTC et à l'ouverture de New York. Étend `openLocation`
    (`shared/auction.js`). Lecture : ouverture dans la valeur → journée de rotation probable.
