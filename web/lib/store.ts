@@ -104,6 +104,7 @@ export interface UiPrefs {
   opts: IndicatorOptions;
   legend: boolean; // liste des indicateurs dépliée dans la légende
   gamma: number;
+  hideCandles: boolean; // bougies et footprint masqués : lecture des profils, niveaux et dessins seuls
 }
 
 export type IndicatorOptions = Record<string, Record<string, number | string>>;
@@ -118,6 +119,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   opts: defaultOptions() as IndicatorOptions,
   legend: true,
   gamma: 0.9,
+  hideCandles: false,
 };
 
 // Réglages complétés par les valeurs par défaut (indicateurs ajoutés depuis, stockage partiel).

@@ -34,6 +34,7 @@ export class Chart {
       style: 'candles',
       fpMode: 'off',
       gamma: 0.9,
+      hideCandles: false, // bougies et footprint masqués (profils, niveaux et dessins restent)
       paneH: 90,
       panes: ['volume', 'delta'],
       layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, ib: false, keys: false, sessions: false, times: true, div: true, naked: true, vwap: false, alerts: true, liq: true, oiprof: false },
@@ -275,11 +276,13 @@ export class Chart {
     drawBehind(this, ctx, items, geo);
 
     const fpOn = st.fpMode !== 'off' && this.spec.fp > 0 && !INDEXED.includes(st.style);
-    if (st.style === 'linebreak') drawLineBreak(ctx, items, geo, s);
+    if (st.hideCandles) {
+      // Bougies masquées : seuls les calques (profils, niveaux, flux) et les dessins restent.
+    } else if (st.style === 'linebreak') drawLineBreak(ctx, items, geo, s);
     else if (st.style === 'kagi') drawKagi(ctx, items, geo, s);
     else if (st.style === 'pnf') drawPointFigure(ctx, items, geo, s, (this.meta.fpBucket ?? 1) * 2);
     else if (!tpo && !(fpOn && geo.slot >= MIN_SLOT)) drawSeries(ctx, items, geo, s, st.style === 'heikin' ? 'candles' : st.style);
-    if (fpOn) drawFootprint(ctx, items, geo, s, { ...O.fp, mode: st.fpMode, bucket: this.meta.fpBucket });
+    if (fpOn && !st.hideCandles) drawFootprint(ctx, items, geo, s, { ...O.fp, mode: st.fpMode, bucket: this.meta.fpBucket });
     drawAbove(this, ctx, items, geo);
     const indexed = INDEXED.includes(st.style); // vues sans heure : dessins de prix seulement
     const profileOf = (d) => this.rangeProfiles.get(d, this.drawings.moving(d));

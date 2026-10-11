@@ -106,7 +106,7 @@ export class Pane {
   apply(prefs: UiPrefs) {
     this.prefs = prefs;
     if (!this.chart) return;
-    Object.assign(this.chart.settings, { style: prefs.style, fpMode: prefs.fpMode, panes: prefs.panes, layers: prefs.layers, opts: prefs.opts, gamma: prefs.gamma });
+    Object.assign(this.chart.settings, { style: prefs.style, fpMode: prefs.fpMode, panes: prefs.panes, layers: prefs.layers, opts: prefs.opts, gamma: prefs.gamma, hideCandles: prefs.hideCandles });
   }
 
   // Recharge la série (type, intervalle, footprint) pour la session suivie.

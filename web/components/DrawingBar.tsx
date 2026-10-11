@@ -2,7 +2,7 @@
 // Barre des outils de dessin, à gauche du graphique : curseur, outils (Alt + lettre), aimant,
 // suppression du dessin sélectionné et effacement de tous les dessins du symbole.
 import type { ReactNode } from 'react';
-import { Cursor01Icon, Delete02Icon, Eraser01Icon, Magnet01Icon } from '@hugeicons/core-free-icons';
+import { Cursor01Icon, Delete02Icon, Eraser01Icon, Magnet01Icon, ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
 import { Icon } from './ui';
 import { engine } from '@/lib/engine';
 import { useLive } from '@/lib/store';
@@ -86,7 +86,7 @@ function Glyph({ id }: { id: string }) {
   );
 }
 
-export function DrawingBar() {
+export function DrawingBar({ candlesHidden = false, onToggleCandles }: { candlesHidden?: boolean; onToggleCandles?: () => void }) {
   const draw = useLive((s) => s.draw);
   const ed = () => engine.chart?.drawings;
   return (
@@ -105,6 +105,9 @@ export function DrawingBar() {
       <button type="button" className={`rail-btn${draw.magnet ? ' on' : ''}`} title="Aimant : coller les points aux prix des bougies (ouverture, plus haut, plus bas, clôture)"
         onClick={() => ed()?.setMagnet(!draw.magnet)}>
         <Icon icon={Magnet01Icon} size={18} />
+      </button>
+      <button type="button" className={`rail-btn${candlesHidden ? ' on' : ''}`} title={`${candlesHidden ? 'Afficher' : 'Masquer'} les bougies pour lire le profil seul (Maj + C)`} onClick={onToggleCandles}>
+        <Icon icon={candlesHidden ? ViewOffIcon : ViewIcon} size={18} />
       </button>
       <button type="button" className="rail-btn" title="Supprimer le dessin sélectionné (Suppr)" disabled={!draw.sel} onClick={() => ed()?.removeSelected()}>
         <Icon icon={Delete02Icon} size={18} />

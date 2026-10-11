@@ -258,6 +258,12 @@ export default function Workspace() {
         e.preventDefault();
         const on = !(prefs.layers.bubbles || prefs.layers.big);
         update({ layers: { ...prefs.layers, bubbles: on, big: on } }, 'view');
+      } else if (e.shiftKey && e.key.toLowerCase() === 'c') {
+        // Maj + C : masque ou réaffiche les bougies (et le footprint) pour lire un profil ou des niveaux seuls.
+        const prefs = layoutRef.current.panes.find((p) => p.id === layoutRef.current.active)?.prefs;
+        if (!prefs) return;
+        e.preventDefault();
+        update({ hideCandles: !prefs.hideCandles }, 'view');
       } else if (/^[a-zA-Z0-9]$/.test(e.key) && search === null) {
         e.preventDefault();
         setSearch(e.key.toUpperCase());
@@ -299,7 +305,7 @@ export default function Workspace() {
         }}
       />
       <main id="workspace">
-        <DrawingBar />
+        <DrawingBar candlesHidden={activeSpec.prefs.hideCandles} onToggleCandles={() => update({ hideCandles: !activeSpec.prefs.hideCandles }, 'view')} />
         <div className={`charts grid-${layout.grid}`}>
           {visible.map((spec) => (
             <ChartView key={spec.id} spec={spec} source={sourceOf(spec.id, spec.key)} active={spec.id === activeSpec.id}
