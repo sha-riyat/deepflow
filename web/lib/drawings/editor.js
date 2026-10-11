@@ -2,7 +2,7 @@
 // redimensionnement par les poignées, style, suppression. Sauvegarde par marché et par symbole, et
 // dernier style de chaque outil : storage.js.
 import { snapToBar } from '@shared/measures.js';
-import { breakEvenPrice, calcDefaults, cleanCalc, moveStop, positionPoints, resetStop, shiftCalc, stopForR } from '@shared/position.js';
+import { MAX_ADDS, averageEntry, breakEvenPrice, calcDefaults, cleanCalc, moveStop, positionPoints, resetStop, shiftCalc, stopForR } from '@shared/position.js';
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
@@ -126,10 +126,11 @@ export class DrawingEditor {
       const { data, meta } = this.chart;
       const buffer = meta?.fpBucket ?? meta?.tickSize ?? 0; // une ligne du footprint au-delà de l'extrême
       let price;
-      if (action === 'be') price = breakEvenPrice(d.type, d.pts[0].p, d.calc.fees);
+      const avg = averageEntry(d.pts[0].p, d.calc.adds);
+      if (action === 'be') price = breakEvenPrice(d.type, avg, d.calc.fees);
       else if (action === 'wick') price = wickStop(d.type, data.bars, d.pts[0].t, buffer);
       else if (action === 'print') price = printStop(d.type, data.bigPrints(), d.pts[0].t, buffer);
-      else price = stopForR(d.type, d.pts[0].p, d.calc.stop0 ?? d.pts[1].p, arg, d.calc.fees);
+      else price = stopForR(d.type, avg, d.calc.stop0 ?? d.pts[1].p, arg, d.calc.fees);
       if (price === null) return 'nodata';
       next = moveStop(d.type, d.pts, d.calc, price, clockNow());
     }
@@ -138,6 +139,20 @@ export class DrawingEditor {
     d.calc = next.calc;
     this.#save();
     return 'ok';
+  }
+
+  // Renfort de la position sélectionnée : une entrée de plus, de même taille, au prix de la dernière
+  // bougie ('add'), ou retrait du dernier renfort ('remove'). Stop et cible restent communs ; le
+  // risque total reste celui du capital et du risque choisis. Faux si rien ne change.
+  manageEntry(action) {
+    const d = this.list.find((x) => x.id === this.sel);
+    if (!d?.calc || !POSITIONS.includes(d.type)) return false;
+    const adds = d.calc.adds ?? [];
+    const price = this.chart.data.bars[this.chart.data.bars.length - 1]?.c;
+    if (action === 'add' ? !(price > 0) || adds.length >= MAX_ADDS : !adds.length) return false;
+    d.calc = cleanCalc({ ...d.calc, adds: action === 'add' ? [...adds, price] : adds.slice(0, -1) });
+    this.#save();
+    return true;
   }
 
   // Fin de saisie d'une note : texte validé, ou null pour annuler. Une note vide est retirée.

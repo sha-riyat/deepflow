@@ -129,6 +129,21 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
   if (st.valid && d.calc.stop0 != null) stopHistory(ctx, d, shape, scale, items);
+  if (st.valid && d.calc.adds?.length) {
+    // Renforts : une ligne par entrée supplémentaire, le prix moyen est dans le résumé.
+    ctx.strokeStyle = alpha(C.white, 0.5);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    d.calc.adds.forEach((p, i) => {
+      const y = scale.yOfPrice(p);
+      ctx.beginPath();
+      ctx.moveTo(target[0], y);
+      ctx.lineTo(target[2], y);
+      ctx.stroke();
+      label(ctx, `Entrée ${i + 2} · ${fmt(p, digits)}`, target[2] - 4, y - 2, C.white, { size: 10, align: 'right' });
+    });
+    ctx.setLineDash([]);
+  }
   if (st.valid && st.tp1 !== null) {
     // Sortie partielle : TP1 en tirets dans la zone de gain, avec la part sortie.
     const y = scale.yOfPrice(st.tp1);
@@ -168,11 +183,16 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
   label(ctx, sText, fit(sText), long ? below(stop) : above(stop), locked ? C.growth : C.loss, { weight: 600 });
   const [, yE] = shape.handles[0];
   const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
-  const info = `R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}`;
+  const avg = st.entries > 1 ? `prix moyen ${fmt(st.avg, digits)} (${st.entries} entrées) · ` : '';
+  const info = `${avg}R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}`;
   // À droite de la zone, ou à sa gauche si le texte déborderait sous l'axe des prix.
   ctx.font = font(11, 600);
-  const right = target[2] + 6 + ctx.measureText(info).width + 10 <= scale.w;
-  label(ctx, info, right ? target[2] + 6 : target[0] - 6, yE + 8.5, C.white, { weight: 600, align: right ? 'left' : 'right' });
+  const w = ctx.measureText(info).width + 10;
+  const right = target[2] + 6 + w <= scale.w;
+  // À gauche de la zone si elle y tient, sinon sur la zone, calée sur le bord droit du tracé.
+  const leftFits = target[0] - 6 - w >= 0;
+  const x = right ? target[2] + 6 : leftFits ? target[0] - 6 : Math.max(4, Math.min(target[0] + 6, scale.w - w - 4));
+  label(ctx, info, x, yE + 8.5, C.white, { weight: 600, align: right || !leftFits ? 'left' : 'right' });
 }
 
 // VWAP ancré : nom à l'ancre ; historique incomplet signalé (l'ancre précède les bougies chargées).

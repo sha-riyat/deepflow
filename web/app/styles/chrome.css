@@ -68,6 +68,7 @@
 .ds-panel .pop-title { padding: 4px 0 0; }
 .ds-panel .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
 .ds-panel .ds-fields { display: flex; flex-wrap: wrap; }
+.ds-panel .ds-row { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
 .ds-panel .note { margin: 0; }
 #drawstyle .swatch { display: block; width: 16px; height: 16px; border-radius: 4px; }
 .ds-field { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 6px; color: var(--text-3); font-size: 12px; }

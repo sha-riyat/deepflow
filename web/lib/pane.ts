@@ -43,6 +43,7 @@ export interface ChartLike {
     setText(text: string | null): void;
     setCalc(patch: Partial<PositionCalc>, id?: string): void;
     manageStop(action: string, arg?: number): 'ok' | 'same' | 'nodata';
+    manageEntry(action: 'add' | 'remove'): boolean;
     escape(): boolean;
     removeSelected(): boolean;
     clear(): void;

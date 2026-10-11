@@ -139,7 +139,8 @@ function StopMenu({ calc }: { calc: PositionCalc }) {
   );
 }
 
-// Plan de la position (fenêtre de réglages) : sortie partielle (part sortie à TP1, en R du risque initial).
+// Plan de la position (fenêtre de réglages) : sortie partielle (part sortie à TP1, en R du risque initial),
+// renforts (entrées de même taille, stop et cible communs).
 function PositionPlan({ id, calc }: { id: string; calc: PositionCalc }) {
   const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
   return (
@@ -148,6 +149,10 @@ function PositionPlan({ id, calc }: { id: string; calc: PositionCalc }) {
         onChange={(pct) => set({ partial: pct > 0 ? { pct, r: calc.partial?.r ?? 1 } : null })} />
       <NumField label="TP1 : multiple du risque initial" value={calc.partial?.r ?? 1} unit="R"
         onChange={(r) => set({ partial: { pct: calc.partial?.pct ?? 50, r } })} />
+      <div className="ds-row">
+        <button type="button" className="pop-item" onClick={() => engine.chart?.drawings.manageEntry('add')}><span>Renfort au prix actuel{calc.adds?.length ? ` (${calc.adds.length})` : ''}</span></button>
+        {Boolean(calc.adds?.length) && <button type="button" className="pop-item" onClick={() => engine.chart?.drawings.manageEntry('remove')}><span>Retirer le dernier renfort</span></button>}
+      </div>
     </>
   );
 }
