@@ -277,6 +277,15 @@ Tout est mémorisé dans le navigateur (`localStorage`) : rien n'est envoyé ail
   sortie, setup, notes) en reprenant l'outil position sélectionné, avec une capture du graphique
   actif ; résultat en R (multiples du risque pris au stop), statistiques (taux de réussite, R moyen
   par trade, total, facteur de profit) et export CSV. Gardé dans le navigateur (IndexedDB).
+  - Chaque trade reçoit une note A / B / C, un setup (liste des vidéos ou texte libre), des erreurs
+    étiquetées (hors horaire, première poussée, mauvais sens, hors plan, stop éloigné), ses heures
+    d'entrée et de sortie, et l'instantané de la bougie à la saisie (volume, delta %, volume relatif,
+    heures UTC et New York) ; les excursions MAE / MFE (en R) sont calculées d'après les bougies
+    chargées.
+  - Panneau : filtre Tous / Réel / Replay, courbe de capital en R (repli maximal, plus longue série
+    de pertes), taux de réussite face au payoff avec la ligne d'équilibre 1 / (1 + payoff), ventilation
+    par setup, note, heure et jour, coût cumulé des erreurs, budget du jour (gains du jour dont on
+    peut risquer une part, limite de perte) et fiche narrative de la semaine.
 - **Replay** : voir ci-dessous ; idéal pour s'entraîner et remplir le journal sans risque.
 
 ## Replay (entraînement)
