@@ -1,7 +1,7 @@
 // Tests de l'initial balance (extensions) et des types d'ouverture de Dalton.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ibExtensions, ibLevels, openType, openTypeLabel } from '../shared/opening.js';
+import { ibExtensions, ibLevels, openType, openTypeLabel, orbRange, orbStart, orbWindow } from '../shared/opening.js';
 
 const M30 = 1_800_000;
 // Session fictive : tranche 1, ouverture `open`, périodes A et B [période, ligne basse, ligne haute, clôture].
@@ -34,4 +34,31 @@ test('types d’ouverture : drive, test-drive, rejection-reverse, auction', () =
   assert.equal(openType(day(100, [96, 104, 101], [97, 103, 100]), t - 1), null); // IB pas terminée
   assert.equal(openTypeLabel({ type: 'test', side: -1 }), 'Open-Test-Drive baissier');
   assert.equal(openTypeLabel({ type: 'auction', side: 0 }), 'Open-Auction');
+});
+
+test('range d’ouverture : ancres UTC, Londres et New York, week-end, plage de N minutes', () => {
+  const utc = (s) => Date.parse(`${s}Z`);
+  const wed = utc('2026-07-01T00:00:00'); // mercredi, heure d'été partout
+  assert.equal(orbStart(wed, 'utc'), wed);
+  assert.equal(orbStart(wed, 'london'), utc('2026-07-01T07:00:00')); // 8 h britanniques = 7 h UTC
+  assert.equal(orbStart(wed, 'ny'), utc('2026-07-01T13:30:00'));
+  const winter = utc('2026-12-02T00:00:00');
+  assert.equal(orbStart(winter, 'london'), utc('2026-12-02T08:00:00'));
+  assert.equal(orbStart(winter, 'ny'), utc('2026-12-02T14:30:00'));
+  const sat = utc('2026-07-04T00:00:00');
+  assert.equal(orbStart(sat, 'ny'), null);
+  assert.equal(orbStart(sat, 'london'), null);
+  assert.equal(orbStart(sat, 'utc'), sat);
+  // Fenêtre : aujourd'hui si l'ouverture est passée, sinon la dernière ouverture (samedi : vendredi).
+  assert.deepEqual(orbWindow(utc('2026-07-01T14:00:00'), 'ny', 15), { start: utc('2026-07-01T13:30:00'), end: utc('2026-07-01T13:45:00'), minutes: 15 });
+  assert.equal(orbWindow(utc('2026-07-01T10:00:00'), 'ny', 15).start, utc('2026-06-30T13:30:00')); // pas encore ouvert
+  assert.equal(orbWindow(utc('2026-07-04T10:00:00'), 'ny', 15).start, utc('2026-07-03T13:30:00')); // samedi
+  // Range : seules les bougies qui commencent dans la fenêtre comptent.
+  const win = { start: 1000, end: 1900, minutes: 15 };
+  const bars = [{ t0: 900, h: 999, l: 1 }, { t0: 1000, h: 105, l: 100 }, { t0: 1300, h: 108, l: 102 }, { t0: 1900, h: 500, l: 2 }];
+  const r = orbRange(bars, win, 1500);
+  assert.deepEqual([r.hi, r.lo, r.mid, r.range, r.done], [108, 100, 104, 8, false]);
+  assert.equal(orbRange(bars, win, 1900).done, true);
+  assert.equal(orbRange([], win, 2000), null);
+  assert.equal(orbRange(bars, null, 2000), null);
 });
