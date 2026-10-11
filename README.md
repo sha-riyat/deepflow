@@ -169,7 +169,9 @@ npm run dev
   distribution) dans la légende.
 - **Value area de la veille** : VAH, VAL et POC de la session précédente prolongés sur la journée,
   avec l'état de l'enchère dans la légende (dans la valeur, sortie, retour, acceptation ou rejet
-  après 2 clôtures de 30 min) et l'extrême de la sortie en cours.
+  après 2 clôtures de 30 min), la relation entre la value area du jour (en cours de construction) et
+  celle de la veille (plus haute, chevauche en haut, intérieure, extérieure, chevauche en bas, plus
+  basse) et l'extrême de la sortie en cours.
 - **Ouverture du jour** : premier prix de la session UTC, en pointillés depuis 00:00, et sa
   position dans la légende : dans la value area de la veille, dans son range (plus haut – plus bas)
   mais hors value area, ou hors du range. En semaine, la légende donne aussi la position du prix à
