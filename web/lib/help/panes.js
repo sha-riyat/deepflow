@@ -97,8 +97,15 @@ export const PANE_ARTICLES = [
     read: [
       'Avec un R:R de 2, gagner une fois sur trois suffit pour ne pas perdre d’argent (avant frais).',
       'Posez le stop là où l’idée est fausse (au-delà d’un niveau), puis déduisez la taille ; jamais l’inverse.',
+      'Menu « Stop » : point mort (le prix qui couvre les frais d’entrée et de sortie), gain verrouillé (+0,5 / +1 / +2 R), stop suiveur sous la dernière mèche ou sous le dernier gros print. Le stop ne va que vers le gain ; l’historique de ses déplacements est tracé, le stop initial reste en pointillés. 1 R = le risque initial.',
+      'Réglages (roue dentée) : sortie partielle (une part de la position sortie à TP1, en R du risque initial, le reste à la cible : le R:R global est recalculé), renforts (entrées de même taille, prix moyen, stop commun, jusqu’à 5), taux de financement par 8 h (coût estimé selon les heures 0 h, 8 h, 16 h UTC traversées par la position) et note du setup A / B / C (B : moitié du risque, C : quart).',
+      'Avertissement orange quand la cible vaut moins de 3 fois les frais aller-retour : la plupart du gain y passe (typique des scalps de quelques ticks).',
+      'Aimant : en plus des prix de la bougie, les points se collent aux niveaux (POC, VAH, VAL et LVN de la veille, VWAP et ouverture du jour, hauts et bas d’hier, ouvertures de semaine et de mois, derniers gros prints) selon les calques actifs.',
     ],
-    traps: ['Un levier élevé ne change pas le risque si la taille est calculée au stop ; il rapproche seulement la liquidation.'],
+    traps: [
+      'Un levier élevé ne change pas le risque si la taille est calculée au stop ; il rapproche seulement la liquidation.',
+      'Remonter le stop trop tôt (point mort immédiat) fait sortir sur le premier retour du prix ; les vidéos le font après une confirmation, pas avant. Chaque position est un calcul affiché : aucun ordre n’est passé.',
+    ],
   },
   {
     id: 'avwap',
