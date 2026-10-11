@@ -27,7 +27,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (vérifié, à valider) |
 | 2 | Gros trades façon Deep Trades | forte | moyen (fait, à valider ; points 1, 2, 3, 5, 6 ; le point 4 reporté) |
 | 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen (points 1 à 8 faits ; 9 reporté) |
-| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (points 1 à 4 faits ; 5 à 7 à faire) |
+| 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (fait, à valider ; 7 points) |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
 | 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen |
@@ -149,6 +149,13 @@ Sources : 15, 18, 20, 21 (ORB 15 / 30 min), 14 (pas de trade avant l'ouverture),
    **Point 4 fait** : `valueRelation(prev, today)` et `RELATION_LABEL` (`shared/auction.js`, testés) ; relation
    ajoutée à la légende du calque `prev` (« en cours », la value area du jour se construit), explication dans la
    fiche d'aide. Vérifié à l'écran avec une veille simulée.
+   **Points 5 à 7 faits** : (5) option « HVN / LVN d'hier » du calque `prev` (masqués par défaut), prolongés sur la
+   journée avec leur prix ; (6) calque `hours` « Mes heures de trading » : `shared/hours.js` (plages en heure locale,
+   passage de minuit, testé sous plusieurs fuseaux), fond grisé hors de la plage choisie, réglé par calque (modèles
+   d'indicateurs) et non en préférence globale ; (7) période `ny` du VWAP (`periodStart` / `periodEnd`, le week-end
+   continue le vendredi), ancrage serveur en minutes jusqu'à l'heure pleine (13 h 30 → 14 h). Vérifié à l'écran
+   (heures grisées, HVN / LVN, VWAP « ny ») sur l'enregistrement fictif ; l'ancrage des sommes antérieures n'a pas
+   pu être contrôlé (klines Binance bloquées ici), il est couvert par le test serveur.
 2. **Position de l'ouverture** (vidéo 18) : dans la value area de la veille, dans le range de la veille mais hors
    value area, hors du range ; mesurée à 00:00 UTC et à l'ouverture de New York. Étend `openLocation`
    (`shared/auction.js`). Lecture : ouverture dans la valeur → journée de rotation probable.
