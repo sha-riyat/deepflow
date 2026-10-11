@@ -30,7 +30,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen (fait, à valider ; 7 points) |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
-| 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen |
+| 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen (fait, à valider ; le rappel du budget du jour attend le lot 8) |
 | 8 | Journal : note, erreurs, courbe en R, statistiques par setup / heure | forte | moyen |
 | 9 | Alertes sur clôture, compteur de touches d'un niveau | moyenne | faible |
 | 10 | Carnet sans MBO : mur retiré / consommé, recharge (iceberg), vitesse du tape | moyenne | élevé |
@@ -219,6 +219,19 @@ Sources : 00, 09, 12, 14, 17, 22, 21.
 7. **Coût du financement** estimé selon la durée de détention (vidéo 01).
 8. **Risque selon la note du setup** (A / B / C, vidéo 09) et rappel du « budget du jour » (lot 8).
 Fichiers : `shared/measures.js` (calculs testés), `web/lib/layers/drawtools.js`, `web/components/DrawingStyle.tsx`.
+
+**Avancement** : points 1 à 7 faits et vérifiés à l'écran sur l'enregistrement fictif ; point 8 fait pour la note
+(A / B / C : risque × 1, 0,5, 0,25), le rappel du « budget du jour » attend le lot 8 (journal).
+- Calculs dans `shared/position.js` (déplacé hors de `measures.js`, qui le réexporte), `shared/trailing.js` et
+  `shared/magnet.js` ; tests dans `test/position.test.js` et `test/magnet.test.js`.
+- Réglages d'une position (champs facultatifs de `calc`) : `stop0` et `moves` (stop initial et historique),
+  `partial` {pct, r}, `adds` (renforts, 5 au plus), `funding` (% par 8 h, repris pour les positions suivantes),
+  `grade`. Menu « Stop » dans la barre de la position, le reste dans la roue dentée.
+- Choix de conception : 1 R = écart au stop initial plus les frais ; le point mort et « +x R verrouillés » sont
+  nets de frais ; le stop ne va que vers le gain ; la taille reste celle du stop initial.
+- Stop « sous le dernier gros print » : demande que les gros prints soient chargés (calque Gros prints actif).
+- Aimant sur les niveaux : selon les calques actifs (value area de la veille, ouverture, niveaux clés, gros prints).
+- Non vérifié ici : données réelles Binance (financement réel, gros prints réels).
 
 ## Lot 8 — Journal
 
