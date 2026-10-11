@@ -1,7 +1,7 @@
 // Tests du journal de trading : résultat en R, statistiques, export CSV.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { errorCosts } from '../shared/journalstats.js';
+import { breakEvenWinRate, edgeStats, equityCurve, errorCosts, longestLosingStreak, maxDrawdown } from '../shared/journalstats.js';
 import { SETUPS, cleanEntry, entrySnapshot, excursions, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
@@ -119,4 +119,28 @@ test('journal : excursions MAE / MFE en R entre l’entrée et la sortie', () =>
   assert.equal(excursions(long, []), null);
   assert.deepEqual(e({ tIn: '5', mae: 'x' }).tIn, 5);
   assert.equal(e({ mae: 'x' }).mae, null);
+});
+
+test('journal : courbe de capital en R, repli maximal, série de pertes, équilibre taux × payoff', () => {
+  const T = (t, exit) => e({ entry: 100, stop: 99, exit, t }); // exit 102 : +2 R, 99 : −1 R, 100 : 0 R
+  const list = [T(5, 99), T(1, 102), T(2, 99), T(3, 99), T(4, 102), T(6, 99), T(7, 100)];
+  // par date : +2, −1, −1, +2, −1 (t = 5), −1 (t = 6), 0 (t = 7)
+  const curve = equityCurve(list);
+  assert.deepEqual(curve.map((p) => p.r), [2, -1, -1, 2, -1, -1, 0]);
+  assert.deepEqual(curve.map((p) => p.cum), [2, 1, 0, 2, 1, 0, 0]);
+  assert.equal(maxDrawdown(curve), 2); // de 2 à 0
+  assert.equal(longestLosingStreak(list), 2);
+  assert.equal(maxDrawdown([]), 0);
+  assert.equal(longestLosingStreak([]), 0);
+  assert.equal(longestLosingStreak([T(1, 99), T(2, 100), T(3, 99)]), 1); // un trade à 0 R rompt la série
+  // l'heure de sortie prime sur l'heure de saisie
+  assert.deepEqual(equityCurve([e({ entry: 100, stop: 99, exit: 102, t: 9, tOut: 1 }), T(5, 99)]).map((p) => p.r), [2, -1]);
+  assert.equal(equityCurve([e({ entry: 100, stop: 99 })]).length, 0); // ouvert : ignoré
+  // taux de réussite et payoff
+  const s = edgeStats([T(1, 102), T(2, 104), T(3, 99), T(4, 99), T(5, 99), T(6, 99)]); // 2 gains de +2 et +4, 4 pertes de −1
+  assert.deepEqual([s.trades, s.winRate, s.avgWin, s.avgLoss, s.payoff], [6, 1 / 3, 3, 1, 3]);
+  assert.equal(s.breakEven, 0.25);
+  assert.equal(breakEvenWinRate(2), 1 / 3);
+  assert.deepEqual(edgeStats([T(1, 102)]), { trades: 1, winRate: 1, avgWin: 2, avgLoss: null, payoff: null, breakEven: null });
+  assert.equal(edgeStats([]).winRate, null);
 });
