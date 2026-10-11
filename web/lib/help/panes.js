@@ -155,4 +155,24 @@ export const PANE_ARTICLES = [
     ],
     traps: ['Aucune de ces lectures n’est une garantie. Ce n’est pas un conseil financier.'],
   },
+  {
+    id: 'journal',
+    group: 'Méthode',
+    title: 'Journal : relire ses trades en R',
+    level: 'context',
+    what: 'Chaque trade est noté avec son setup, une note A / B / C, les erreurs commises et le contexte de la bougie à la saisie ; le résultat se mesure en R (multiples du risque pris au stop), ce qui rend les trades comparables quelle que soit la taille.',
+    read: [
+      'Courbe de capital en R : sa pente compte moins que son repli maximal et la plus longue série de pertes, qu’il faut savoir encaisser.',
+      'Taux de réussite et payoff (gain moyen / perte moyenne) : on ne perd pas d’argent si le taux dépasse 1 / (1 + payoff) (avant frais) ; avec un payoff de 2, un trade sur trois suffit.',
+      'MAE (jusqu’où le prix est allé contre vous) et MFE (jusqu’où il est allé pour vous) : des gagnants à MAE proche de 1 R sont passés près du stop ; un MFE bien au-dessus du résultat montre des gains laissés.',
+      'Ventilation par setup, note, heure et jour : quels setups rapportent, à quelle heure vous perdez. Avec moins de 5 trades par ligne, ce sont des indications, pas des preuves.',
+      'Coût des erreurs : le total en R des trades étiquetés (hors horaire, première poussée, mauvais sens, hors plan, stop éloigné) montre ce qui coûte le plus cher à corriger en premier.',
+      'Budget du jour : les gains déjà encaissés aujourd’hui (UTC) dont on peut risquer une part sur un setup plus risqué, et une limite de perte quotidienne ; seuls les trades réels comptent, pas le replay.',
+      'Fiche de la semaine : trois scénarios, données attendues et biais, écrits avant d’ouvrir le graphique ; un biais sert à repérer ce qui le contredirait.',
+    ],
+    traps: [
+      'Ces statistiques portent sur vos trades notés, pas sur un backtest : peu de trades, des résultats peu fiables.',
+      'Les trades pris en replay restent séparés du réel (filtre Tous / Réel / Replay) : s’entraîner n’est pas le même risque.',
+    ],
+  },
 ];
