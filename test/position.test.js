@@ -78,3 +78,23 @@ test('réglages : champs de position validés, par défaut du compte sans eux, d
   assert.deepEqual(shiftCalc({ capital: 1, risk: 1, fees: 0 }, 10, 5), { capital: 1, risk: 1, fees: 0 });
   assert.equal(cleanCalc({ moves: Array.from({ length: 40 }, (_, i) => ({ t: i, p: 1 })) }).moves.length, 30);
 });
+
+test('stop suiveur : sous la dernière mèche fermée, sous le dernier gros print favorable', async () => {
+  const { wickStop, printStop } = await import('../shared/trailing.js');
+  const bars = [
+    { t0: 0, h: 105, l: 99, x: 1 },
+    { t0: 60, h: 108, l: 101, x: 1 },
+    { t0: 120, h: 110, l: 103, x: 1 },
+    { t0: 180, h: 112, l: 106 }, // en cours : ignorée
+  ];
+  assert.equal(wickStop('long', bars, 0, 1), 102); // plus bas de la dernière bougie fermée (103) moins 1
+  assert.equal(wickStop('short', bars, 0, 1), 111);
+  assert.equal(wickStop('long', bars, 120, 0), 103);
+  assert.equal(wickStop('long', bars, 180, 0), null); // aucune bougie fermée depuis l'entrée
+  assert.equal(wickStop('long', [], 0), null);
+  const prints = [[10, 100, 50, 1], [20, 104, 60, -1], [30, 103, 70, 1], [40, 108, 80, -1]]; // [t, prix, qté, côté]
+  assert.equal(printStop('long', prints, 0, 2), 101); // dernier achat : 103 − 2
+  assert.equal(printStop('short', prints, 0, 2), 110); // dernière vente : 108 + 2
+  assert.equal(printStop('long', prints, 31, 0), null); // aucun achat depuis 31
+  assert.equal(printStop('short', [], 0), null);
+});
