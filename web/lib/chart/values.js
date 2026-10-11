@@ -7,7 +7,7 @@ import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
 import { MAX_SESSION_TF, SESSION_STYLE, rangesOf } from '../layers/marketsessions.js';
-import { SHAPE_LABEL, auctionLabel, auctionState, openLocation, openZoneLabel, profileShape } from '@shared/auction.js';
+import { RELATION_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, openZoneLabel, profileShape, valueRelation } from '@shared/auction.js';
 import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
 import { ibLevels, nyOpenPrice, openType, openTypeLabel } from '@shared/opening.js';
@@ -49,7 +49,8 @@ export function indicatorValues(chart, items) {
   }
   if (L.prev && style !== 'tpo') {
     const { prev, today } = prevAndToday(data.dailySessions);
-    out.prev = prev ? (today ? auctionLabel(auctionState(prev, today)) : 'session du jour en attente') : 'chargement…';
+    const rel = valueRelation(prev, today);
+    out.prev = prev ? (today ? `${auctionLabel(auctionState(prev, today))}${rel ? ` · ${RELATION_LABEL[rel]} (en cours)` : ''}` : 'session du jour en attente') : 'chargement…';
   }
   if (L.open && style !== 'tpo') {
     const { prev, today } = prevAndToday(data.dailySessions);

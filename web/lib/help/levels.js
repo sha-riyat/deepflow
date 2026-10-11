@@ -39,8 +39,12 @@ export const LEVEL_ARTICLES = [
     read: [
       'Acceptation au-dessus de la VAH : le marché cherche plus haut, on suit plutôt le mouvement.',
       'Rejet (retour dans la valeur) : le prix tend à traverser la value area vers l’autre bord (« règle des 80 % », empirique).',
+      'Relation des deux value areas, dans la légende : plus haute ou plus basse (tendance, la valeur a migré), chevauche en haut ou en bas (migration partielle, hésitation), intérieure (équilibre, le marché se resserre), extérieure (élargissement, l’intérêt s’étend des deux côtés).',
     ],
-    traps: ['La règle des 80 % vient des contrats à terme classiques ; sur le crypto, à vérifier dans votre journal.'],
+    traps: [
+      'La règle des 80 % vient des contrats à terme classiques ; sur le crypto, à vérifier dans votre journal.',
+      'La value area du jour se construit au fil de la séance (« en cours ») : tôt dans la journée, elle bouge beaucoup et la relation peut changer.',
+    ],
   },
   {
     id: 'open',
