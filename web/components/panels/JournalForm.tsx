@@ -2,7 +2,7 @@
 // Formulaire d'un trade du journal : symbole, sens, entrée, stop, cible, sortie, setup, notes et
 // capture du graphique actif. « Depuis la position » reprend l'outil position sélectionné.
 import { useState } from 'react';
-import { ERRORS, SETUPS, cleanEntry, entrySnapshot, plannedRR, tradeR } from '@shared/journal.js';
+import { ERRORS, SETUPS, cleanEntry, entrySnapshot, excursions, plannedRR, tradeR } from '@shared/journal.js';
 import { GRADES } from '@shared/position.js';
 import { fmt } from '@/lib/fmt.js';
 import { engine } from '@/lib/engine';
@@ -13,14 +13,23 @@ import type { JournalEntry } from '@/lib/journal';
 const FIELDS: [keyof JournalEntry, string][] = [['entry', 'Entrée'], ['stop', 'Stop'], ['target', 'Cible'], ['exit', 'Sortie']];
 
 type Draft = Record<string, string>;
-type Drawing = { id: string; type: string; pts: { p: number }[] };
-type ChartExtra = { drawings: { list: Drawing[]; sel: string | null }; data: { bars: unknown[] }; snapshot(): string | null };
+type Drawing = { id: string; type: string; pts: { t: number; p: number }[] };
+type ChartExtra = { drawings: { list: Drawing[]; sel: string | null }; data: { bars: { t0: number; t1: number; h: number; l: number }[] }; snapshot(): string | null };
+
+// Heure locale du champ « datetime-local » (aaaa-mm-jjThh:mm) et son horodatage.
+const pad = (n: number) => String(n).padStart(2, '0');
+const toInput = (t: number | null) => {
+  if (t === null) return '';
+  const d = new Date(t);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fromInput = (s: string) => (s ? new Date(s).getTime() : null);
 
 const toDraft = (e: JournalEntry | null): Draft => {
   const meta = getLive().meta;
-  if (!e) return { symbol: meta?.symbol ?? '', market: meta?.market ?? 'futures', side: 'long', entry: '', stop: '', target: '', exit: '', setup: '', grade: '', notes: '' };
+  if (!e) return { symbol: meta?.symbol ?? '', market: meta?.market ?? 'futures', side: 'long', entry: '', stop: '', target: '', exit: '', setup: '', grade: '', tIn: '', tOut: '', notes: '' };
   const s = (v: number | null) => (v === null ? '' : String(v));
-  return { symbol: e.symbol, market: e.market, side: e.side, entry: s(e.entry), stop: s(e.stop), target: s(e.target), exit: s(e.exit), setup: e.setup, grade: e.grade ?? '', notes: e.notes };
+  return { symbol: e.symbol, market: e.market, side: e.side, entry: s(e.entry), stop: s(e.stop), target: s(e.target), exit: s(e.exit), setup: e.setup, grade: e.grade ?? '', tIn: toInput(e.tIn), tOut: toInput(e.tOut), notes: e.notes };
 };
 
 export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry | null; onSave: (e: JournalEntry) => void; onCancel: () => void }) {
@@ -36,7 +45,7 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
     const sel = chart?.drawings.list.find((x) => x.id === chart.drawings.sel);
     if (!sel || (sel.type !== 'long' && sel.type !== 'short')) return setMsg('Sélectionnez d’abord un outil position sur le graphique.');
     const digits = (p: number) => String(Number(p.toPrecision(8)));
-    setD((x) => ({ ...x, side: sel.type, entry: digits(sel.pts[0].p), stop: digits(sel.pts[1].p), target: digits(sel.pts[2].p) }));
+    setD((x) => ({ ...x, side: sel.type, entry: digits(sel.pts[0].p), stop: digits(sel.pts[1].p), target: digits(sel.pts[2].p), tIn: toInput(sel.pts[0].t), tOut: toInput(Math.min(sel.pts[1].t, clockNow())) }));
     setMsg('');
   };
 
@@ -48,10 +57,12 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
     ev.preventDefault();
     // Contexte de la bougie au moment de la saisie (à la première sauvegarde seulement, replay : heure rejouée).
     const snap = entry?.snap ?? (chart ? entrySnapshot(chart.data.bars, clockNow()) : null);
-    const e = cleanEntry({ ...entry, ...d, errors, snap, id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
+    const e = cleanEntry({ ...entry, ...d, errors, snap, tIn: fromInput(d.tIn), tOut: fromInput(d.tOut), id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
     if (!e) return setMsg('Symbole requis.');
     if (e.entry === null || e.stop === null) return setMsg('Entrée et stop requis : le résultat se mesure en multiples du risque (R).');
-    onSave(e);
+    // MAE / MFE : seulement si les bougies chargées couvrent le trade (sinon on garde l'ancienne valeur).
+    const ex = chart ? excursions(e, chart.data.bars) : null;
+    onSave(ex ? { ...e, mae: ex.mae, mfe: ex.mfe } : e);
   };
 
   return (
@@ -76,6 +87,10 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
       <p className="muted jf-calc">
         {rr !== null ? `R:R prévu ${fmt(rr, 2)}` : 'R:R prévu —'}{r !== null ? ` · résultat ${r >= 0 ? '+' : ''}${fmt(r, 2)} R` : ''}
       </p>
+      <div className="jf-grid">
+        <label><span>Heure d’entrée</span><input type="datetime-local" value={d.tIn} onChange={(e) => set('tIn', e.target.value)} /></label>
+        <label><span>Heure de sortie</span><input type="datetime-local" value={d.tOut} onChange={(e) => set('tOut', e.target.value)} /></label>
+      </div>
       <input list="journal-setups" value={d.setup} onChange={(e) => set('setup', e.target.value)} placeholder="Setup (ex. Rejet de la VAH)" aria-label="Setup" />
       <div className="jf-row" title="A : setup de grande qualité (risque plein), B : correct, C : douteux (risque réduit)">
         <span className="muted">Note du setup</span>

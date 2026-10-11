@@ -68,6 +68,11 @@ function Entry({ e, open, onToggle, onEdit, onDelete }: { e: JournalEntry; open:
               {e.snap.relVolume !== null && ` · volume ×${fmt(e.snap.relVolume, 1)}`} · {e.snap.utc} UTC ({e.snap.ny} à New York{e.snap.session && e.snap.session !== 'off' ? `, séance ${SESSION_NAMES[e.snap.session]}` : ''})
             </p>
           )}
+          {e.mae !== null && e.mfe !== null && (
+            <p className="muted" title="MAE : jusqu'où le prix est allé contre vous ; MFE : jusqu'où il est allé pour vous (en R, entre l'entrée et la sortie)">
+              Excursions : MAE −{fmt(e.mae, 2)} R · MFE +{fmt(e.mfe, 2)} R
+            </p>
+          )}
           {e.errors.length > 0 && <p className="neg">Erreurs : {e.errors.map((k) => ERRORS[k as keyof typeof ERRORS]).join(', ')}</p>}
           {e.notes && <p className="journal-notes">{e.notes}</p>}
           {e.shot && <img src={e.shot} alt={`Graphique ${e.symbol} au moment du trade`} />}
