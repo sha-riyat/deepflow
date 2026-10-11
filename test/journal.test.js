@@ -1,7 +1,7 @@
 // Tests du journal de trading : résultat en R, statistiques, export CSV.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bySource, breakEvenWinRate, breakdown, edgeStats, equityCurve, errorCosts, longestLosingStreak, maxDrawdown } from '../shared/journalstats.js';
+import { DEFAULT_BUDGET, bySource, breakEvenWinRate, dayBudget, breakdown, edgeStats, equityCurve, errorCosts, longestLosingStreak, maxDrawdown } from '../shared/journalstats.js';
 import { SETUPS, cleanEntry, entrySnapshot, excursions, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
@@ -174,4 +174,29 @@ test('journal : ventilation par setup, note, heure, jour et séparation replay /
   assert.equal(bySource(mixed, 'all').length, 3);
   assert.equal(e({}).replay, false);
   assert.equal(e({ replay: 'oui' }).replay, false); // seulement un vrai booléen
+});
+
+test('journal : budget de risque du jour (gains du jour, limite de perte)', () => {
+  const H = 3_600_000;
+  const day = Date.UTC(2026, 9, 8);
+  const T = (h, exit, o = {}) => e({ entry: 100, stop: 99, exit, t: day + h * H, ...o });
+  const list = [
+    T(2, 102), // +2 aujourd'hui
+    T(5, 99), // −1 aujourd'hui
+    T(8, 101), // +1 aujourd'hui
+    e({ entry: 100, stop: 99, exit: 99, t: day - H }), // hier : ignoré
+    e({ entry: 100, stop: 99, t: day + 3 * H }), // ouvert : ignoré
+    T(1, 99, { tOut: day - 5 * H }), // sorti hier malgré une saisie aujourd'hui : l'heure de sortie prime
+  ];
+  const now = day + 10 * H;
+  const b = dayBudget(list, now);
+  assert.deepEqual([b.trades, b.dayR, b.gains, b.allowed, b.remaining, b.limitReached], [3, 2, 2, 1, 5, false]);
+  assert.equal(dayBudget(list, now, { share: 0.25 }).allowed, 0.5);
+  // journée perdante : plus d'argent du jour, marge qui fond, limite atteinte à −3 R
+  const bad = [T(1, 99), T(2, 99), T(3, 99)];
+  const d = dayBudget(bad, now);
+  assert.deepEqual([d.dayR, d.gains, d.allowed, d.remaining, d.limitReached], [-3, 0, 0, 0, true]);
+  assert.equal(dayBudget(bad, now, { limitR: 5 }).limitReached, false);
+  assert.deepEqual(dayBudget([], now), { trades: 0, dayR: 0, gains: 0, allowed: 0, remaining: 3, limitReached: false });
+  assert.deepEqual(DEFAULT_BUDGET, { share: 0.5, limitR: 3 });
 });

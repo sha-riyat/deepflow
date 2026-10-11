@@ -115,3 +115,26 @@ export function breakdown(list, dim) {
 
 // Trades réels ou rejoués ('replay'), ou tous : l'entraînement en replay ne se mélange pas au réel.
 export const bySource = (list, source) => (source === 'all' ? list : list.filter((e) => e.replay === (source === 'replay')));
+
+// ---------- Budget de risque du jour ----------
+
+export const DEFAULT_BUDGET = { share: 0.5, limitR: 3 };
+
+// Budget du jour (jour UTC de `now`), en R, affichage seulement : résultat réalisé aujourd'hui, « argent
+// du jour » (les gains déjà encaissés) dont on peut risquer une part (`share`) sur un setup plus risqué,
+// et marge restante avant la limite de perte quotidienne (`limitR`, en R). L'idée des vidéos : ne
+// prendre un setup risqué qu'avec l'argent gagné dans la journée, et s'arrêter à la limite.
+export function dayBudget(list, now, { share = DEFAULT_BUDGET.share, limitR = DEFAULT_BUDGET.limitR } = {}) {
+  const day = Math.floor(now / 86_400_000);
+  const today = closedByTime(list).filter((x) => Math.floor(x.t / 86_400_000) === day);
+  const dayR = sum(today.map((x) => x.r));
+  const gains = Math.max(0, dayR);
+  return {
+    trades: today.length,
+    dayR,
+    gains,
+    allowed: gains * share, // risque (en R) que les gains du jour permettent de prendre en plus
+    remaining: Math.max(0, limitR + dayR), // perte encore permise avant la limite du jour
+    limitReached: dayR <= -limitR,
+  };
+}
