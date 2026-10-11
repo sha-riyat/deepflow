@@ -98,3 +98,29 @@ test('stop suiveur : sous la dernière mèche fermée, sous le dernier gros prin
   assert.equal(printStop('long', prints, 31, 0), null); // aucun achat depuis 31
   assert.equal(printStop('short', [], 0), null);
 });
+
+test('sorties partielles : une part à TP1 (en R), le reste à la cible, R global recalculé', () => {
+  const base = { side: 'long', entry: 100, stop: 98, target: 106, capital: 1000, risk: 1 }; // 1 R = 2, qté 5, risque 10 $
+  const full = positionStats(base);
+  near(full.rr, 3); // tout à la cible : +30 $
+  assert.equal(full.tp1, null);
+  const half = positionStats({ ...base, partial: { pct: 50, r: 1 } }); // moitié à 102, moitié à 106
+  near(half.tp1, 102);
+  assert.equal(half.share, 0.5);
+  near(half.gain, 5 * (0.5 * 2 + 0.5 * 6)); // 20 $
+  near(half.rr, 2);
+  // avec frais : entrée sur tout, puis chaque sortie sur sa part
+  const fee = positionStats({ ...base, fees: 0.1, partial: { pct: 50, r: 1 } });
+  const f = 0.001;
+  near(fee.gain, fee.qty * (0.5 * 2 + 0.5 * 6 - f * (100 + 0.5 * 102 + 0.5 * 106)));
+  near(fee.fees, fee.qty * f * (100 + 104));
+  // TP1 au-delà de la cible (R trop grand) : ignoré
+  const far = positionStats({ ...base, partial: { pct: 50, r: 5 } });
+  assert.equal(far.share, 0);
+  near(far.rr, 3);
+  // court : TP1 sous l'entrée
+  near(positionStats({ side: 'short', entry: 100, stop: 102, target: 94, capital: 1000, risk: 1, partial: { pct: 25, r: 1 } }).tp1, 98);
+  // réglages : bornes
+  assert.deepEqual(cleanCalc({ partial: { pct: 50, r: 1.5 } }).partial, { pct: 50, r: 1.5 });
+  for (const bad of [{ pct: 0, r: 1 }, { pct: 100, r: 1 }, { pct: 50, r: 0 }, { pct: 'x', r: 1 }]) assert.equal('partial' in cleanCalc({ partial: bad }), false);
+});
