@@ -31,7 +31,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
 | 7 | Outil position : point mort, stop suiveur, sorties partielles, frais | forte | moyen (fait, à valider ; le rappel du budget du jour attend le lot 8) |
-| 8 | Journal : note, erreurs, courbe en R, statistiques par setup / heure | forte | moyen |
+| 8 | Journal : note, erreurs, courbe en R, statistiques par setup / heure | forte | moyen (fait, à valider) |
 | 9 | Alertes sur clôture, compteur de touches d'un niveau | moyenne | faible |
 | 10 | Carnet sans MBO : mur retiré / consommé, recharge (iceberg), vitesse du tape | moyenne | élevé |
 | 11 | Apprentissage : fiches et check-list | forte | faible |
@@ -248,6 +248,20 @@ Sources : 09, 14, 22, 21, 15.
    vidéos 12 et 14), affichage seulement.
 8. **Fiche « narrative » hebdomadaire** (3 scénarios, données attendues, biais) — option.
 Aucune de ces statistiques n'est un backtest : elles portent sur les trades réellement notés.
+
+**Avancement** : les 8 points sont faits et vérifiés à l'écran (journal prérempli dans IndexedDB, enregistrement fictif).
+- Calculs purs : `shared/journal.js` (entrée : note, erreurs, instantané, heures, MAE / MFE, replay ; `excursions`,
+  `entrySnapshot`), `shared/journalstats.js` (coût des erreurs, courbe de capital, repli maximal, série de pertes,
+  taux de réussite × payoff, ventilation, budget du jour) et `shared/weeksheet.js` (fiche hebdomadaire) ; tests dans
+  `test/journal.test.js` et `test/weeksheet.test.js`.
+- Interface : `JournalForm` (note, erreurs, heures, instantané enregistré à la première sauvegarde), `JournalPanel`,
+  `JournalCharts`, `JournalBreakdown`, `JournalBudget`, `JournalWeek`.
+- Choix : le budget du jour (UTC) ne compte que les trades réels ; limite de perte 3 R et part risquable 50 % par
+  défaut, réglables ; la fiche hebdomadaire est facultative (une par semaine UTC, dans le navigateur).
+- Non fait : le rappel du budget du jour sur l'outil position (le journal est lu dans IndexedDB, hors du tracé du
+  graphique) ; il reste affiché dans le panneau Journal.
+- Non vérifié ici : trades réels avec des données Binance en direct (MAE / MFE demandent des bougies chargées
+  jusqu'à l'entrée du trade).
 
 ## Lot 9 — Alertes et niveaux dessinés
 
