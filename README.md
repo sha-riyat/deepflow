@@ -122,7 +122,8 @@ npm run dev
   - VWAP ancré : depuis le début de la bougie cliquée jusqu'au direct, valeur courante sur l'axe ;
     signalé « historique incomplet » si l'ancre précède les bougies chargées.
   - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
-    calculés par le collecteur à partir de chaque trade ; 3 jours au plus (au-delà, les 3 derniers).
+    calculés par le collecteur à partir de chaque trade, lus jour par jour ; 10 jours au plus (au-delà, les 10 derniers) :
+    tracer la plage sur plusieurs jours en fait un profil fusionné.
     La taille des lignes s'adapte à la hauteur de la plage (environ 30 lignes : 10 $ pour 220 $ sur
     BTC), sans descendre sous la tranche du collecteur. Histogramme en volume, en achats / ventes
     ou en delta ; pics (HVN) et creux (LVN) de volume ; étiquette de totaux (volume, delta, bougies)

@@ -26,7 +26,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 |---|---|---|---|
 | 1 | Statistiques par bougie : delta %, volume relatif, taille moyenne | forte | faible (vérifié, à valider) |
 | 2 | Gros trades façon Deep Trades | forte | moyen (fait, à valider ; points 1, 2, 3, 5, 6 ; le point 4 reporté) |
-| 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen |
+| 3 | Profil à plage fixe enrichi + fusion de profils | forte | moyen (points 1 à 8 faits ; 9 reporté) |
 | 4 | Range d'ouverture réglable, position de l'ouverture, profils par session | forte | moyen |
 | 5 | CVD en bougies et divergences complètes | moyenne | moyen |
 | 6 | Footprint : déséquilibres à 2 niveaux, case anormale, POC, balayage | moyenne | moyen |
@@ -97,8 +97,14 @@ ordres en points gris, jaunes sous le seuil dans la vidéo 14) reporté : il obl
 **Avancement** : points 1 à 7 faits, vérifiés à l'écran et commités (type de profil ; pics / creux, totaux et forme, avec
 correction de la position des pics ; prolongement et état acceptation / rejet ; niveaux de delta maximal ; masquage des
 bougies par le bouton œil ou Maj + C). Ajouts hors liste : bouton « Réglages du dessin » sur tous les dessins et taille des
-lignes d'un profil de plage choisie d'après sa hauteur (≈ 30 lignes). **Restent** : point 8 (plage jusqu'à 10 jours, fusion de
-profils) et point 9 (composites 30 / 90 jours, reporté volontairement).
+lignes d'un profil de plage choisie d'après sa hauteur (≈ 30 lignes). **Point 8 fait** : la plage d'un profil (dessiné ou
+visible) est lue jour par jour (`forEachChunk` dans `server/history/store.js`), 10 jours au plus (`RANGE_DAYS` dans
+`server/queries.js`, `MAX_SPAN` côté navigateur) ; tracer la plage sur plusieurs jours donne un profil fusionné. Mesuré sur
+10 jours réels de BTCUSDT (archives Binance Vision) : 31 s au premier tracé (téléchargement), 1,6 s ensuite (cache disque),
+558 Mo de mémoire au plus (plus d'un Go en réunissant les jours) ; délai du relais Next.js porté à 180 s pour ce premier tracé
+(`experimental.proxyTimeout`). La vue « plage visible » reste limitée à 3 jours côté navigateur (rechargée à chaque
+défilement). **Reste** : point 9 (composites 30 / 90 jours, reporté volontairement) ; non vérifié visuellement (session
+directe impossible dans l'environnement cloud : fapi.binance.com répond 451).
 
 Sources : 00, 10, 14, 18, 19, 20, 21.
 1. **Type de profil** du dessin : volume, achats / ventes, delta par prix (aujourd'hui `vp()` de
