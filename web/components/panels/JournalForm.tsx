@@ -2,7 +2,7 @@
 // Formulaire d'un trade du journal : symbole, sens, entrée, stop, cible, sortie, setup, notes et
 // capture du graphique actif. « Depuis la position » reprend l'outil position sélectionné.
 import { useState } from 'react';
-import { SETUPS, cleanEntry, plannedRR, tradeR } from '@shared/journal.js';
+import { ERRORS, SETUPS, cleanEntry, plannedRR, tradeR } from '@shared/journal.js';
 import { GRADES } from '@shared/position.js';
 import { fmt } from '@/lib/fmt.js';
 import { engine } from '@/lib/engine';
@@ -25,6 +25,7 @@ const toDraft = (e: JournalEntry | null): Draft => {
 export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry | null; onSave: (e: JournalEntry) => void; onCancel: () => void }) {
   const [d, setD] = useState<Draft>(() => toDraft(entry));
   const [shot, setShot] = useState(!entry?.shot);
+  const [errors, setErrors] = useState<string[]>(entry?.errors ?? []);
   const [msg, setMsg] = useState('');
   const set = (k: string, v: string) => setD((x) => ({ ...x, [k]: v }));
   const chart = engine.chart as unknown as ChartExtra | null;
@@ -44,7 +45,7 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
 
   const save = (ev: React.FormEvent) => {
     ev.preventDefault();
-    const e = cleanEntry({ ...entry, ...d, id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
+    const e = cleanEntry({ ...entry, ...d, errors, id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
     if (!e) return setMsg('Symbole requis.');
     if (e.entry === null || e.stop === null) return setMsg('Entrée et stop requis : le résultat se mesure en multiples du risque (R).');
     onSave(e);
@@ -82,6 +83,15 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
         </div>
       </div>
       <datalist id="journal-setups">{SETUPS.map((s) => <option key={s} value={s} />)}</datalist>
+      <div className="jf-errors" title="Étiquetez après coup ce qui a mal tourné : le coût cumulé de chaque erreur apparaît dans les statistiques">
+        <span className="muted">Erreurs (après coup)</span>
+        {Object.entries(ERRORS).map(([k, label]) => (
+          <label key={k} className="jf-check">
+            <input type="checkbox" checked={errors.includes(k)} onChange={(ev) => setErrors((x) => (ev.target.checked ? [...x, k] : x.filter((y) => y !== k)))} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
       <textarea value={d.notes} onChange={(e) => set('notes', e.target.value)} rows={4} placeholder="Contexte, ce que vous avez vu, émotions, erreurs…" aria-label="Notes" />
       <label className="jf-check">
         <input type="checkbox" checked={shot} onChange={(e) => setShot(e.target.checked)} />

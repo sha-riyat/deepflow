@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Delete02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
 import { JournalForm } from './JournalForm';
-import { journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
+import { ERRORS, journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
+import { errorCosts } from '@shared/journalstats.js';
 import { fmt } from '@/lib/fmt.js';
 import { deleteEntry, download, listEntries, putEntry, type JournalEntry } from '@/lib/journal';
 
@@ -23,6 +24,21 @@ function Stats({ list }: { list: JournalEntry[] }) {
       <span><b className={(s.avgR ?? 0) >= 0 ? 'pos' : 'neg'}>{signed(s.avgR ?? 0)} R</b> par trade</span>
       <span>total <b className={s.totalR >= 0 ? 'pos' : 'neg'}>{signed(s.totalR)} R</b></span>
       {s.profitFactor !== null && <span>facteur de profit <b>{fmt(s.profitFactor, 2)}</b></span>}
+    </div>
+  );
+}
+
+// Coût de chaque erreur étiquetée (total en R des trades concernés), comparé aux trades sans erreur.
+function Errors({ list }: { list: JournalEntry[] }) {
+  const { rows, clean } = errorCosts(list);
+  if (!rows.length) return null;
+  return (
+    <div className="journal-stats journal-errors">
+      <b>Coût des erreurs</b>
+      {rows.map((r) => (
+        <span key={r.key}>{ERRORS[r.key as keyof typeof ERRORS]} : <b className={r.totalR >= 0 ? 'pos' : 'neg'}>{signed(r.totalR)} R</b> ({r.count} trade{r.count > 1 ? 's' : ''})</span>
+      ))}
+      {clean.count > 0 && <span>Sans erreur : <b className={clean.totalR >= 0 ? 'pos' : 'neg'}>{signed(clean.totalR)} R</b> ({clean.count} trade{clean.count > 1 ? 's' : ''}, {signed(clean.avgR ?? 0)} R par trade)</span>}
     </div>
   );
 }
@@ -45,6 +61,7 @@ function Entry({ e, open, onToggle, onEdit, onDelete }: { e: JournalEntry; open:
             Entrée {e.entry ?? '—'} · stop {e.stop ?? '—'} · cible {e.target ?? '—'} · sortie {e.exit ?? '—'}
             {rr !== null && ` · R:R prévu ${fmt(rr, 2)}`}
           </p>
+          {e.errors.length > 0 && <p className="neg">Erreurs : {e.errors.map((k) => ERRORS[k as keyof typeof ERRORS]).join(', ')}</p>}
           {e.notes && <p className="journal-notes">{e.notes}</p>}
           {e.shot && <img src={e.shot} alt={`Graphique ${e.symbol} au moment du trade`} />}
           <div className="jf-row">
@@ -83,6 +100,7 @@ export function JournalPanel() {
       </div>
       {error && <p className="neg pop-note">{error}</p>}
       <Stats list={list} />
+      <Errors list={list} />
       {list.map((e) => (
         <Entry key={e.id} e={e} open={open === e.id} onToggle={() => setOpen(open === e.id ? null : e.id)} onEdit={() => setEdit(e)}
           onDelete={() => window.confirm(`Supprimer le trade ${e.symbol} du ${date(e.t)} ?`) && deleteEntry(e.id).then(reload)} />
