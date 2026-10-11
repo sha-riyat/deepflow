@@ -2,9 +2,42 @@
 // export CSV. Un trade à +2 R a rapporté deux fois ce qu'il risquait au stop ; à −1 R, le stop
 // a été touché. Raisonner en R rend les trades comparables, quelle que soit la taille.
 
+import { deltaPct, relativeVolume } from './barstats.js';
+import { barAt } from './bigprints.js';
 import { GRADES } from './position.js';
+import { sessionAt, usDst } from './sessions.js';
 
 export const JOURNAL_VERSION = 1;
+
+// Instantané de la bougie en cours quand le trade est noté (contexte à relire plus tard) : volume, delta
+// en % du volume, volume relatif (multiple de la moyenne des 20 précédentes), heure UTC et heure de
+// New York, séance de bureau. null si aucune bougie ne couvre l'instant `t`.
+export function entrySnapshot(bars, t) {
+  const i = barAt(bars, t);
+  if (i < 0) return null;
+  const b = bars[i];
+  const day = Math.floor(t / 86_400_000) * 86_400_000;
+  const clock = (ms) => new Date(ms).toISOString().slice(11, 16);
+  return {
+    volume: b.v,
+    deltaPct: deltaPct(b),
+    relVolume: relativeVolume(bars, i),
+    utc: clock(t),
+    ny: clock(t - (usDst(day) ? 4 : 5) * 3_600_000),
+    session: sessionAt(t),
+  };
+}
+
+// Instantané relu depuis le stockage : seuls les champs valides sont gardés.
+function cleanSnapshot(s) {
+  if (!s || typeof s !== 'object') return null;
+  const hhmm = (v) => (typeof v === 'string' && /^\d\d:\d\d$/.test(v) ? v : null);
+  const out = {
+    volume: num(s.volume), deltaPct: num(s.deltaPct), relVolume: num(s.relVolume), utc: hhmm(s.utc), ny: hhmm(s.ny),
+    session: ['asia', 'london', 'ny', 'off'].includes(s.session) ? s.session : null,
+  };
+  return out.utc ? out : null;
+}
 
 // Erreurs typiques à étiqueter après coup (vidéos 09, 14, 22) : clé -> libellé. Leur coût cumulé en R
 // montre ce qui coûte le plus cher (journalstats.js).
@@ -43,6 +76,7 @@ export function cleanEntry(raw) {
     setup: text(raw.setup, 80),
     grade: GRADES.includes(raw.grade) ? raw.grade : null, // note du setup A / B / C
     errors: [...new Set(Array.isArray(raw.errors) ? raw.errors.filter((k) => k in ERRORS) : [])],
+    snap: cleanSnapshot(raw.snap),
     notes: text(raw.notes, TEXT_MAX),
     shot: typeof raw.shot === 'string' && raw.shot.startsWith('data:image/') ? raw.shot : null,
   };

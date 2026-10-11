@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { errorCosts } from '../shared/journalstats.js';
-import { SETUPS, cleanEntry, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
+import { SETUPS, cleanEntry, entrySnapshot, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
 
@@ -69,4 +69,28 @@ test('journal : étiquettes d’erreur et coût cumulé en R', () => {
   assert.deepEqual(c.clean, { count: 1, totalR: 3, avgR: 3 });
   assert.deepEqual(errorCosts([]), { rows: [], clean: { count: 0, totalR: 0, avgR: null } });
   assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures'));
+});
+
+test('journal : instantané de la bougie au moment de la saisie', () => {
+  const H = 3_600_000;
+  const day = Date.UTC(2026, 9, 8); // jeudi : heure d'été américaine (UTC − 4), séance New York 12 h – 21 h UTC
+  // 25 bougies d'une heure de 100 de volume, la dernière de 300 (achats 200, ventes 100)
+  const bars = Array.from({ length: 25 }, (_, i) => ({ t0: day - 12 * H + i * H, v: 100, b: 50, s: 50 }));
+  bars[24] = { t0: day + 12 * H, v: 300, b: 200, s: 100 };
+  const t = day + 13 * H + 45 * 60_000; // 13:45 UTC
+  assert.equal(entrySnapshot(bars, day + 12 * H + 1000)?.utc, '12:00');
+  const s = entrySnapshot(bars, day + 12 * H + 30 * 60_000);
+  assert.deepEqual([s.volume, s.utc, s.ny, s.session], [300, '12:30', '08:30', 'ny']);
+  assert.ok(Math.abs(s.deltaPct - (100 / 300) * 100) < 1e-9);
+  assert.equal(s.relVolume, 3); // 300 / moyenne 100 des 20 précédentes
+  assert.equal(entrySnapshot(bars, day - 100 * H), null); // avant les bougies chargées
+  assert.equal(entrySnapshot([], t), null);
+  // heure d'hiver : UTC − 5
+  const winter = Date.UTC(2026, 11, 3, 15, 10);
+  assert.equal(entrySnapshot([{ t0: winter - 60_000, v: 1, b: 1, s: 0 }], winter)?.ny, '10:10');
+  // stockage : instantané valide gardé, champs invalides écartés
+  assert.deepEqual(e({ snap: s }).snap, s);
+  assert.equal(e({ snap: { utc: 'abc' } }).snap, null);
+  assert.equal(e({ snap: { utc: '09:30', volume: 'x', session: 'mars' } }).snap.volume, null);
+  assert.equal(e({}).snap, null);
 });
