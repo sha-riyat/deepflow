@@ -43,7 +43,7 @@ export function indicatorValues(chart, items) {
   const list = range === 'week' ? weeklySessions(data.profiles) : data.profiles;
   const s = range.startsWith('c') ? compositeOf(data.dailySessions, range) : list[list.length - 1];
   if (L.profile && style !== 'tpo' && s && s.poc !== null) {
-    const what = { day: 'Jour', week: 'Semaine', visible: 'Visible', c5: 'Composite 5 j', c10: 'Composite 10 j' }[range] ?? '';
+    const what = range === 'sessions' ? `Séance ${SESSION_STYLE[s.kind]?.[0] ?? ''}` : { day: 'Jour', week: 'Semaine', visible: 'Visible', c5: 'Composite 5 j', c10: 'Composite 10 j' }[range] ?? '';
     const shape = profileShape(s);
     out.profile = `${what} · POC ${fmt((s.poc + 0.5) * s.bucket)} · VA ${fmt(s.val * s.bucket)}–${fmt((s.vah + 1) * s.bucket)}${shape ? ` · forme ${SHAPE_LABEL[shape]}` : ''}`;
   }

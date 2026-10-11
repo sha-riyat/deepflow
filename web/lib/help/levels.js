@@ -12,7 +12,10 @@ export const LEVEL_ARTICLES = [
       'HVN (pic de volume) : niveau accepté, le prix y ralentit. LVN (creux) : niveau rejeté, le prix le traverse vite.',
       'Forme D : équilibre ; P : rachat de shorts en fin de hausse ; b : liquidation de longs ; double distribution : tendance.',
     ],
-    traps: ['La forme du profil change en cours de journée : ne la lisez qu’avec assez de données.'],
+    traps: [
+      'La forme du profil change en cours de journée : ne la lisez qu’avec assez de données.',
+      'Mode « Séances Asie / Londres / NY » : un profil par séance de bureau sur 7 jours, sans chevauchement (la séance qui ouvre plus tard prend la main). Pas de profil le week-end ni hors des heures de bureau : le crypto ne s’arrête pas, mais ces heures concentrent la liquidité.',
+    ],
   },
   {
     id: 'tpo',

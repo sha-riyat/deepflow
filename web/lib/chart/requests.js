@@ -92,11 +92,12 @@ export function requestData(chart, items) {
     // lundi pour la semaine, ou un profil unique de la plage visible (3 jours au plus).
     const { tpo: T, profile: P } = chart.settings.opts;
     const visible = !tpo && P.range === 'visible';
+    const bySessions = !tpo && P.range === 'sessions'; // un profil par séance (7 jours au plus côté serveur)
     let from = tpo ? Math.floor(now / DAY) * DAY - (T.days - 1) * DAY : Math.floor(Math.max(tL, tR - 7 * DAY) / DAY) * DAY;
     if (!tpo && P.range === 'week') from = Math.floor((from - 4 * DAY) / (7 * DAY)) * 7 * DAY + 4 * DAY;
     if (visible) from = Math.max(tL, tR - 3 * DAY);
     const to = tpo ? now : tR;
-    const params = { tpo: tpo ? T.period : 30, ...(visible ? { mode: 'range' } : {}) };
+    const params = { tpo: tpo ? T.period : 30, ...(visible ? { mode: 'range' } : bySessions ? { mode: 'sessions' } : {}) };
     // Plage visible : rechargée quand la vue bouge d'un dixième de sa largeur.
     const step = visible ? Math.max(60_000, (tR - tL) / 10) : DAY;
     const bucket = tpo ? meta.fpBucket : profileBucket(chart);

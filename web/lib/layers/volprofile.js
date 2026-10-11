@@ -5,6 +5,7 @@
 import { nakedPocs, valueArea } from '@shared/profile.js';
 import { compositeSession } from '@shared/auction.js';
 import { drawNodes, prevAndToday } from './levels.js';
+import { SESSION_STYLE } from './marketsessions.js';
 import { fmt } from '../fmt.js';
 import { clockNow } from '../clock.js';
 import { C, alpha, pill } from '../theme.js';
@@ -114,6 +115,14 @@ export function compositeOf(daily, range) {
   return done.length ? compositeSession(done, n) : null;
 }
 
+// Profil par séance : fond teinté de la couleur de la séance (New York plus foncé) et son nom.
+function sessionBand(ctx, s, x0, x1, scale) {
+  const [name, color] = SESSION_STYLE[s.kind] ?? ['', C.mist];
+  ctx.fillStyle = alpha(color, s.kind === 'ny' ? 0.08 : 0.04);
+  ctx.fillRect(x0, 0, x1 - x0, scale.h);
+  if (name) pill(ctx, Math.max(x0, 0) + 4, scale.h - 32, name, { bg: C.obsidian, fg: color, size: 10 });
+}
+
 export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily = []) {
   const { width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0, nodes = 1 } = opts;
   const y = (p) => scale.yOfPrice(p);
@@ -137,6 +146,7 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily
     const x1 = scale.xAt(Math.min(s.t1, lastT), items);
     if (!(x1 > 0) || x0 > scale.w) continue;
     const width = Math.min(scale.w * share, Math.max(40, (x1 - x0) * share));
+    if (range === 'sessions' && s.kind) sessionBand(ctx, s, x0, x1, scale);
     if (va === 1) {
       ctx.fillStyle = alpha(C.white, 0.025);
       ctx.fillRect(x0, y((s.vah + 1) * s.bucket), x1 - x0, y(s.val * s.bucket) - y((s.vah + 1) * s.bucket));
