@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Delete02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
+import { JournalCharts } from './JournalCharts';
 import { JournalForm } from './JournalForm';
 import { ERRORS, journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
 import { errorCosts } from '@shared/journalstats.js';
@@ -112,6 +113,7 @@ export function JournalPanel() {
       </div>
       {error && <p className="neg pop-note">{error}</p>}
       <Stats list={list} />
+      <JournalCharts list={list} />
       <Errors list={list} />
       {list.map((e) => (
         <Entry key={e.id} e={e} open={open === e.id} onToggle={() => setOpen(open === e.id ? null : e.id)} onEdit={() => setEdit(e)}

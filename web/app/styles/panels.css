@@ -140,3 +140,6 @@ label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2)
 .journal-detail img { width: 100%; border-radius: 6px; border: 1px solid var(--line); }
 .journal-errors { display: grid; gap: 2px; }
 .jf-errors { display: grid; gap: 2px; }
+.journal-chart { display: grid; gap: 4px; margin: 0; padding: 8px; border-radius: 8px; background: var(--active); color: var(--text-2); }
+.journal-chart figcaption { font-size: 11px; }
+.journal-chart svg { width: 100%; height: auto; color: var(--text-3); }
