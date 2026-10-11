@@ -1,7 +1,7 @@
 // Tests de la lecture d'enchère : HVN / LVN, forme du profil, acceptation / rejet, composite.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auctionLabel, auctionState, compositeSession, deltaExtremes, openLocation, openZoneLabel, profileShape, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
+import { auctionLabel, auctionState, compositeSession, deltaExtremes, openLocation, openZoneLabel, profileShape, valueRelation, profileTotals, rangeBucket, volumeNodes } from '../shared/auction.js';
 
 // Profil à partir d'une liste de volumes par ligne (lignes 100, 101, ...).
 const prof = (vols, extra = {}) => {
@@ -132,4 +132,21 @@ test('delta maximal d’un profil : ligne du plus fort delta acheteur et du plus
   assert.deepEqual(deltaExtremes(rows), { buy: { row: 12, delta: 7 }, sell: { row: 11, delta: -8 } });
   assert.deepEqual(deltaExtremes([[1, 5, 1], [2, 4, 2]]), { buy: { row: 1, delta: 4 }, sell: null }); // aucun delta vendeur
   assert.deepEqual(deltaExtremes([]), { buy: null, sell: null });
+});
+
+test('relation de la value area du jour avec celle de la veille', () => {
+  const prev = { bucket: 1, val: 100, vah: 109 }; // 100 – 110
+  const rel = (val, vah, bucket = 1) => valueRelation(prev, { bucket, val, vah });
+  assert.equal(rel(111, 118), 'higher');
+  assert.equal(rel(90, 98), 'lower'); // 90 – 99
+  assert.equal(rel(103, 107), 'inside');
+  assert.equal(rel(100, 109), 'inside'); // mêmes bornes : intérieure
+  assert.equal(rel(95, 115), 'outside'); // 95 – 116 contient 100 – 110
+  assert.equal(rel(105, 115), 'overlap-high'); // 105 – 116
+  assert.equal(rel(95, 105), 'overlap-low'); // 95 – 106
+  assert.equal(rel(110, 118), 'overlap-high'); // la VAL du jour touche la VAH d'hier : elles se chevauchent
+  assert.equal(rel(50, 53, 2), 'inside'); // lignes de 2 : 100 – 108
+  assert.equal(rel(49, 53, 2), 'overlap-low'); // 98 – 108
+  assert.equal(valueRelation(prev, { bucket: 1, val: null, vah: null }), null);
+  assert.equal(valueRelation(null, { bucket: 1, val: 1, vah: 2 }), null);
 });

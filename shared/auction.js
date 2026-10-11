@@ -162,6 +162,25 @@ export function openZoneLabel(loc) {
   return `${up ? 'au-dessus du' : 'sous le'} range de la veille`;
 }
 
+// Relation entre la value area du jour et celle de la veille (Dalton) : plus haute, chevauche en
+// haut, intérieure, extérieure, chevauche en bas, plus basse. null s'il manque l'une des deux.
+// La value area du jour se construit au fil de la séance : la relation peut encore changer.
+export function valueRelation(prev, today) {
+  if (!prev || !today || prev.vah === null || today.vah === null || !(prev.bucket > 0) || !(today.bucket > 0)) return null;
+  const [pLo, pHi] = [prev.val * prev.bucket, (prev.vah + 1) * prev.bucket];
+  const [tLo, tHi] = [today.val * today.bucket, (today.vah + 1) * today.bucket];
+  if (tLo > pHi) return 'higher';
+  if (tHi < pLo) return 'lower';
+  if (tLo >= pLo && tHi <= pHi) return 'inside';
+  if (tLo < pLo && tHi > pHi) return 'outside';
+  return tHi > pHi ? 'overlap-high' : 'overlap-low';
+}
+
+export const RELATION_LABEL = {
+  higher: 'valeur plus haute', 'overlap-high': 'valeur qui chevauche en haut', inside: 'valeur intérieure',
+  outside: 'valeur extérieure', 'overlap-low': 'valeur qui chevauche en bas', lower: 'valeur plus basse',
+};
+
 // `ref` : de quoi la zone de valeur est la référence (« de la veille », « du profil »).
 export function auctionLabel(st, ref = 'de la veille') {
   if (!st) return '';
