@@ -188,7 +188,7 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
   const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
   const avg = st.entries > 1 ? `prix moyen ${fmt(st.avg, digits)} (${st.entries} entrées) · ` : '';
   const fund = fundings ? ` · financement ${st.fundingCost > 0 ? '−' : '+'}${fmt(Math.abs(st.fundingCost), 2)} $ (${fundings} × 8 h)` : '';
-  const info = `${avg}R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(d.calc.risk, 2)} %${fees}${fund}`;
+  const info = `${avg}R:R ${fmt(st.rr, 2)} · ${qty(st.qty)} ${base} (${compact(st.notional)} $) · levier ×${fmt(st.leverage, 1)} · risque ${fmt(st.riskPct, 2)} %${d.calc.grade ? ` (note ${d.calc.grade})` : ''}${fees}${fund}`;
   // À droite de la zone, ou à sa gauche si le texte déborderait sous l'axe des prix.
   ctx.font = font(11, 600);
   const w = ctx.measureText(info).width + 10;

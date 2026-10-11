@@ -7,7 +7,10 @@ import { Delete02Icon, Settings02Icon } from '@hugeicons/core-free-icons';
 import { Icon, MenuButton, OptionRows, type OptDefs } from './ui';
 import { engine } from '@/lib/engine';
 import { useLive, type DrawStyle as Style, type PositionCalc } from '@/lib/store';
+import { GRADES, GRADE_RISK } from '@shared/position.js';
 import { DEFAULT_STYLE, DRAW_COLORS, DRAW_DASHES, DRAW_WIDTHS, POSITIONS, PROFILE_KINDS, textSize } from '@shared/drawings.js';
+
+type Grade = 'A' | 'B' | 'C';
 
 const KIND_LABELS: Record<string, string> = { volume: 'Volume', bidask: 'Achats / ventes', delta: 'Delta' };
 const DASH_LABELS: Record<string, string> = { solid: 'Plein', dash: 'Tirets', dot: 'Pointillés' };
@@ -140,7 +143,7 @@ function StopMenu({ calc }: { calc: PositionCalc }) {
 }
 
 // Plan de la position (fenêtre de réglages) : sortie partielle (part sortie à TP1, en R du risque initial),
-// renforts (entrées de même taille, stop et cible communs), taux de financement.
+// renforts (entrées de même taille, stop et cible communs), taux de financement, note du setup.
 function PositionPlan({ id, calc }: { id: string; calc: PositionCalc }) {
   const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
   return (
@@ -150,6 +153,17 @@ function PositionPlan({ id, calc }: { id: string; calc: PositionCalc }) {
       <NumField label="TP1 : multiple du risque initial" value={calc.partial?.r ?? 1} unit="R"
         onChange={(r) => set({ partial: { pct: calc.partial?.pct ?? 50, r } })} />
       <NumField label="Taux de financement par 8 h (positif : les longs paient)" value={calc.funding ?? 0.01} unit="% / 8 h" zero onChange={(funding) => set({ funding })} />
+      <div className="lg-opt">
+        <span title="A : risque plein, B : moitié, C : quart du risque choisi">Note du setup</span>
+        <div className="ds-row">
+          {([null, ...GRADES] as (Grade | null)[]).map((g) => (
+            <button key={g ?? 'none'} type="button" className={`pop-item${(calc.grade ?? null) === g ? ' on' : ''}`}
+              title={g ? `Risque × ${GRADE_RISK[g]}` : 'Risque plein, sans note'} onClick={() => set({ grade: g })}>
+              <span>{g ?? '—'}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="ds-row">
         <button type="button" className="pop-item" onClick={() => engine.chart?.drawings.manageEntry('add')}><span>Renfort au prix actuel{calc.adds?.length ? ` (${calc.adds.length})` : ''}</span></button>
         {Boolean(calc.adds?.length) && <button type="button" className="pop-item" onClick={() => engine.chart?.drawings.manageEntry('remove')}><span>Retirer le dernier renfort</span></button>}
