@@ -207,7 +207,8 @@ npm run dev
   multi-plateformes (Binance, Bybit, OKX sur le même perpétuel, chacun à son échelle) pour voir si
   un mouvement est suivi par tout le marché. Bybit et OKX : en direct seulement, depuis le
   lancement du collecteur (rien en replay).
-- **VWAP** : du jour, de la semaine (depuis lundi) ou du mois UTC, bandes à ±1, ±2 et ±3 écarts-types.
+- **VWAP** : du jour, de la semaine (depuis lundi), du mois UTC ou de l'ouverture de New York (le
+  week-end, celle du vendredi continue), bandes à ±1, ±2 et ±3 écarts-types.
 - **Open interest par prix** : profil à droite du tracé, positions ouvertes (vert) et fermées
   (rouge) par niveau de prix sur la plage visible ; dans la légende, la lecture prix / OI de la
   dernière heure : nouveaux longs (prix ↑, OI ↑), nouveaux shorts (prix ↓, OI ↑), rachats de shorts
@@ -304,8 +305,9 @@ l'heure rejouée).
 - Session = jour UTC (00:00 → 24:00), comme la bougie journalière de Binance ; marché ouvert en
   continu, donc 48 périodes TPO par session et initial balance de 00:00 à 01:00 UTC.
 - Prix de marque et financement (`markPrice@1s`) dans la barre d'état.
-- VWAP ancré au début du jour, de la semaine ou du mois UTC : les sommes antérieures à la première
-  bougie chargée viennent des klines 1 h puis 1 min (volume en cotation / volume = VWAP exact) ;
+- VWAP ancré au début du jour, de la semaine, du mois UTC ou de l'ouverture de New York : les sommes
+  antérieures à la première bougie chargée viennent des klines 1 h puis 1 min (volume en cotation /
+  volume = VWAP exact), en minutes d'abord jusqu'à l'heure pleine quand l'ancrage est à 13 h 30 ;
   les bandes ignorent la dispersion à l'intérieur de chaque kline (un peu plus étroites).
 - Open interest : historique Binance (`openInterestHist`), 30 derniers jours, période adaptée à
   l'intervalle des bougies (5 min au minimum).
