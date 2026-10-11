@@ -126,7 +126,7 @@ export const PANE_ARTICLES = [
       'L’étiquette sous la plage donne le volume total, le delta (en valeur et en % du volume), le nombre de bougies et la forme du profil : D (équilibre), P (volume concentré en haut, rachat de shorts), b (volume en bas, liquidation de longs) ou double distribution (deux HVN séparés par un LVN, tendance).',
     ],
     traps: [
-      'Trois jours au plus (au-delà, les trois derniers).',
+      'Dix jours au plus (au-delà, les dix derniers). Pour fusionner plusieurs jours en un seul profil, tracez la plage sur ces jours : le profil se calcule sur tous leurs trades, comme un profil composite. Au premier tracé, les jours absents du cache sont téléchargés (quelques secondes par jour).',
       'Le POC, le VAH et le VAL se calculent toujours sur le volume total, quel que soit le type d’histogramme affiché.',
       'L’état d’acceptation ou de rejet se compte en périodes de 30 minutes à partir de la fin de la plage (pas sur l’horloge), et seulement si la plage est terminée.',
       'La forme et les pics / creux dépendent de la taille des lignes (choisie d’après la hauteur de la plage) : une plage très courte ou très étroite en donne peu et peut les rendre peu parlants. Ce sont des repères de lecture, pas des signaux.',
