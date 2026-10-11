@@ -7,6 +7,7 @@ export const DEFAULT_CALC = { capital: 1000, risk: 1, fees: 0.05 };
 
 export const MAX_MOVES = 30;
 export const MAX_ADDS = 5; // renforts d'une position
+export const FEE_WARN = 3; // la cible doit valoir au moins 3 fois les frais aller-retour
 
 // Réglages d'une position : capital, risque, frais, et seulement s'ils sont valides les champs
 // propres à la position (stop initial et déplacements du stop : voir moveStop).
@@ -86,6 +87,8 @@ export function positionStats({ side, entry, stop, target, capital, risk, fees =
     share,
     stopPct: (k * (e - stop) / e) * 100, // < 0 : stop au-delà de l'entrée, côté gain
     targetPct: (reward / e) * 100,
+    feeMultiple: f > 0 ? (reward / e) / (2 * f) : Infinity, // cible en multiples des frais aller-retour
+    feeWarn: f > 0 && (reward / e) / (2 * f) < FEE_WARN - 1e-9,
   };
 }
 

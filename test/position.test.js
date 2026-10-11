@@ -1,7 +1,7 @@
 // Tests de la gestion d'une position : point mort, gain verrouillé, déplacements du stop.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { averageEntry, breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
+import { FEE_WARN, averageEntry, breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≠ ${b}`);
 
@@ -143,4 +143,17 @@ test('renforts : prix moyen, taille totale pour le même risque, stop commun', (
   assert.deepEqual(cleanCalc({ adds: [98, -1, 'x', 97] }).adds, [98, 97]);
   assert.equal('adds' in cleanCalc({ adds: [] }), false);
   assert.deepEqual(shiftCalc(cleanCalc({ adds: [98] }), 0, 2).adds, [100]);
+});
+
+test('avertissement frais : cible inférieure à 3 fois les frais aller-retour', () => {
+  // frais 0,05 % par ordre : 0,1 % aller-retour, seuil à 0,3 % du prix
+  const at = (target) => positionStats({ side: 'long', entry: 100, stop: 99, target, capital: 1000, risk: 1, fees: 0.05 });
+  near(at(100.2).feeMultiple, 2);
+  assert.equal(at(100.2).feeWarn, true); // 2 × les frais
+  assert.equal(at(100.3).feeWarn, false); // pile 3 ×
+  near(at(101).feeMultiple, 10);
+  assert.equal(at(101).feeWarn, false);
+  const free = positionStats({ side: 'long', entry: 100, stop: 99, target: 100.1, capital: 1000, risk: 1, fees: 0 });
+  assert.deepEqual([free.feeMultiple, free.feeWarn], [Infinity, false]); // sans frais : rien à signaler
+  assert.equal(FEE_WARN, 3);
 });
