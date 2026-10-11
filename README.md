@@ -273,6 +273,16 @@ Tout est mémorisé dans le navigateur (`localStorage`) : rien n'est envoyé ail
   empirique non prouvée, ou repère de contexte), plus une routine d'analyse pas à pas. Recherche
   sans accents ; le bouton « ? » d'une ligne de légende ou d'un panneau ouvre directement sa fiche.
   Le menu Footprint décrit chaque mode.
+  - Fiches de lecture et de méthode tirées des vidéos d'order flow (chacune dit ce qui est mesuré,
+    ce qui est une règle empirique et ce qui n'est pas prouvé) : effort et résultat, enchère
+    responsive et initiative, stop run ou enchère ratée, icebergs et données par ordre, types
+    d'ordres et file d'attente, VWAP, Wyckoff, méthode PBD, routine de scalping, espérance et
+    surajustement. Les fiches renvoient les unes aux autres (« voir aussi »).
+  - **Check-list avant trade** (onglet du panneau Apprendre) : la routine d'analyse en 18 cases à
+    cocher à la main (contexte, état du marché, lieu, confirmation, plan, risque), avec un lien vers
+    la fiche de chaque case ; les cases essentielles (★) doivent toutes être cochées avant d'entrer,
+    et la part cochée propose une note A / B / C reprise dans le journal. Aucune case n'est cochée
+    automatiquement.
 - **Journal de trading** (rail à droite) : noter un trade (symbole, sens, entrée, stop, cible,
   sortie, setup, notes) en reprenant l'outil position sélectionné, avec une capture du graphique
   actif ; résultat en R (multiples du risque pris au stop), statistiques (taux de réussite, R moyen
