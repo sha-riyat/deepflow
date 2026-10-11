@@ -34,7 +34,7 @@ dans `web/lib/indicators.js` ; fichiers de 200 à 300 lignes (400 au plus) ; com
 | 8 | Journal : note, erreurs, courbe en R, statistiques par setup / heure | forte | moyen (fait, à valider) |
 | 9 | Alertes sur clôture, compteur de touches d'un niveau | moyenne | faible |
 | 10 | Carnet sans MBO : mur retiré / consommé, recharge (iceberg), vitesse du tape | moyenne | élevé |
-| 11 | Apprentissage : fiches et check-list | forte | faible |
+| 11 | Apprentissage : fiches et check-list | forte | faible (fait, à valider) |
 | 12 | Divers (VWAP ancré à une session, bandes du VWAP ancré, ratios long/short…) | faible à moyenne | variable |
 
 ---
@@ -314,6 +314,17 @@ Nouvelles fiches (avec statut donnée mesurée / règle empirique / contexte) :
    confirmation, stop derrière la grosse agression, point mort rapide, risque 0,25 % par trade et 2 % par jour (14).
 10. **Wyckoff** (accumulation, distribution) avec critères observables (12, 08).
 Lien depuis la routine d'analyse existante (`method`).
+
+**Avancement** : les 10 fiches et la check-list sont faites (aucune ne reprend un indicateur propriétaire ni un signal).
+- Fiches : `web/lib/help/theory.js` (effort / résultat, responsive / initiative, stop run, icebergs, ordres et FIFO,
+  VWAP, Wyckoff) et `web/lib/help/strategy.js` (PBD, routine de scalping, espérance) ; champ facultatif `see` (« voir
+  aussi », rendu par `LearnPanel`) et lien depuis la routine `method`.
+- Check-list : `shared/checklist.js` (18 cases par phase, 5 essentielles, bilan et note indicative, testés dans
+  `test/checklist.test.js`), `web/components/panels/Checklist.tsx` (onglet du panneau Apprendre) et
+  `web/lib/checklist.ts` ; la note proposée est reprise par le formulaire du journal.
+- Choix : cases cochées à la main (jamais automatiquement) ; note A si au moins 90 % et prêt, B si au moins 70 % et
+  prêt, sinon C (indicatif) ; les seuils chiffrés des vidéos sont cités comme repères non prouvés.
+- Le point 5 (icebergs) précise que deepflow ne les détecte pas ; l'estimation par recharge du carnet reste au lot 10.
 
 ## Lot 12 — Divers
 
