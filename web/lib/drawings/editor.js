@@ -1,13 +1,14 @@
 // Édition des dessins à la souris : création (deux clics, ou glisser), sélection, déplacement,
 // redimensionnement par les poignées, style, suppression. Sauvegarde par marché et par symbole, et
 // dernier style de chaque outil : storage.js.
-import { snapToBar } from '@shared/measures.js';
+import { levelsOf, snapPoint } from '@shared/magnet.js';
 import { MAX_ADDS, averageEntry, breakEvenPrice, calcDefaults, cleanCalc, moveStop, positionPoints, resetStop, shiftCalc, stopForR } from '@shared/position.js';
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
 import { wickStop, printStop } from '@shared/trailing.js';
 import { clockNow } from '../clock.js';
+import { prevAndToday } from '../layers/levels.js';
 import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles, watchSets } from './storage.js';
 
 const CLICK_PX = 5; // en deçà, un glisser est un simple clic
@@ -299,13 +300,22 @@ export class DrawingEditor {
     return toPixel(this.chart.scale, this.#items(), pt);
   }
 
-  // Point (heure, prix) sous la souris, collé à la bougie la plus proche si l'aimant est actif.
+  // Niveaux auxquels l'aimant se colle (voir shared/magnet.js), d'après les calques et données chargés.
+  #levels() {
+    const { data } = this.chart;
+    const { prev, today } = prevAndToday(data.dailySessions);
+    return levelsOf({ prev, today, keyLevels: data.keyLevels, bars: data.bars, prints: data.bigPrints() });
+  }
+
+  // Point (heure, prix) sous la souris, collé si l'aimant est actif au prix OHLC de la bougie la plus
+  // proche ou à un niveau surveillé (POC, VAH, VAL, LVN, VWAP, hauts et bas de la veille, gros prints).
   #point(p) {
     const { scale, spec } = this.chart;
     const pt = fromPixel(scale, this.#items(), p.x, p.y);
     if (!this.magnet) return pt;
     const tf = scale.mode === 'time' && spec.type === 'time' ? spec.param : null;
-    return snapToBar(this.chart.itemAt(this.#items(), p.x), pt, p.y, (v) => scale.yOfPrice(v), { tf });
+    const snapped = snapPoint(this.chart.itemAt(this.#items(), p.x), pt, p.y, (v) => scale.yOfPrice(v), { tf, levels: this.#levels() });
+    return { t: snapped.t, p: snapped.p };
   }
 
   // Contexte de calcul des formes (voir shapeIn).

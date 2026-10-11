@@ -102,7 +102,7 @@ export function DrawingBar({ candlesHidden = false, onToggleCandles }: { candles
         </button>
       ))}
       <span className="rail-sep" />
-      <button type="button" className={`rail-btn${draw.magnet ? ' on' : ''}`} title="Aimant : coller les points aux prix des bougies (ouverture, plus haut, plus bas, clôture)"
+      <button type="button" className={`rail-btn${draw.magnet ? ' on' : ''}`} title="Aimant : coller les points aux prix des bougies (ouverture, plus haut, plus bas, clôture) et aux niveaux (POC, VAH, VAL, LVN, VWAP, hauts et bas de la veille, gros prints)"
         onClick={() => ed()?.setMagnet(!draw.magnet)}>
         <Icon icon={Magnet01Icon} size={18} />
       </button>
