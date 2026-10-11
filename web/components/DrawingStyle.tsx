@@ -139,6 +139,19 @@ function StopMenu({ calc }: { calc: PositionCalc }) {
   );
 }
 
+// Plan de la position (fenêtre de réglages) : sortie partielle (part sortie à TP1, en R du risque initial).
+function PositionPlan({ id, calc }: { id: string; calc: PositionCalc }) {
+  const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
+  return (
+    <>
+      <NumField label="Part sortie à TP1 (0 : aucune)" value={calc.partial?.pct ?? 0} unit="%" zero
+        onChange={(pct) => set({ partial: pct > 0 ? { pct, r: calc.partial?.r ?? 1 } : null })} />
+      <NumField label="TP1 : multiple du risque initial" value={calc.partial?.r ?? 1} unit="R"
+        onChange={(r) => set({ partial: { pct: calc.partial?.pct ?? 50, r } })} />
+    </>
+  );
+}
+
 function PositionFields({ id, calc }: { id: string; calc: PositionCalc }) {
   const set = (patch: Partial<PositionCalc>) => engine.chart?.drawings.setCalc(patch, id);
   return (
@@ -196,6 +209,7 @@ function SettingsPanel({ id, type, style, calc, set }: { id: string | null; type
       )}
       <OptionRows defs={defs} values={values} onChange={change} />
       {id && calc && POSITIONS.includes(type) && <div className="ds-fields"><PositionFields key={`${id}${JSON.stringify(calc)}`} id={id} calc={calc} /></div>}
+      {id && calc && POSITIONS.includes(type) && <div className="ds-fields"><PositionPlan key={`plan${id}${JSON.stringify(calc)}`} id={id} calc={calc} /></div>}
       {type === 'ruler' && <p className="note">La couleur de la règle suit le sens du mouvement : verte si le prix monte, rouge s’il baisse.</p>}
       {POSITIONS.includes(type) && <p className="note">Les zones de stop et de cible gardent leurs couleurs ; le calcul est affiché seulement, aucun ordre n’est passé.</p>}
       {styled && <button type="button" className="pop-item" onClick={reset}><span>Rétablir le style par défaut</span></button>}

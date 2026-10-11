@@ -129,6 +129,19 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
   if (st.valid && d.calc.stop0 != null) stopHistory(ctx, d, shape, scale, items);
+  if (st.valid && st.tp1 !== null) {
+    // Sortie partielle : TP1 en tirets dans la zone de gain, avec la part sortie.
+    const y = scale.yOfPrice(st.tp1);
+    ctx.strokeStyle = alpha(C.growth, 0.8);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(target[0], y);
+    ctx.lineTo(target[2], y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(ctx, `TP1 ${fmt(st.tp1, digits)} · ${Math.round(st.share * 100)} % à +${fmt(d.calc.partial.r, 1)} R`, target[0] + 4, y - 2, C.growth, { size: 10 });
+  }
   // Étiquettes hors des zones (lisibles même sur une petite position) : cible au-delà de sa zone,
   // stop au-delà de la sienne, résumé à droite de la ligne d'entrée.
   const left = target[0];

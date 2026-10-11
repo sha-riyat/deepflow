@@ -50,6 +50,7 @@ export interface PositionCalc {
   fees: number; // en % de chaque ordre
   stop0?: number; // stop initial, une fois le stop déplacé (point mort, gain verrouillé)
   moves?: { t: number; p: number }[]; // historique des déplacements du stop
+  partial?: { pct: number; r: number } | null; // sortie partielle : % de la position sortis à r × le risque initial
 }
 
 export interface NoteEdit {
