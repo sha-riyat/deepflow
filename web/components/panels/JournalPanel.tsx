@@ -36,7 +36,7 @@ function Entry({ e, open, onToggle, onEdit, onDelete }: { e: JournalEntry; open:
         <span className="muted">{date(e.t)}</span>
         <b>{e.symbol}</b>
         <span className={`tag ${e.side === 'long' ? 'pos' : 'neg'}`}>{e.side === 'long' ? 'Long' : 'Short'}</span>
-        <span className="journal-setup">{e.setup}</span>
+        <span className="journal-setup">{e.grade && <b className="tag">{e.grade}</b>} {e.setup}</span>
         <b className={r === null ? 'muted' : r >= 0 ? 'pos' : 'neg'}>{r === null ? 'en cours' : `${signed(r)} R`}</b>
       </button>
       {open && (

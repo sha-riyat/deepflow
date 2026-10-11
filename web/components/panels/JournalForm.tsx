@@ -2,14 +2,13 @@
 // Formulaire d'un trade du journal : symbole, sens, entrée, stop, cible, sortie, setup, notes et
 // capture du graphique actif. « Depuis la position » reprend l'outil position sélectionné.
 import { useState } from 'react';
-import { cleanEntry, plannedRR, tradeR } from '@shared/journal.js';
+import { SETUPS, cleanEntry, plannedRR, tradeR } from '@shared/journal.js';
+import { GRADES } from '@shared/position.js';
 import { fmt } from '@/lib/fmt.js';
 import { engine } from '@/lib/engine';
 import { getLive } from '@/lib/store';
 import type { JournalEntry } from '@/lib/journal';
 
-// Setups proposés à la saisie (texte libre accepté).
-const SETUPS = ['Rejet de la VAH', 'Rejet de la VAL', 'Acceptation hors de la valeur', 'Retour au POC', 'POC non testé', 'Absorption', 'Cassure de l’IB', 'Sweep d’un plus haut / plus bas', 'Rebond sur le VWAP'];
 const FIELDS: [keyof JournalEntry, string][] = [['entry', 'Entrée'], ['stop', 'Stop'], ['target', 'Cible'], ['exit', 'Sortie']];
 
 type Draft = Record<string, string>;
@@ -18,9 +17,9 @@ type ChartExtra = { drawings: { list: Drawing[]; sel: string | null }; snapshot(
 
 const toDraft = (e: JournalEntry | null): Draft => {
   const meta = getLive().meta;
-  if (!e) return { symbol: meta?.symbol ?? '', market: meta?.market ?? 'futures', side: 'long', entry: '', stop: '', target: '', exit: '', setup: '', notes: '' };
+  if (!e) return { symbol: meta?.symbol ?? '', market: meta?.market ?? 'futures', side: 'long', entry: '', stop: '', target: '', exit: '', setup: '', grade: '', notes: '' };
   const s = (v: number | null) => (v === null ? '' : String(v));
-  return { symbol: e.symbol, market: e.market, side: e.side, entry: s(e.entry), stop: s(e.stop), target: s(e.target), exit: s(e.exit), setup: e.setup, notes: e.notes };
+  return { symbol: e.symbol, market: e.market, side: e.side, entry: s(e.entry), stop: s(e.stop), target: s(e.target), exit: s(e.exit), setup: e.setup, grade: e.grade ?? '', notes: e.notes };
 };
 
 export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry | null; onSave: (e: JournalEntry) => void; onCancel: () => void }) {
@@ -74,6 +73,14 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
         {rr !== null ? `R:R prévu ${fmt(rr, 2)}` : 'R:R prévu —'}{r !== null ? ` · résultat ${r >= 0 ? '+' : ''}${fmt(r, 2)} R` : ''}
       </p>
       <input list="journal-setups" value={d.setup} onChange={(e) => set('setup', e.target.value)} placeholder="Setup (ex. Rejet de la VAH)" aria-label="Setup" />
+      <div className="jf-row" title="A : setup de grande qualité (risque plein), B : correct, C : douteux (risque réduit)">
+        <span className="muted">Note du setup</span>
+        <div className="seg">
+          {['', ...GRADES].map((g) => (
+            <button key={g || 'none'} type="button" className={d.grade === g ? 'on' : ''} onClick={() => set('grade', g)}>{g || '—'}</button>
+          ))}
+        </div>
+      </div>
       <datalist id="journal-setups">{SETUPS.map((s) => <option key={s} value={s} />)}</datalist>
       <textarea value={d.notes} onChange={(e) => set('notes', e.target.value)} rows={4} placeholder="Contexte, ce que vous avez vu, émotions, erreurs…" aria-label="Notes" />
       <label className="jf-check">
