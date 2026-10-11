@@ -11,6 +11,7 @@ import { errorCosts } from '@shared/journalstats.js';
 import { fmt } from '@/lib/fmt.js';
 import { deleteEntry, download, listEntries, putEntry, type JournalEntry } from '@/lib/journal';
 
+const SESSION_NAMES: Record<string, string> = { asia: 'Asie', london: 'Londres', ny: 'New York' };
 const date = (t: number) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const signed = (v: number) => `${v >= 0 ? '+' : ''}${fmt(v, 2)}`;
 
@@ -61,6 +62,12 @@ function Entry({ e, open, onToggle, onEdit, onDelete }: { e: JournalEntry; open:
             Entrée {e.entry ?? '—'} · stop {e.stop ?? '—'} · cible {e.target ?? '—'} · sortie {e.exit ?? '—'}
             {rr !== null && ` · R:R prévu ${fmt(rr, 2)}`}
           </p>
+          {e.snap && (
+            <p className="muted">
+              À la saisie : volume {fmt(e.snap.volume ?? 0, 0)} · delta {signed(e.snap.deltaPct ?? 0)} %
+              {e.snap.relVolume !== null && ` · volume ×${fmt(e.snap.relVolume, 1)}`} · {e.snap.utc} UTC ({e.snap.ny} à New York{e.snap.session && e.snap.session !== 'off' ? `, séance ${SESSION_NAMES[e.snap.session]}` : ''})
+            </p>
+          )}
           {e.errors.length > 0 && <p className="neg">Erreurs : {e.errors.map((k) => ERRORS[k as keyof typeof ERRORS]).join(', ')}</p>}
           {e.notes && <p className="journal-notes">{e.notes}</p>}
           {e.shot && <img src={e.shot} alt={`Graphique ${e.symbol} au moment du trade`} />}

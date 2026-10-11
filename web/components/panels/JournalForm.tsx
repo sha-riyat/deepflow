@@ -2,10 +2,11 @@
 // Formulaire d'un trade du journal : symbole, sens, entrée, stop, cible, sortie, setup, notes et
 // capture du graphique actif. « Depuis la position » reprend l'outil position sélectionné.
 import { useState } from 'react';
-import { ERRORS, SETUPS, cleanEntry, plannedRR, tradeR } from '@shared/journal.js';
+import { ERRORS, SETUPS, cleanEntry, entrySnapshot, plannedRR, tradeR } from '@shared/journal.js';
 import { GRADES } from '@shared/position.js';
 import { fmt } from '@/lib/fmt.js';
 import { engine } from '@/lib/engine';
+import { clockNow } from '@/lib/clock.js';
 import { getLive } from '@/lib/store';
 import type { JournalEntry } from '@/lib/journal';
 
@@ -13,7 +14,7 @@ const FIELDS: [keyof JournalEntry, string][] = [['entry', 'Entrée'], ['stop', '
 
 type Draft = Record<string, string>;
 type Drawing = { id: string; type: string; pts: { p: number }[] };
-type ChartExtra = { drawings: { list: Drawing[]; sel: string | null }; snapshot(): string | null };
+type ChartExtra = { drawings: { list: Drawing[]; sel: string | null }; data: { bars: unknown[] }; snapshot(): string | null };
 
 const toDraft = (e: JournalEntry | null): Draft => {
   const meta = getLive().meta;
@@ -45,7 +46,9 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
 
   const save = (ev: React.FormEvent) => {
     ev.preventDefault();
-    const e = cleanEntry({ ...entry, ...d, errors, id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
+    // Contexte de la bougie au moment de la saisie (à la première sauvegarde seulement, replay : heure rejouée).
+    const snap = entry?.snap ?? (chart ? entrySnapshot(chart.data.bars, clockNow()) : null);
+    const e = cleanEntry({ ...entry, ...d, errors, snap, id: entry?.id ?? Math.random().toString(36).slice(2, 10), t: entry?.t ?? Date.now(), shot: shot ? chart?.snapshot() ?? entry?.shot : entry?.shot });
     if (!e) return setMsg('Symbole requis.');
     if (e.entry === null || e.stop === null) return setMsg('Entrée et stop requis : le résultat se mesure en multiples du risque (R).');
     onSave(e);
