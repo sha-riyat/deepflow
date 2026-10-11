@@ -1,7 +1,7 @@
 // Tests de la gestion d'une position : point mort, gain verrouillé, déplacements du stop.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FEE_WARN, averageEntry, breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
+import { FEE_WARN, GRADES, averageEntry, breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≠ ${b}`);
 
@@ -172,4 +172,20 @@ test('financement : coût estimé selon le nombre de périodes de 8 h traversée
   for (const bad of [-1, 2, 'x', null]) assert.equal('funding' in cleanCalc({ funding: bad }), false);
   assert.deepEqual(calcDefaults({ capital: 500, risk: 2, fees: 0.1, funding: 0.03, stop0: 1 }), { capital: 500, risk: 2, fees: 0.1, funding: 0.03 });
   assert.equal('funding' in calcDefaults({}), false);
+});
+
+test('note du setup : le risque est réduit pour B et C', () => {
+  const base = { side: 'long', entry: 100, stop: 98, target: 106, capital: 1000, risk: 1 };
+  const a = positionStats({ ...base, grade: 'A' });
+  const b = positionStats({ ...base, grade: 'B' });
+  const c = positionStats({ ...base, grade: 'C' });
+  assert.deepEqual([a.riskPct, b.riskPct, c.riskPct], [1, 0.5, 0.25]);
+  assert.deepEqual([a.riskAmount, b.riskAmount, c.riskAmount], [10, 5, 2.5]);
+  near(b.qty, a.qty / 2);
+  near(b.rr, a.rr); // le rapport gain / risque ne change pas, seule la taille
+  assert.equal(positionStats(base).riskPct, 1); // sans note : risque plein
+  assert.equal(positionStats({ ...base, grade: 'Z' }).riskPct, 1);
+  assert.equal(cleanCalc({ grade: 'B' }).grade, 'B');
+  assert.equal('grade' in cleanCalc({ grade: 'D' }), false);
+  assert.deepEqual(GRADES, ['A', 'B', 'C']);
 });

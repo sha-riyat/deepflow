@@ -7,6 +7,9 @@ export const DEFAULT_CALC = { capital: 1000, risk: 1, fees: 0.05 };
 
 export const MAX_MOVES = 30;
 export const MAX_ADDS = 5; // renforts d'une position
+// Note du setup (vidéo 09) : A = setup de grande qualité, risque plein ; B et C, risque réduit.
+export const GRADES = ['A', 'B', 'C'];
+export const GRADE_RISK = { A: 1, B: 0.5, C: 0.25 };
 export const FUNDING_DEFAULT = 0.01; // financement des perpétuels Binance : 0,01 % par période de 8 h (taux de base)
 export const FEE_WARN = 3; // la cible doit valoir au moins 3 fois les frais aller-retour
 
@@ -30,6 +33,7 @@ export function cleanCalc(c) {
     risk: risk > 0 && risk <= 100 ? risk : DEFAULT_CALC.risk,
     fees: fees >= 0 && fees <= 1 ? fees : DEFAULT_CALC.fees,
     ...(c?.stop0 != null && stop0 > 0 ? { stop0 } : {}),
+    ...(GRADES.includes(c?.grade) ? { grade: c.grade } : {}),
     ...(funding !== null ? { funding } : {}),
     ...(partial ? { partial } : {}),
     ...(adds.length ? { adds } : {}),
@@ -53,20 +57,21 @@ export function positionPoints(entry, side, dist, end) {
 // Prix moyen de l'entrée et des renforts (tous de même taille).
 export const averageEntry = (entry, adds = []) => (adds.length ? (entry + adds.reduce((a, p) => a + p, 0)) / (1 + adds.length) : entry);
 
-// Taille de position pour perdre `risk` % du capital, frais compris, si le stop INITIAL est touché
+// Taille de position pour perdre `risk` % du capital (× la part de la note A / B / C), frais compris, si le stop INITIAL est touché
 // (`stop0`, sinon le stop courant) : par unité, la perte au stop est l'écart entrée-stop plus les
 // frais de l'entrée et de la sortie (`fees` % de chaque prix) ; quantité = montant risqué / perte
 // par unité. Gain à la cible et R:R (gain / montant risqué) nets de frais. Un stop déplacé change
 // `riskNow` (perte restante au stop courant) et `lockedR` (en R, > 0 : gain verrouillé). Avec des
 // renforts (`adds`, prix d'entrées de même taille que la première), tout part du prix moyen.
-export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null, adds = [], funding = FUNDING_DEFAULT, fundings = 0 }) {
+export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null, adds = [], funding = FUNDING_DEFAULT, fundings = 0, grade = null }) {
   const e = averageEntry(entry, adds);
   const k = side === 'long' ? 1 : -1;
   const f = fees / 100;
   const perUnit = k * (e - stop0); // écart au stop initial, par unité
   const reward = k * (target - e); // écart à la cible, par unité
   if (!(perUnit > 0) || !(e > 0)) return { valid: false };
-  const riskAmount = (capital * risk) / 100;
+  const riskPct = risk * (GRADE_RISK[grade] ?? 1); // la note du setup réduit le risque
+  const riskAmount = (capital * riskPct) / 100;
   const qty = riskAmount / (perUnit + f * (e + stop0));
   // Sortie partielle : une part sort à `tp1`, le reste à la cible ; ignorée si `tp1` n'est pas avant la cible.
   const tp1 = partial ? e + k * partial.r * perUnit : null;
@@ -83,6 +88,7 @@ export function positionStats({ side, entry, stop, target, capital, risk, fees =
     notional: qty * e,
     leverage: (qty * e) / capital,
     riskAmount,
+    riskPct,
     riskNow: Math.max(0, lossNow),
     lockedR: Math.max(0, -lossNow) / riskAmount,
     gain,
