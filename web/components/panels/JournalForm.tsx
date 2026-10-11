@@ -7,6 +7,7 @@ import { GRADES } from '@shared/position.js';
 import { fmt } from '@/lib/fmt.js';
 import { engine } from '@/lib/engine';
 import { clockNow } from '@/lib/clock.js';
+import { checklistGrade } from '@/lib/checklist';
 import { getLive } from '@/lib/store';
 import type { JournalEntry } from '@/lib/journal';
 
@@ -101,6 +102,9 @@ export function JournalForm({ entry, onSave, onCancel }: { entry: JournalEntry |
           ))}
         </div>
       </div>
+      <button type="button" className="tb-btn" title="Note proposée par la check-list de l'onglet Apprendre" onClick={() => { const g = checklistGrade(); if (g) set('grade', g); else setMsg('Cochez d’abord des cases dans la check-list (panneau Apprendre).'); }}>
+        Reprendre la note de la check-list
+      </button>
       <datalist id="journal-setups">{SETUPS.map((s) => <option key={s} value={s} />)}</datalist>
       <div className="jf-errors" title="Étiquetez après coup ce qui a mal tourné : le coût cumulé de chaque erreur apparaît dans les statistiques">
         <span className="muted">Erreurs (après coup)</span>

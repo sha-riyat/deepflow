@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
+import { Checklist } from './Checklist';
 import { ARTICLES, LEVELS, article, searchArticles } from '@/lib/help/index.js';
 
 type Article = (typeof ARTICLES)[number] & { see?: string[] };
@@ -45,13 +46,29 @@ function ArticleView({ a, onBack, onOpen }: { a: Article; onBack: () => void; on
 export function LearnPanel({ topic }: { topic: { id: string; n: number } | null }) {
   const [id, setId] = useState<string | null>(topic?.id ?? null);
   const [q, setQ] = useState('');
+  const [tab, setTab] = useState<'help' | 'check'>('help');
   useEffect(() => setId(topic?.id ?? null), [topic]);
   const a = id ? article(id) : null;
   if (a) return <ArticleView a={a} onBack={() => setId(null)} onOpen={setId} />;
+  if (tab === 'check') {
+    return (
+      <div className="learn">
+        <div className="seg">
+          <button type="button" onClick={() => setTab('help')}>Fiches</button>
+          <button type="button" className="on">Check-list</button>
+        </div>
+        <Checklist onHelp={(h) => (setTab('help'), setId(h))} />
+      </div>
+    );
+  }
   const list = searchArticles(q);
   const groups = [...new Set(list.map((x) => x.group))];
   return (
     <div className="learn">
+      <div className="seg">
+        <button type="button" className="on">Fiches</button>
+        <button type="button" onClick={() => setTab('check')}>Check-list</button>
+      </div>
       <input className="learn-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher (delta, VWAP, absorption…)" aria-label="Rechercher une fiche" />
       {groups.map((g) => (
         <div key={g}>
