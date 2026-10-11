@@ -1,7 +1,7 @@
 // Tests de l'initial balance (extensions) et des types d'ouverture de Dalton.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ibExtensions, ibLevels, openType, openTypeLabel, orbRange, orbStart, orbWindow } from '../shared/opening.js';
+import { ibExtensions, ibLevels, nyOpenPrice, openType, openTypeLabel, orbRange, orbStart, orbWindow } from '../shared/opening.js';
 
 const M30 = 1_800_000;
 // Session fictive : tranche 1, ouverture `open`, périodes A et B [période, ligne basse, ligne haute, clôture].
@@ -61,4 +61,17 @@ test('range d’ouverture : ancres UTC, Londres et New York, week-end, plage de 
   assert.equal(orbRange(bars, win, 1900).done, true);
   assert.equal(orbRange([], win, 2000), null);
   assert.equal(orbRange(bars, null, 2000), null);
+});
+
+test('ouverture de New York : dernier prix de la période de 30 min qui la précède', () => {
+  const day = Date.UTC(2026, 9, 8); // jeudi, heure d'été américaine : ouverture 13 h 30 UTC
+  const today = { t0: day, tpoMs: 1_800_000, periods: [[26, 1, 2, 101.5], [27, 1, 2, 102.5]] }; // 26 : 13:00–13:30
+  const open = day + 13.5 * 3_600_000;
+  assert.equal(nyOpenPrice(today, open), 101.5);
+  assert.equal(nyOpenPrice(today, open - 1), null); // pas encore ouvert
+  assert.equal(nyOpenPrice({ ...today, periods: [[27, 1, 2, 102.5]] }, open), null); // aucune période avant l'ouverture
+  assert.equal(nyOpenPrice({ ...today, t0: Date.UTC(2026, 9, 10) }, Date.UTC(2026, 9, 10, 20)), null); // samedi
+  assert.equal(nyOpenPrice(null, open), null);
+  const winter = Date.UTC(2026, 11, 3); // 14 h 30 UTC en hiver
+  assert.equal(nyOpenPrice({ t0: winter, tpoMs: 1_800_000, periods: [[28, 1, 2, 77]] }, winter + 15 * 3_600_000), 77);
 });

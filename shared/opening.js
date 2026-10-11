@@ -78,6 +78,18 @@ export function openTypeLabel(o) {
 // dans le range après une cassure est une enchère ratée. Le crypto n'ouvre ni ne ferme : l'ancre
 // est un choix, New York restant le moment où le volume des actions américaines arrive.
 
+// Prix de l'ouverture de New York : dernier prix de la période de 30 min qui se termine à
+// l'ouverture (13 h 30 ou 14 h 30 UTC tombent sur la grille de 30 min), donc à un tick près.
+// null le week-end, avant l'ouverture ou si la période n'a pas de trade.
+export function nyOpenPrice(today, now) {
+  if (!today) return null;
+  const t = nyOpen(today.t0);
+  if (t === null || now < t) return null;
+  const k = (t - today.t0) / today.tpoMs - 1;
+  const per = today.periods.find((p) => p[0] === k);
+  return per ? per[3] : null;
+}
+
 export const ORB_ANCHORS = { utc: '00:00 UTC', london: 'Londres', ny: 'New York' };
 export const ORB_MINUTES = [5, 15, 30, 60];
 const HOUR = 3_600_000;
