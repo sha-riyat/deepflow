@@ -160,7 +160,9 @@ npm run dev
   fournie), calibrés pour toucher environ une bougie sur vingt, bougie à gauche ou au centre entre bid et ask, delta sous
   chaque bougie, lignes regroupées automatiquement au dézoom.
 - **Profil de volume** : par jour UTC, par semaine (depuis lundi), sur la plage visible (épinglé à
-  droite, comme le « visible range » de TradingView) ou composite des 5 / 10 derniers jours ; lignes
+  droite, comme le « visible range » de TradingView), un profil par séance Asie / Londres / New York
+  (7 jours, sans chevauchement : la séance qui ouvre plus tard prend la main ; rien le week-end) ou
+  composite des 5 / 10 derniers jours ; lignes
   de 0,05 % ou 0,1 % du prix (ou celles du footprint) ; type volume, achats / ventes ou delta ;
   value area en zone et lignes ; POC et value area en développement (en escalier) ; HVN et LVN
   (profil lissé, extrêmes locaux suffisamment marqués) et forme du profil (D, P, b, double
