@@ -168,7 +168,7 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
     return;
   }
   const money = (v) => `${v >= 0 ? '+' : '−'}${compact(Math.abs(v))} $`;
-  const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · ${money(st.gain)}${st.gain <= 0 ? ' : les frais mangent le gain' : ''}`;
+  const tText = `Cible ${fmt(tp, digits)} · +${fmt(st.targetPct, 2)} % · ${money(st.gain)}${st.gain <= 0 ? ' : les frais mangent le gain' : st.feeWarn ? ` · frais trop lourds : cible = ${fmt(st.feeMultiple, 1)} × les frais aller-retour` : ''}`;
   const sText = locked
     ? `Stop ${fmt(sl, digits)} · +${fmt(st.lockedR, 2)} R verrouillé${st.lockedR >= 1.005 ? 's' : ''} · ${money(st.lockedR * st.riskAmount)}`
     : st.stopPct <= 0 || st.riskNow >= st.riskAmount * 0.999
@@ -179,7 +179,7 @@ function position(ctx, d, shape, { digits, base, scale, items = [] }) {
     ctx.font = font(11, 600);
     return Math.max(0, Math.min(left, scale.w - ctx.measureText(text).width - 12));
   };
-  label(ctx, tText, fit(tText), long ? above(target) : below(target), st.gain > 0 ? C.growth : C.ember, { weight: 600 });
+  label(ctx, tText, fit(tText), long ? above(target) : below(target), st.gain > 0 && !st.feeWarn ? C.growth : C.ember, { weight: 600 });
   label(ctx, sText, fit(sText), long ? below(stop) : above(stop), locked ? C.growth : C.loss, { weight: 600 });
   const [, yE] = shape.handles[0];
   const fees = d.calc.fees ? ` · frais ${fmt(d.calc.fees, 3)} %` : ' · sans frais';
