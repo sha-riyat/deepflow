@@ -9,6 +9,7 @@ import { JournalBreakdown } from './JournalBreakdown';
 import { JournalBudget } from './JournalBudget';
 import { JournalCharts } from './JournalCharts';
 import { JournalForm } from './JournalForm';
+import { JournalWeek } from './JournalWeek';
 import { ERRORS, journalStats, plannedRR, toCsv, tradeR } from '@shared/journal.js';
 import { bySource, errorCosts } from '@shared/journalstats.js';
 import { fmt } from '@/lib/fmt.js';
@@ -124,6 +125,7 @@ export function JournalPanel() {
           ))}
         </div>
       </div>
+      <JournalWeek />
       <JournalBudget list={bySource(list, 'real')} />
       <Stats list={shown} />
       <JournalCharts list={shown} />
