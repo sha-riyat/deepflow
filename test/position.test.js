@@ -1,7 +1,7 @@
 // Tests de la gestion d'une position : point mort, gain verrouillé, déplacements du stop.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
+import { averageEntry, breakEvenPrice, calcDefaults, cleanCalc, improves, moveStop, positionPoints, positionStats, resetStop, shiftCalc, stopForR } from '../shared/position.js';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≠ ${b}`);
 
@@ -123,4 +123,24 @@ test('sorties partielles : une part à TP1 (en R), le reste à la cible, R globa
   // réglages : bornes
   assert.deepEqual(cleanCalc({ partial: { pct: 50, r: 1.5 } }).partial, { pct: 50, r: 1.5 });
   for (const bad of [{ pct: 0, r: 1 }, { pct: 100, r: 1 }, { pct: 50, r: 0 }, { pct: 'x', r: 1 }]) assert.equal('partial' in cleanCalc({ partial: bad }), false);
+});
+
+test('renforts : prix moyen, taille totale pour le même risque, stop commun', () => {
+  assert.equal(averageEntry(100, []), 100);
+  assert.equal(averageEntry(100, [98, 96]), 98);
+  // long 100, renfort à 98 : prix moyen 99, stop 96, cible 105, 1 000 $ à 1 % (10 $)
+  const st = positionStats({ side: 'long', entry: 100, adds: [98], stop: 96, target: 105, capital: 1000, risk: 1 });
+  assert.equal(st.avg, 99);
+  assert.equal(st.entries, 2);
+  near(st.qty, 10 / 3); // risque par unité : 99 − 96 = 3
+  near(st.riskNow, 10);
+  near(st.rr, 2); // gain par unité : 105 − 99 = 6
+  near(st.targetPct, (6 / 99) * 100);
+  // point mort et gain verrouillé partent du prix moyen
+  near(stopForR('long', 99, 96, 1), 102);
+  // réglages : 5 renforts au plus, prix valides, décalés avec la position
+  assert.equal(cleanCalc({ adds: [1, 2, 3, 4, 5, 6, 7] }).adds.length, 5);
+  assert.deepEqual(cleanCalc({ adds: [98, -1, 'x', 97] }).adds, [98, 97]);
+  assert.equal('adds' in cleanCalc({ adds: [] }), false);
+  assert.deepEqual(shiftCalc(cleanCalc({ adds: [98] }), 0, 2).adds, [100]);
 });

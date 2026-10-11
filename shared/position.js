@@ -6,6 +6,7 @@
 export const DEFAULT_CALC = { capital: 1000, risk: 1, fees: 0.05 };
 
 export const MAX_MOVES = 30;
+export const MAX_ADDS = 5; // renforts d'une position
 
 // Réglages d'une position : capital, risque, frais, et seulement s'ils sont valides les champs
 // propres à la position (stop initial et déplacements du stop : voir moveStop).
@@ -15,6 +16,7 @@ export function cleanCalc(c) {
   const fees = Number(c?.fees ?? DEFAULT_CALC.fees);
   const stop0 = Number(c?.stop0);
   const moves = Array.isArray(c?.moves) ? c.moves.filter((m) => Number.isFinite(m?.t) && m.p > 0).slice(-MAX_MOVES).map((m) => ({ t: m.t, p: m.p })) : [];
+  const adds = Array.isArray(c?.adds) ? c.adds.map(Number).filter((p) => p > 0).slice(0, MAX_ADDS) : [];
   // Sortie partielle : `pct` % de la position sortis à `r` fois le risque initial, le reste à la cible.
   const pct = Number(c?.partial?.pct);
   const r = Number(c?.partial?.r);
@@ -25,6 +27,7 @@ export function cleanCalc(c) {
     fees: fees >= 0 && fees <= 1 ? fees : DEFAULT_CALC.fees,
     ...(c?.stop0 != null && stop0 > 0 ? { stop0 } : {}),
     ...(partial ? { partial } : {}),
+    ...(adds.length ? { adds } : {}),
     ...(moves.length ? { moves } : {}),
   };
 }
@@ -42,40 +45,47 @@ export function positionPoints(entry, side, dist, end) {
   return [{ ...entry }, { t: end, p: entry.p - k * dist }, { t: end, p: entry.p + 2 * k * dist }];
 }
 
+// Prix moyen de l'entrée et des renforts (tous de même taille).
+export const averageEntry = (entry, adds = []) => (adds.length ? (entry + adds.reduce((a, p) => a + p, 0)) / (1 + adds.length) : entry);
+
 // Taille de position pour perdre `risk` % du capital, frais compris, si le stop INITIAL est touché
 // (`stop0`, sinon le stop courant) : par unité, la perte au stop est l'écart entrée-stop plus les
 // frais de l'entrée et de la sortie (`fees` % de chaque prix) ; quantité = montant risqué / perte
 // par unité. Gain à la cible et R:R (gain / montant risqué) nets de frais. Un stop déplacé change
-// `riskNow` (perte restante au stop courant) et `lockedR` (en R, > 0 : gain verrouillé).
-export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null }) {
+// `riskNow` (perte restante au stop courant) et `lockedR` (en R, > 0 : gain verrouillé). Avec des
+// renforts (`adds`, prix d'entrées de même taille que la première), tout part du prix moyen.
+export function positionStats({ side, entry, stop, target, capital, risk, fees = 0, stop0 = stop, partial = null, adds = [] }) {
+  const e = averageEntry(entry, adds);
   const k = side === 'long' ? 1 : -1;
   const f = fees / 100;
-  const perUnit = k * (entry - stop0); // écart au stop initial, par unité
-  const reward = k * (target - entry); // écart à la cible, par unité
-  if (!(perUnit > 0) || !(entry > 0)) return { valid: false };
+  const perUnit = k * (e - stop0); // écart au stop initial, par unité
+  const reward = k * (target - e); // écart à la cible, par unité
+  if (!(perUnit > 0) || !(e > 0)) return { valid: false };
   const riskAmount = (capital * risk) / 100;
-  const qty = riskAmount / (perUnit + f * (entry + stop0));
+  const qty = riskAmount / (perUnit + f * (e + stop0));
   // Sortie partielle : une part sort à `tp1`, le reste à la cible ; ignorée si `tp1` n'est pas avant la cible.
-  const tp1 = partial ? entry + k * partial.r * perUnit : null;
-  const share = partial && k * (tp1 - entry) < reward ? partial.pct / 100 : 0;
+  const tp1 = partial ? e + k * partial.r * perUnit : null;
+  const share = partial && k * (tp1 - e) < reward ? partial.pct / 100 : 0;
   const exit = share ? share * tp1 + (1 - share) * target : target; // prix de sortie moyen
-  const gain = qty * (k * (exit - entry) - f * (entry + exit));
-  const lossNow = qty * (k * (entry - stop) + f * (entry + stop)); // perte au stop courant (< 0 : gain)
+  const gain = qty * (k * (exit - e) - f * (e + exit));
+  const lossNow = qty * (k * (e - stop) + f * (e + stop)); // perte au stop courant (< 0 : gain)
   return {
     valid: reward > 0,
+    avg: e,
+    entries: 1 + adds.length,
     rr: gain / riskAmount,
     qty,
-    notional: qty * entry,
-    leverage: (qty * entry) / capital,
+    notional: qty * e,
+    leverage: (qty * e) / capital,
     riskAmount,
     riskNow: Math.max(0, lossNow),
     lockedR: Math.max(0, -lossNow) / riskAmount,
     gain,
-    fees: qty * f * (entry + exit), // frais si la cible est atteinte (et la part sortie à TP1)
+    fees: qty * f * (e + exit), // frais si la cible est atteinte (et la part sortie à TP1)
     tp1: share ? tp1 : null,
     share,
-    stopPct: (k * (entry - stop) / entry) * 100, // < 0 : stop au-delà de l'entrée, côté gain
-    targetPct: (reward / entry) * 100,
+    stopPct: (k * (e - stop) / e) * 100, // < 0 : stop au-delà de l'entrée, côté gain
+    targetPct: (reward / e) * 100,
   };
 }
 
@@ -123,6 +133,7 @@ export function shiftCalc(calc, dt, dp) {
   return {
     ...calc,
     ...(calc.stop0 != null ? { stop0: calc.stop0 + dp } : {}),
+    ...(calc.adds ? { adds: calc.adds.map((p) => p + dp) } : {}),
     ...(calc.moves ? { moves: calc.moves.map((m) => ({ t: m.t + dt, p: m.p + dp })) } : {}),
   };
 }
