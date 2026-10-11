@@ -6,6 +6,16 @@ import { GRADES } from './position.js';
 
 export const JOURNAL_VERSION = 1;
 
+// Erreurs typiques à étiqueter après coup (vidéos 09, 14, 22) : clé -> libellé. Leur coût cumulé en R
+// montre ce qui coûte le plus cher (journalstats.js).
+export const ERRORS = {
+  hors_horaire: 'Hors de mes heures',
+  premiere_poussee: 'Première poussée prise',
+  mauvais_sens: 'Mauvais sens (contre le contexte)',
+  hors_plan: 'Hors plan (sans zone ni confirmation)',
+  stop_deplace: 'Stop éloigné',
+};
+
 // Setups proposés à la saisie (texte libre accepté) : ceux des vidéos (break-in, cassure, enchère
 // ratée, retournement, absorption, balayage, momentum) et les lectures de profil de deepflow.
 export const SETUPS = [
@@ -32,6 +42,7 @@ export function cleanEntry(raw) {
     exit: num(raw.exit),
     setup: text(raw.setup, 80),
     grade: GRADES.includes(raw.grade) ? raw.grade : null, // note du setup A / B / C
+    errors: [...new Set(Array.isArray(raw.errors) ? raw.errors.filter((k) => k in ERRORS) : [])],
     notes: text(raw.notes, TEXT_MAX),
     shot: typeof raw.shot === 'string' && raw.shot.startsWith('data:image/') ? raw.shot : null,
   };
@@ -77,14 +88,14 @@ export function journalStats(list) {
 
 // Export CSV (séparateur « ; », lisible par un tableur en français), sans les captures.
 export function toCsv(list) {
-  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note'];
+  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note', 'erreurs'];
   const cell = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const rows = list.map((e) => {
     const r = tradeR(e);
-    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade];
+    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade, e.errors.map((k) => ERRORS[k]).join(' + ')];
   });
   return [cols, ...rows].map((r) => r.map(cell).join(';')).join('\n');
 }

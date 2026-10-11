@@ -1,6 +1,7 @@
 // Tests du journal de trading : résultat en R, statistiques, export CSV.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { errorCosts } from '../shared/journalstats.js';
 import { SETUPS, cleanEntry, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
@@ -47,7 +48,25 @@ test('journal : statistiques en R', () => {
 test('journal : export CSV', () => {
   const csv = toCsv([e({ t: 0, entry: 100, stop: 99, exit: 102, setup: 'Rejet VAH', notes: 'a;b "c"' })]);
   const [head, row] = csv.split('\n');
-  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note');
-  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";');
-  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A'));
+  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note;erreurs');
+  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";;');
+  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A;'));
+});
+
+test('journal : étiquettes d’erreur et coût cumulé en R', () => {
+  assert.deepEqual(e({ errors: ['hors_plan', 'inconnue', 'hors_plan', 'hors_horaire'] }).errors, ['hors_plan', 'hors_horaire']);
+  assert.deepEqual(e({}).errors, []);
+  const list = [
+    e({ entry: 100, stop: 99, exit: 99, errors: ['hors_plan'] }), // −1
+    e({ entry: 100, stop: 99, exit: 99, errors: ['hors_plan', 'hors_horaire'] }), // −1
+    e({ entry: 100, stop: 99, exit: 100.5, errors: ['hors_horaire'] }), // +0,5
+    e({ entry: 100, stop: 99, exit: 103 }), // +3 sans erreur
+    e({ entry: 100, stop: 99, errors: ['hors_plan'] }), // ouvert : ignoré
+  ];
+  const c = errorCosts(list);
+  assert.deepEqual(c.rows.map((r) => [r.key, r.count, r.totalR]), [['hors_plan', 2, -2], ['hors_horaire', 2, -0.5]]);
+  assert.equal(c.rows[0].avgR, -1);
+  assert.deepEqual(c.clean, { count: 1, totalR: 3, avgR: 3 });
+  assert.deepEqual(errorCosts([]), { rows: [], clean: { count: 0, totalR: 0, avgR: null } });
+  assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures'));
 });
