@@ -1,7 +1,7 @@
 // Tests du journal de trading : résultat en R, statistiques, export CSV.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanEntry, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
+import { SETUPS, cleanEntry, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
 
@@ -12,6 +12,10 @@ test('journal : entrée vérifiée', () => {
   assert.deepEqual([x.entry, x.stop, x.shot], [100, null, null]);
   assert.equal(x.notes.length, 2000);
   assert.equal(cleanEntry({ id: 'a' }), null); // sans symbole
+  assert.equal(e({ grade: 'B' }).grade, 'B');
+  assert.equal(e({ grade: 'Z' }).grade, null); // note inconnue : ignorée
+  assert.equal(e({}).grade, null);
+  assert.ok(SETUPS.length >= 10 && new Set(SETUPS).size === SETUPS.length);
   assert.equal(cleanEntry(null), null);
 });
 
@@ -43,6 +47,7 @@ test('journal : statistiques en R', () => {
 test('journal : export CSV', () => {
   const csv = toCsv([e({ t: 0, entry: 100, stop: 99, exit: 102, setup: 'Rejet VAH', notes: 'a;b "c"' })]);
   const [head, row] = csv.split('\n');
-  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes');
-  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c"""');
+  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note');
+  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";');
+  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A'));
 });

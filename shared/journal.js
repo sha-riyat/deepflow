@@ -2,7 +2,17 @@
 // export CSV. Un trade à +2 R a rapporté deux fois ce qu'il risquait au stop ; à −1 R, le stop
 // a été touché. Raisonner en R rend les trades comparables, quelle que soit la taille.
 
+import { GRADES } from './position.js';
+
 export const JOURNAL_VERSION = 1;
+
+// Setups proposés à la saisie (texte libre accepté) : ceux des vidéos (break-in, cassure, enchère
+// ratée, retournement, absorption, balayage, momentum) et les lectures de profil de deepflow.
+export const SETUPS = [
+  'Break-in (retour dans la valeur)', 'Cassure (hors de la valeur)', 'Enchère ratée', 'Retournement complet',
+  'Absorption', 'Balayage d’un plus haut / plus bas', 'Momentum', 'Rejet de la VAH', 'Rejet de la VAL',
+  'Retour au POC', 'POC non testé', 'Cassure de l’IB', 'Rebond sur le VWAP',
+];
 const TEXT_MAX = 2000;
 const num = (v) => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
 const text = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max) : '');
@@ -21,6 +31,7 @@ export function cleanEntry(raw) {
     target: num(raw.target),
     exit: num(raw.exit),
     setup: text(raw.setup, 80),
+    grade: GRADES.includes(raw.grade) ? raw.grade : null, // note du setup A / B / C
     notes: text(raw.notes, TEXT_MAX),
     shot: typeof raw.shot === 'string' && raw.shot.startsWith('data:image/') ? raw.shot : null,
   };
@@ -66,14 +77,14 @@ export function journalStats(list) {
 
 // Export CSV (séparateur « ; », lisible par un tableur en français), sans les captures.
 export function toCsv(list) {
-  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes'];
+  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note'];
   const cell = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const rows = list.map((e) => {
     const r = tradeR(e);
-    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes];
+    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade];
   });
   return [cols, ...rows].map((r) => r.map(cell).join(';')).join('\n');
 }
