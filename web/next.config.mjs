@@ -18,6 +18,9 @@ const nextConfig = {
   // Le code partagé (../shared) est hors du dossier de l'application.
   turbopack: { root },
   outputFileTracingRoot: root,
+  // Délai du relais vers le collecteur (30 s par défaut) : le premier profil d'une longue plage
+  // télécharge plusieurs jours d'archives Binance.
+  experimental: { proxyTimeout: 180_000 },
   async rewrites() {
     return [
       { source: '/api/:path*', destination: `${collector}/api/:path*` },
