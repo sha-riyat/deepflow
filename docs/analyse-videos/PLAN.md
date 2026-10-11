@@ -94,6 +94,12 @@ ordres en points gris, jaunes sous le seuil dans la vidéo 14) reporté : il obl
 
 ## Lot 3 — Profil à plage fixe enrichi, fusion de profils
 
+**Avancement** : points 1 à 7 faits, vérifiés à l'écran et commités (type de profil ; pics / creux, totaux et forme, avec
+correction de la position des pics ; prolongement et état acceptation / rejet ; niveaux de delta maximal ; masquage des
+bougies par le bouton œil ou Maj + C). Ajouts hors liste : bouton « Réglages du dessin » sur tous les dessins et taille des
+lignes d'un profil de plage choisie d'après sa hauteur (≈ 30 lignes). **Restent** : point 8 (plage jusqu'à 10 jours, fusion de
+profils) et point 9 (composites 30 / 90 jours, reporté volontairement).
+
 Sources : 00, 10, 14, 18, 19, 20, 21.
 1. **Type de profil** du dessin : volume, achats / ventes, delta par prix (aujourd'hui `vp()` de
    `web/lib/layers/drawtools.js` appelle `histogram` en `kind: 'volume'`). Ajouter `d.style.kind` modifiable dans la
