@@ -83,12 +83,13 @@ npm run dev
   colonnes, haut-bas, Line break, Kagi, Point & Figure, TPO), footprint (6 modes), Indicateurs,
   Alerte, mises en page, grille de graphiques, Replay, réglages, plein écran. Ces réglages
   s'appliquent au graphique actif (voir Espace de travail).
-- **Indicateurs** (menu sur deux colonnes) : flux d'ordres (heatmap, bulles de trades, gros prints,
-  liquidations, bid/ask, divergences CVD, open interest par prix), alertes de prix, vue Market
-  Profile (TPO), profils et niveaux (profil de session, value area de la veille, ouverture du jour,
-  initial balance et type d'ouverture, niveaux clés, sessions Asie / Londres / New York, repères
-  horaires, POC non testés, VWAP), panneaux (volume, delta, CVD de session, CVD spot / perp, CVD
-  multi-plateformes, open interest, liquidations, prime et financement, statistiques).
+- **Indicateurs** (menu sur deux colonnes de longueur voisine) : à gauche, flux d'ordres (heatmap,
+  bulles de trades, gros prints, liquidations, bid/ask, divergences CVD, open interest par prix) et
+  panneaux sous le graphique (volume, delta, CVD de session, CVD spot / perp, CVD multi-plateformes,
+  open interest, liquidations, prime et financement, statistiques) ; à droite, vue Market Profile
+  (TPO), profils et niveaux (profil de session, value area de la veille, ouverture du jour, initial
+  balance et type d'ouverture, niveaux clés, POC non testés, VWAP), sessions et horaires (sessions
+  Asie / Londres / New York, repères horaires) et alertes de prix.
 - **Légende** : une ligne par indicateur actif avec sa valeur courante (VWAP, POC et value area,
   liquidations longues / courtes en vue, seuil des gros prints, état de l'enchère…) ; au survol,
   réglages et retrait. Les réglages sont mémorisés dans le navigateur.
@@ -123,7 +124,16 @@ npm run dev
   - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
     calculés par le collecteur à partir de chaque trade ; 3 jours au plus (au-delà, les 3 derniers).
     La taille des lignes s'adapte à la hauteur de la plage (environ 30 lignes : 10 $ pour 220 $ sur
-    BTC), sans descendre sous la tranche du collecteur.
+    BTC), sans descendre sous la tranche du collecteur. Histogramme en volume, en achats / ventes
+    ou en delta ; pics (HVN) et creux (LVN) de volume ; étiquette de totaux (volume, delta, bougies)
+    avec la forme du profil (D, P, b, double distribution) ; option « Prolongé vers la droite » qui
+    étend POC, VAH et VAL et indique l'état depuis la fin de la plage (acceptation ou rejet, 2
+    clôtures de 30 min) ; niveaux de delta maximal (plus fort achat, plus forte vente) en option.
+  - Roue dentée « Réglages du dessin » sur chaque dessin : couleur, épaisseur, trait et réglages
+    propres à l'outil (profil : type, prolongement, pics et creux, totaux, delta maximal ;
+    position : capital, risque, frais).
+  - Bouton œil de la barre de gauche (ou Maj + C) : masque les bougies et le footprint pour lire un
+    profil ou des niveaux seuls.
 - **Bulles de trades** (cercles, à la Bookmap / DeepCharts) : une bulle par créneau de temps
   (environ 8 px, choisi pour tomber dans une seule bougie), placée au VWAP du créneau ; taille
   rapportée à la moyenne des créneaux visibles (échelle racine, linéaire ou logarithmique) ; couleur
