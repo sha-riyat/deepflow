@@ -109,7 +109,9 @@ npm run dev
   - Barre flottante du dessin sélectionné : couleur, épaisseur (taille du texte d'une note), trait
     plein, en tirets ou en pointillés ; le dernier style de chaque outil est repris.
   - Aimant (bouton de la barre) : les points se collent à l'ouverture, au plus haut, au plus bas ou
-    à la clôture de la bougie la plus proche (à moins de 30 px).
+    à la clôture de la bougie la plus proche, ou à un niveau surveillé (POC, VAH, VAL et LVN de la
+    veille, VWAP et ouverture du jour, hauts et bas d'hier, ouvertures de la semaine et du mois,
+    derniers gros prints ; selon les calques actifs), à moins de 30 px.
   - Dessins accrochés à une heure et un prix : ils restent en place au zoom, au défilement et au
     changement d'unité de temps ; sauvegardés dans le navigateur par marché et par symbole. Dans
     les vues sans échelle de temps continue (TPO, Kagi, P&F, Line break), seules les horizontales
@@ -118,7 +120,13 @@ npm run dev
     affiche le R:R, la taille de position pour perdre le pourcentage choisi du capital au stop,
     frais compris (1 % de 1 000 $ et 0,05 % de frais par ordre par défaut ; 0,1 % en spot), la
     valeur, le levier implicite et les montants nets au stop et à la cible ; signale une cible dont
-    le gain ne couvre pas les frais. Calcul affiché seulement : aucun ordre n'est passé.
+    le gain ne couvre pas les frais, ou qui vaut moins de 3 fois les frais aller-retour. Menu Stop :
+    point mort (frais compris), gain verrouillé de +0,5 / +1 / +2 R, stop suiveur sous la dernière
+    mèche ou le dernier gros print, retour au stop initial (le stop ne va que vers le gain ; stop
+    initial en pointillés et historique des déplacements tracés). Réglages : sortie partielle à TP1
+    (R global recalculé), renforts (prix moyen, stop commun), taux de financement par 8 h (coût estimé
+    selon la durée), note du setup A / B / C (risque réduit pour B et C). Calcul affiché seulement :
+    aucun ordre n'est passé.
   - VWAP ancré : depuis le début de la bougie cliquée jusqu'au direct, valeur courante sur l'axe ;
     signalé « historique incomplet » si l'ancre précède les bougies chargées.
   - Profil à plage fixe : histogramme du volume par prix, POC et value area (70 %) de la plage,
