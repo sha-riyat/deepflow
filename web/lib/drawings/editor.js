@@ -6,6 +6,7 @@ import { breakEvenPrice, calcDefaults, cleanCalc, moveStop, positionPoints, rese
 import {
   DRAW_TYPES, POSITIONS, TEXT_MAX, cleanStyle, fromPixel, hitTest, movePoints, setHandle, shapeIn, textSize, toPixel,
 } from '@shared/drawings.js';
+import { wickStop, printStop } from '@shared/trailing.js';
 import { clockNow } from '../clock.js';
 import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles, watchSets } from './storage.js';
 
@@ -113,22 +114,30 @@ export class DrawingEditor {
   }
 
   // Gestion du stop de la position sélectionnée : 'be' (point mort, frais compris), 'lock' (`arg` : R à
-  // verrouiller) ou 'reset' (retour au stop initial). Le stop ne va que vers le gain : faux s'il ne
-  // change pas.
+  // verrouiller), 'wick' (sous la dernière mèche), 'print' (sous le dernier gros print favorable) ou
+  // 'reset' (retour au stop initial). Le stop ne va que vers le gain. Retourne 'ok', 'same' (le stop
+  // ne change pas) ou 'nodata' (pas de bougie fermée ni de gros print depuis l'entrée).
   manageStop(action, arg) {
     const d = this.list.find((x) => x.id === this.sel);
-    if (!d?.calc || !POSITIONS.includes(d.type)) return false;
+    if (!d?.calc || !POSITIONS.includes(d.type)) return 'same';
     let next;
     if (action === 'reset') next = resetStop(d.pts, d.calc);
     else {
-      const price = action === 'be' ? breakEvenPrice(d.type, d.pts[0].p, d.calc.fees) : stopForR(d.type, d.pts[0].p, d.calc.stop0 ?? d.pts[1].p, arg, d.calc.fees);
+      const { data, meta } = this.chart;
+      const buffer = meta?.fpBucket ?? meta?.tickSize ?? 0; // une ligne du footprint au-delà de l'extrême
+      let price;
+      if (action === 'be') price = breakEvenPrice(d.type, d.pts[0].p, d.calc.fees);
+      else if (action === 'wick') price = wickStop(d.type, data.bars, d.pts[0].t, buffer);
+      else if (action === 'print') price = printStop(d.type, data.bigPrints(), d.pts[0].t, buffer);
+      else price = stopForR(d.type, d.pts[0].p, d.calc.stop0 ?? d.pts[1].p, arg, d.calc.fees);
+      if (price === null) return 'nodata';
       next = moveStop(d.type, d.pts, d.calc, price, clockNow());
     }
-    if (!next) return false;
+    if (!next) return 'same';
     d.pts = next.pts;
     d.calc = next.calc;
     this.#save();
-    return true;
+    return 'ok';
   }
 
   // Fin de saisie d'une note : texte validé, ou null pour annuler. Une note vide est retirée.

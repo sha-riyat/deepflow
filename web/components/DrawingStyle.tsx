@@ -109,16 +109,19 @@ function NumField({ label, value, unit, zero = false, onChange }: { label: strin
   );
 }
 
-// Gestion du stop : point mort (frais compris), gain verrouillé en R, retour au stop initial. Le stop ne
+// Gestion du stop : point mort (frais compris), gain verrouillé en R, stop suiveur (dernière mèche, dernier
+// gros print), retour au stop initial. Le stop ne
 // se déplace que vers le gain ; sinon un message le dit.
 function StopMenu({ calc }: { calc: PositionCalc }) {
   const [msg, setMsg] = useState('');
   const run = (close: () => void, action: string, arg?: number) => {
-    const ok = engine.chart?.drawings.manageStop(action, arg);
-    setMsg(ok ? '' : action === 'reset' ? 'Le stop est déjà le stop initial' : 'Le stop est déjà plus protecteur');
+    const res = engine.chart?.drawings.manageStop(action, arg);
+    if (res === 'ok') setMsg('');
+    else if (res === 'nodata') setMsg(action === 'print' ? 'Aucun gros print favorable depuis l’entrée (activez les gros prints)' : 'Aucune bougie fermée depuis l’entrée');
+    else setMsg(action === 'reset' ? 'Le stop est déjà le stop initial' : 'Le stop est déjà plus protecteur');
     close();
   };
-  const items: [string, string, number?][] = [['be', 'Point mort (frais compris)'], ['lock', 'Verrouiller +0,5 R', 0.5], ['lock', 'Verrouiller +1 R', 1], ['lock', 'Verrouiller +2 R', 2]];
+  const items: [string, string, number?][] = [['be', 'Point mort (frais compris)'], ['lock', 'Verrouiller +0,5 R', 0.5], ['lock', 'Verrouiller +1 R', 1], ['lock', 'Verrouiller +2 R', 2], ['wick', 'Sous la dernière mèche'], ['print', 'Sous le dernier gros print']];
   return (
     <>
       <MenuButton title="Déplacer le stop vers le gain : point mort, gain verrouillé" caret label={<span className="ds-size">Stop</span>}>
