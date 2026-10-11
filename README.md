@@ -169,7 +169,9 @@ npm run dev
   avec l'état de l'enchère dans la légende (dans la valeur, sortie, retour, acceptation ou rejet
   après 2 clôtures de 30 min) et l'extrême de la sortie en cours.
 - **Ouverture du jour** : premier prix de la session UTC, en pointillés depuis 00:00, et sa
-  position dans la légende (au-dessus, dans ou sous la valeur de la veille).
+  position dans la légende : dans la value area de la veille, dans son range (plus haut – plus bas)
+  mais hors value area, ou hors du range. En semaine, la légende donne aussi la position du prix à
+  l'ouverture de New York (dernier prix de la période de 30 min précédente, à un tick près).
 - **Initial balance (IB) et ouverture** : plus haut et plus bas de la première heure de la session
   UTC, extensions à 1,5 × et 2 × (option 3 ×) en tirets ; dans la légende, le type d'ouverture de
   Dalton lu sur l'IB : Open-Drive (départ sans retour sur l'ouverture, conviction forte),
