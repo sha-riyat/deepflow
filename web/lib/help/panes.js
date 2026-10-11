@@ -154,6 +154,7 @@ export const PANE_ARTICLES = [
       '6. Journal : notez le trade, le contexte et ce que vous avez vu ; relisez chaque semaine.',
     ],
     traps: ['Aucune de ces lectures n’est une garantie. Ce n’est pas un conseil financier.'],
+    see: ['pbd', 'scalp', 'effort-result', 'expectancy', 'journal'],
   },
   {
     id: 'journal',

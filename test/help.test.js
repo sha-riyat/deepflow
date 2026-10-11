@@ -13,6 +13,16 @@ test('aide : fiches complètes et identifiants uniques', () => {
   }
 });
 
+test('aide : les fiches de méthode existent et leurs liens « voir aussi » pointent vers des fiches', () => {
+  for (const id of ['effort-result', 'responsive-initiative', 'pbd', 'stoprun', 'iceberg', 'orders', 'expectancy', 'vwap-theory', 'scalp', 'wyckoff']) {
+    assert.ok(article(id), id);
+    assert.ok(article(id).level in LEVELS, id);
+  }
+  for (const a of ARTICLES) for (const s of a.see ?? []) assert.ok(article(s), `${a.id} → ${s}`);
+  assert.ok(article('method').see.includes('pbd')); // la routine d'analyse renvoie vers les fiches
+  assert.ok(searchArticles('break-in').some((a) => a.id === 'pbd'));
+});
+
 test('aide : une fiche par calque, panneau, outil et mode du footprint', () => {
   for (const k of Object.keys(LAYERS)) if (k !== 'alerts') assert.ok(article(helpId(k)), `calque ${k}`);
   for (const k of ['volume', 'delta', 'cvd', 'oi', 'liq', 'stats', 'spot', 'funding', 'venues']) assert.ok(article(helpId(k, 'pane')), `panneau ${k}`);

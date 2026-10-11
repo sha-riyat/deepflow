@@ -7,9 +7,9 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { Icon } from '../ui';
 import { ARTICLES, LEVELS, article, searchArticles } from '@/lib/help/index.js';
 
-type Article = (typeof ARTICLES)[number];
+type Article = (typeof ARTICLES)[number] & { see?: string[] };
 
-function ArticleView({ a, onBack }: { a: Article; onBack: () => void }) {
+function ArticleView({ a, onBack, onOpen }: { a: Article; onBack: () => void; onOpen: (id: string) => void }) {
   return (
     <div className="learn-article">
       <button type="button" className="tb-btn learn-back" onClick={onBack}>
@@ -31,6 +31,12 @@ function ArticleView({ a, onBack }: { a: Article; onBack: () => void }) {
           <ul className="traps">{a.traps.map((t) => <li key={t}>{t}</li>)}</ul>
         </>
       )}
+      {a.see && a.see.length > 0 && (
+        <>
+          <h4>Voir aussi</h4>
+          <div className="learn-see">{a.see.map((id: string) => article(id) && <button key={id} type="button" className="pop-item" onClick={() => onOpen(id)}><span>{article(id)?.title}</span></button>)}</div>
+        </>
+      )}
       <p className="muted learn-note">Outil d’analyse et d’apprentissage : ce n’est pas un conseil financier.</p>
     </div>
   );
@@ -41,7 +47,7 @@ export function LearnPanel({ topic }: { topic: { id: string; n: number } | null 
   const [q, setQ] = useState('');
   useEffect(() => setId(topic?.id ?? null), [topic]);
   const a = id ? article(id) : null;
-  if (a) return <ArticleView a={a} onBack={() => setId(null)} />;
+  if (a) return <ArticleView a={a} onBack={() => setId(null)} onOpen={setId} />;
   const list = searchArticles(q);
   const groups = [...new Set(list.map((x) => x.group))];
   return (
