@@ -3,10 +3,11 @@
 import { FLOW_ARTICLES, FOOTPRINT_HELP } from './flow.js';
 import { LEVEL_ARTICLES } from './levels.js';
 import { PANE_ARTICLES } from './panes.js';
+import { STRATEGY_ARTICLES } from './strategy.js';
 import { THEORY_ARTICLES } from './theory.js';
 
 export { FOOTPRINT_HELP };
-export const ARTICLES = [...PANE_ARTICLES.filter((a) => a.group === 'Méthode'), ...FLOW_ARTICLES, ...THEORY_ARTICLES.filter((a) => a.group === 'Lire le flux'), ...LEVEL_ARTICLES, ...THEORY_ARTICLES.filter((a) => a.group !== 'Lire le flux'), ...PANE_ARTICLES.filter((a) => a.group !== 'Méthode')];
+export const ARTICLES = [...PANE_ARTICLES.filter((a) => a.group === 'Méthode'), ...STRATEGY_ARTICLES, ...FLOW_ARTICLES, ...THEORY_ARTICLES.filter((a) => a.group === 'Lire le flux'), ...LEVEL_ARTICLES, ...THEORY_ARTICLES.filter((a) => a.group !== 'Lire le flux'), ...PANE_ARTICLES.filter((a) => a.group !== 'Méthode')];
 export const LEVELS = { fact: 'Donnée mesurée', rule: 'Règle empirique (non prouvée)', context: 'Repère de contexte' };
 
 const BY_ID = new Map(ARTICLES.map((a) => [a.id, a]));
