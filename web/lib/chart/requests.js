@@ -2,6 +2,7 @@
 // limitées à 4 par seconde.
 import { rowBucket } from '@shared/auction.js';
 import { bySession } from '@shared/bigprints.js';
+import { orbWindow } from '@shared/opening.js';
 import { clockNow } from '../clock.js';
 import { periodStart } from '@shared/sessions.js';
 import { INDEXED } from './plot.js';
@@ -170,6 +171,17 @@ export function requestData(chart, items) {
     if (key !== chart.requests.levels) {
       chart.requests.levels = key;
       chart.data.loadLevels();
+    }
+  }
+  if (layers.orb && !tpo) {
+    // Range d'ouverture : fenêtre la plus récente de l'ancre choisie ; tant qu'elle se forme, rafraîchi toutes les 30 s.
+    const { anchor, minutes } = chart.settings.opts.orb;
+    const win = orbWindow(now, anchor, minutes);
+    const open = win && now < win.end;
+    const key = `${anchor}:${minutes}:${win?.start}:${open ? Math.floor(real / 30_000) : 'fin'}`;
+    if (win && key !== chart.requests.orb) {
+      chart.requests.orb = key;
+      chart.data.loadOpeningRange(win.start, minutes);
     }
   }
   const { period } = chart.settings.opts.vwap;

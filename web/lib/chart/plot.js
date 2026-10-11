@@ -5,6 +5,7 @@ import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofi
 import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
 import { drawKeyLevels } from '../layers/keylevels.js';
 import { drawIb } from '../layers/ib.js';
+import { drawOrb } from '../layers/orb.js';
 import { drawOiProfile } from '../layers/oiprofile.js';
 import { drawTimeMarkers } from '../layers/times.js';
 import { MAX_SESSION_TF, drawMarketSessions } from '../layers/marketsessions.js';
@@ -28,6 +29,7 @@ export function drawBehind(chart, ctx, items, geo) {
   if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items);
   if (L.open && !tpo) drawDayOpen(ctx, data.dailySessions, s, items);
   if (L.ib && !tpo) drawIb(ctx, data.dailySessions, s, items, clockNow(), O.ib);
+  if (L.orb && !tpo) drawOrb(ctx, data, s, items, clockNow(), O.orb);
   if (L.keys && !tpo) drawKeyLevels(ctx, data.keyLevels, s, items, O.keys);
   if (L.sessions && s.mode === 'time' && chart.spec.param <= MAX_SESSION_TF) drawMarketSessions(ctx, s, items, data.bars, clockNow(), O.sessions);
   if (L.times && !INDEXED.includes(st.style)) drawTimeMarkers(ctx, s, items, { show: O.times.show, futures: chart.meta.market === 'futures' });

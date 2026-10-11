@@ -56,6 +56,7 @@ export class DataManager {
     this.keyLevels = null; // ouvertures semaine / mois, hauts et bas précédents (voir loadLevels)
     this.vwapAnchor = null; // sommes de la période (jour, semaine, mois) avant la première bougie chargée (voir loadVwapAnchor)
     this.dailySessions = []; // sessions journalières des 10 derniers jours (nPOC, veille, composite)
+    this.orbBars = null; // bougies 1 min du range d'ouverture : { start, minutes, bars } (voir loadOpeningRange)
   }
 
   // Charge la série la plus récente pour un type de bougie donné.
@@ -287,6 +288,23 @@ export class DataManager {
       this.onChange('vwap');
     } catch {
       this.vwapAnchor = null;
+    }
+  }
+
+  // Range d'ouverture : bougies d'une minute de la fenêtre [start, start + minutes), quel que soit
+  // l'intervalle du graphique (le plus haut et le plus bas se lisent sur ces bougies).
+  async loadOpeningRange(start, minutes) {
+    const end = start + minutes * 60_000;
+    const to = Math.min(end, nowOf(this));
+    const q = new URLSearchParams({ type: 'time', param: 60_000, count: minutes + 2, to: Math.floor(to) });
+    const gen = this.gen;
+    try {
+      const r = await getJSON(this.url(`/api/bars?${q}`));
+      if (gen !== this.gen) return;
+      this.orbBars = { start, minutes, bars: r.bars.filter((b) => b.t0 >= start && b.t0 < end) };
+      this.onChange('orb');
+    } catch {
+      if (gen === this.gen) this.orbBars = null;
     }
   }
 

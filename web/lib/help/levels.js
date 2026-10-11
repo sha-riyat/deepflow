@@ -67,6 +67,22 @@ export const LEVEL_ARTICLES = [
     traps: ['Classement automatique par règle simple sur l’IB : indicatif ; Dalton le lit sur les toutes premières minutes.'],
   },
   {
+    id: 'orb',
+    group: 'Profils et niveaux',
+    title: 'Range d’ouverture (ORB)',
+    level: 'rule',
+    what: 'Opening range : plus haut et plus bas des 5, 15, 30 ou 60 premières minutes après une ouverture (New York, Londres ou 00:00 UTC), prolongés vers la droite avec le milieu et les extensions 1,5 × et 2 ×. Pendant sa formation, la fenêtre est encadrée.',
+    read: [
+      'Sortie nette du range, avec delta et volume dans le même sens : le camp qui sort prend le contrôle (stratégie « opening range breakout »).',
+      'Retour dans le range après une sortie : cassure ratée, le prix tend à rejoindre l’autre bord ou le milieu.',
+      'Range très étroit : énergie accumulée, la sortie peut être plus vive ; très large : le mouvement du jour est déjà fait.',
+    ],
+    traps: [
+      'Pas d’ouverture officielle en crypto (24 h / 24) : New York et Londres suivent les heures de bureau locales, heure d’été comprise ; le week-end, seul 00:00 UTC existe.',
+      'Une cassure seule n’est pas un signal : sans flux qui la confirme, beaucoup échouent. Statistiques à vérifier dans votre journal.',
+    ],
+  },
+  {
     id: 'naked',
     group: 'Profils et niveaux',
     title: 'POC non testés (nPOC)',

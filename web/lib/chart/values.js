@@ -12,6 +12,7 @@ import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
 import { ibLevels, openType, openTypeLabel } from '@shared/opening.js';
 import { QUADRANT_LABEL, oiChange } from '@shared/oiflow.js';
+import { orbLabel } from '../layers/orb.js';
 import { clockNow } from '../clock.js';
 
 const DAY = 86_400_000;
@@ -63,6 +64,7 @@ export function indicatorValues(chart, items) {
     else if (!ib.done) out.ib = `en formation jusqu’à ${new Date(ib.end).toISOString().slice(11, 16)} UTC`;
     else out.ib = `${fmt(ib.lo)} – ${fmt(ib.hi)}${open ? ` · ${openTypeLabel(open)}` : ''}`;
   }
+  if (L.orb && style !== 'tpo') out.orb = orbLabel(data, clockNow(), opts.orb);
   if (L.oiprof) {
     // Dernière heure : variation du prix et de l'OI, et le cas correspondant.
     const now = clockNow();

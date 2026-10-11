@@ -20,6 +20,7 @@ export const LAYERS = {
   prev: { label: 'Value area de la veille', sub: 'VAH, VAL et POC d’hier sur la journée, état d’acceptation ou de rejet', group: 'levels', color: '#479ffa' },
   open: { label: 'Ouverture du jour', sub: 'Premier prix de la session UTC, dans ou hors de la valeur de la veille', group: 'levels', color: '#e6e6e6' },
   ib: { label: 'Initial balance et ouverture', sub: 'Première heure de la session UTC, extensions 1,5 × et 2 ×, type d’ouverture de Dalton (indicatif)', group: 'levels', color: '#ffa16c' },
+  orb: { label: 'Range d’ouverture (ORB)', sub: 'Plus haut et plus bas des premières minutes après l’ouverture (UTC, Londres ou New York), milieu et extensions', group: 'levels', color: '#7dd3c0' },
   keys: { label: 'Niveaux clés', sub: 'Ouvertures de la semaine et du mois, plus hauts et plus bas de la veille, de la semaine et du mois précédents', group: 'levels', color: '#a78bfa' },
   sessions: { label: 'Sessions Asie / Londres / NY', sub: 'Range de chaque session (heures de bureau locales, heure d’été comprise), du lundi au vendredi', group: 'time', color: '#e8c35a' },
   times: { label: 'Repères horaires', sub: 'Ouverture de New York (9 h 30 là-bas, heure d’été comprise) et heures de financement (0 h, 8 h, 16 h UTC)', group: 'time', color: '#ffa16c' },
@@ -70,6 +71,11 @@ export const OPTIONS = {
   },
   ib: {
     ext: { label: 'Extensions', choices: [[1, '×1,5 et ×2'], [2, '×1,5, ×2 et ×3'], [0, 'IB seule']] },
+  },
+  orb: {
+    anchor: { label: 'Ouverture', choices: [['ny', 'New York'], ['london', 'Londres'], ['utc', '00:00 UTC']] },
+    minutes: { label: 'Durée du range', choices: [[15, '15 min'], [5, '5 min'], [30, '30 min'], [60, '1 h']] },
+    ext: { label: 'Extensions', choices: [[1, '×1,5 et ×2'], [0, 'Range seul']] },
   },
   keys: {
     show: { label: 'Afficher', choices: [['all', 'Ouvertures et hauts / bas'], ['opens', 'Ouvertures (semaine, mois)'], ['prev', 'Hauts / bas précédents']] },

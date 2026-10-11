@@ -37,7 +37,7 @@ export class Chart {
       hideCandles: false, // bougies et footprint masqués (profils, niveaux et dessins restent)
       paneH: 90,
       panes: ['volume', 'delta'],
-      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, ib: false, keys: false, sessions: false, times: true, div: true, naked: true, vwap: false, alerts: true, liq: true, oiprof: false },
+      layers: { heat: true, bubbles: true, big: true, quotes: true, profile: false, prev: true, open: true, ib: false, orb: false, keys: false, sessions: false, times: true, div: true, naked: true, vwap: false, alerts: true, liq: true, oiprof: false },
       opts: defaultOptions(), // réglages par indicateur (voir indicators.js)
     };
     const mk = (cls) => {
