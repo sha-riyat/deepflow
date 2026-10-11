@@ -44,12 +44,13 @@ export const LEVEL_ARTICLES = [
     group: 'Profils et niveaux',
     title: 'Ouverture du jour',
     level: 'context',
-    what: 'Premier prix de la session UTC, et sa position face à la valeur de la veille.',
+    what: 'Premier prix de la session UTC, et sa position face à la veille : dans la value area, dans le range (plus haut – plus bas) mais hors value area, ou hors du range. En semaine, la légende donne aussi la position à l’ouverture de New York.',
     read: [
       'Ouverture dans la valeur d’hier : journée de rotation plus probable.',
-      'Ouverture hors de la valeur : déséquilibre possible ; tout dépend de l’acceptation ou du rejet qui suit.',
+      'Ouverture dans le range de la veille mais hors value area : le marché doit d’abord être accepté hors de la valeur ; surveillez le retour dedans.',
+      'Ouverture hors du range : déséquilibre plus net ; tout dépend de l’acceptation ou du rejet qui suit.',
     ],
-    traps: [],
+    traps: ['Prix de New York : dernier prix de la période de 30 min avant l’ouverture, à un tick près. Ces lectures sont des tendances, pas des règles : à vérifier dans votre journal.'],
   },
   {
     id: 'ib',

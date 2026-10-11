@@ -7,10 +7,10 @@ import { vwapStart } from '../layers/vwap.js';
 import { compositeOf, nakedList, weeklySessions } from '../layers/volprofile.js';
 import { prevAndToday } from '../layers/levels.js';
 import { MAX_SESSION_TF, SESSION_STYLE, rangesOf } from '../layers/marketsessions.js';
-import { OPEN_LABEL, SHAPE_LABEL, auctionLabel, auctionState, openLocation, profileShape } from '@shared/auction.js';
+import { SHAPE_LABEL, auctionLabel, auctionState, openLocation, openZoneLabel, profileShape } from '@shared/auction.js';
 import { nextMarkers, periodStart } from '@shared/sessions.js';
 import { formatDuration } from '@shared/measures.js';
-import { ibLevels, openType, openTypeLabel } from '@shared/opening.js';
+import { ibLevels, nyOpenPrice, openType, openTypeLabel } from '@shared/opening.js';
 import { QUADRANT_LABEL, oiChange } from '@shared/oiflow.js';
 import { orbLabel } from '../layers/orb.js';
 import { clockNow } from '../clock.js';
@@ -54,7 +54,9 @@ export function indicatorValues(chart, items) {
   if (L.open && style !== 'tpo') {
     const { prev, today } = prevAndToday(data.dailySessions);
     const loc = openLocation(prev, today);
-    out.open = loc ? `${fmt(loc.open)} · ${OPEN_LABEL[loc.where]}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
+    const nyPrice = nyOpenPrice(today, clockNow());
+    const ny = nyPrice === null ? null : openLocation(prev, today, nyPrice);
+    out.open = loc ? `${fmt(loc.open)} · ${openZoneLabel(loc)}${ny ? ` · NY ${fmt(ny.open)} : ${openZoneLabel(ny)}` : ''}` : today ? fmt(today.open) : data.dailySessions.length ? 'session du jour en attente' : 'chargement…';
   }
   if (L.ib && style !== 'tpo') {
     const { today } = prevAndToday(data.dailySessions);
