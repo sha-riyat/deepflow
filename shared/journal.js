@@ -77,10 +77,37 @@ export function cleanEntry(raw) {
     grade: GRADES.includes(raw.grade) ? raw.grade : null, // note du setup A / B / C
     errors: [...new Set(Array.isArray(raw.errors) ? raw.errors.filter((k) => k in ERRORS) : [])],
     snap: cleanSnapshot(raw.snap),
+    tIn: num(raw.tIn), // heure d'entrée et de sortie (excursions)
+    tOut: num(raw.tOut),
+    mae: num(raw.mae),
+    mfe: num(raw.mfe),
     notes: text(raw.notes, TEXT_MAX),
     shot: typeof raw.shot === 'string' && raw.shot.startsWith('data:image/') ? raw.shot : null,
   };
   return e.symbol ? e : null;
+}
+
+// Excursions du trade entre son entrée (`tIn`) et sa sortie (`tOut`), d'après les bougies : MAE
+// (maximum adverse excursion : jusqu'où le prix est allé contre vous) et MFE (maximum favorable
+// excursion : jusqu'où il est allé pour vous), en R. Un stop souvent touché de justesse (MAE proche
+// de 1 R sur les gagnants) ou des gains non pris (MFE bien au-dessus du résultat) se lisent ici.
+// null sans heures, sans résultat, ou si les bougies chargées ne couvrent pas tout le trade.
+export function excursions(e, bars) {
+  const r = tradeR(e);
+  if (r === null || e.tIn === null || e.tOut === null || e.tOut < e.tIn || !bars.length || bars[0].t0 > e.tIn) return null;
+  let hi = -Infinity;
+  let lo = Infinity;
+  for (const b of bars) {
+    if (b.t1 <= e.tIn || b.t0 >= e.tOut) continue;
+    if (b.h > hi) hi = b.h;
+    if (b.l < lo) lo = b.l;
+  }
+  if (!(hi >= lo)) return null;
+  const long = e.side === 'long';
+  const risk = long ? e.entry - e.stop : e.stop - e.entry;
+  const against = long ? e.entry - lo : hi - e.entry;
+  const forward = long ? hi - e.entry : e.entry - lo;
+  return { mae: Math.max(0, against) / risk, mfe: Math.max(0, forward) / risk };
 }
 
 // Résultat en R d'un trade clôturé (null tant qu'il n'a pas de sortie ou si le stop est mal placé).
@@ -122,14 +149,14 @@ export function journalStats(list) {
 
 // Export CSV (séparateur « ; », lisible par un tableur en français), sans les captures.
 export function toCsv(list) {
-  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note', 'erreurs'];
+  const cols = ['date', 'symbole', 'marché', 'sens', 'entrée', 'stop', 'cible', 'sortie', 'R', 'setup', 'notes', 'note', 'erreurs', 'MAE', 'MFE'];
   const cell = (v) => {
     const s = v === null || v === undefined ? '' : String(v);
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const rows = list.map((e) => {
     const r = tradeR(e);
-    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade, e.errors.map((k) => ERRORS[k]).join(' + ')];
+    return [new Date(e.t).toISOString(), e.symbol, e.market, e.side, e.entry, e.stop, e.target, e.exit, r === null ? '' : r.toFixed(2), e.setup, e.notes, e.grade, e.errors.map((k) => ERRORS[k]).join(' + '), e.mae === null ? '' : e.mae.toFixed(2), e.mfe === null ? '' : e.mfe.toFixed(2)];
   });
   return [cols, ...rows].map((r) => r.map(cell).join(';')).join('\n');
 }

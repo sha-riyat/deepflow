@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { errorCosts } from '../shared/journalstats.js';
-import { SETUPS, cleanEntry, entrySnapshot, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
+import { SETUPS, cleanEntry, entrySnapshot, excursions, journalStats, plannedRR, toCsv, tradeR } from '../shared/journal.js';
 
 const e = (o) => cleanEntry({ id: Math.random().toString(36), symbol: 'btcusdt', ...o });
 
@@ -48,9 +48,9 @@ test('journal : statistiques en R', () => {
 test('journal : export CSV', () => {
   const csv = toCsv([e({ t: 0, entry: 100, stop: 99, exit: 102, setup: 'Rejet VAH', notes: 'a;b "c"' })]);
   const [head, row] = csv.split('\n');
-  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note;erreurs');
-  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";;');
-  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A;'));
+  assert.equal(head, 'date;symbole;marché;sens;entrée;stop;cible;sortie;R;setup;notes;note;erreurs;MAE;MFE');
+  assert.equal(row, '1970-01-01T00:00:00.000Z;BTCUSDT;futures;long;100;99;;102;2.00;Rejet VAH;"a;b ""c""";;;;');
+  assert.ok(toCsv([e({ t: 0, entry: 100, stop: 99, grade: 'A' })]).endsWith(';A;;;'));
 });
 
 test('journal : étiquettes d’erreur et coût cumulé en R', () => {
@@ -68,7 +68,7 @@ test('journal : étiquettes d’erreur et coût cumulé en R', () => {
   assert.equal(c.rows[0].avgR, -1);
   assert.deepEqual(c.clean, { count: 1, totalR: 3, avgR: 3 });
   assert.deepEqual(errorCosts([]), { rows: [], clean: { count: 0, totalR: 0, avgR: null } });
-  assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures'));
+  assert.ok(toCsv([list[1]]).endsWith('Hors plan (sans zone ni confirmation) + Hors de mes heures;;'));
 });
 
 test('journal : instantané de la bougie au moment de la saisie', () => {
@@ -93,4 +93,30 @@ test('journal : instantané de la bougie au moment de la saisie', () => {
   assert.equal(e({ snap: { utc: 'abc' } }).snap, null);
   assert.equal(e({ snap: { utc: '09:30', volume: 'x', session: 'mars' } }).snap.volume, null);
   assert.equal(e({}).snap, null);
+});
+
+test('journal : excursions MAE / MFE en R entre l’entrée et la sortie', () => {
+  const bars = [
+    { t0: 0, t1: 60, h: 101, l: 99.5 }, // avant l'entrée : ignorée
+    { t0: 60, t1: 120, h: 102, l: 99.2 }, // le prix recule à 99,2 (−0,8 R pour un stop à 99)
+    { t0: 120, t1: 180, h: 103, l: 100.5 }, // monte à 103 (+3 R)
+    { t0: 180, t1: 240, h: 110, l: 90 }, // après la sortie : ignorée
+  ];
+  const long = e({ side: 'long', entry: 100, stop: 99, exit: 102, tIn: 60, tOut: 180 });
+  const x = excursions(long, bars);
+  assert.ok(Math.abs(x.mae - 0.8) < 1e-9 && Math.abs(x.mfe - 3) < 1e-9);
+  // court : miroir
+  const short = e({ side: 'short', entry: 100, stop: 101, exit: 98, tIn: 60, tOut: 180 });
+  const y = excursions(short, [{ t0: 0, t1: 60, h: 100, l: 100 }, { t0: 60, t1: 180, h: 100.4, l: 97 }]);
+  assert.ok(Math.abs(y.mae - 0.4) < 1e-9 && Math.abs(y.mfe - 3) < 1e-9);
+  // jamais négatif : le prix n'est jamais allé contre l'entrée
+  assert.equal(excursions(long, [{ t0: 0, t1: 200, h: 105, l: 100 }]).mae, 0);
+  // sans heures, sans sortie, sortie avant l'entrée, bougies qui ne couvrent pas le début : null
+  assert.equal(excursions(e({ entry: 100, stop: 99, exit: 102 }), bars), null);
+  assert.equal(excursions(e({ entry: 100, stop: 99, tIn: 60, tOut: 180 }), bars), null);
+  assert.equal(excursions({ ...long, tOut: 30 }, bars), null);
+  assert.equal(excursions({ ...long, tIn: -10 }, bars), null);
+  assert.equal(excursions(long, []), null);
+  assert.deepEqual(e({ tIn: '5', mae: 'x' }).tIn, 5);
+  assert.equal(e({ mae: 'x' }).mae, null);
 });
