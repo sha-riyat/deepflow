@@ -40,7 +40,7 @@ function drawLayersBehind(chart, ctx, items, geo, tpo) {
   const L = st.layers;
   const O = st.opts;
   if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
-  else if (L.profile) drawVolumeProfiles(ctx, data.profiles, s, items, O.profile, data.dailySessions);
+  else if (L.profile) drawVolumeProfiles(ctx, data.profiles, s, items, O.profile, data.dailySessions, geo);
   if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items, O.prev);
   if (L.open && !tpo) drawDayOpen(ctx, data.dailySessions, s, items);
   if (L.ib && !tpo) drawIb(ctx, data.dailySessions, s, items, clockNow(), O.ib);

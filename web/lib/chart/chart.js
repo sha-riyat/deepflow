@@ -10,6 +10,7 @@ import { HeatLayer } from '../layers/heat.js';
 import { drawSeries, drawLineBreak, drawKagi, drawPointFigure } from '../layers/candles.js';
 import { drawFootprint, MIN_SLOT } from '../layers/footprint.js';
 import { tpoItems } from '../layers/tpo.js';
+import { BESIDE_BODY, BESIDE_SHIFT, profilesBeside } from '../layers/beside.js';
 import { composeSnapshot } from './snapshot.js';
 import { INDEXED, drawAbove, drawBehind } from './plot.js';
 import { drawDrawings, drawDrawingLabels } from '../layers/drawings.js';
@@ -257,6 +258,15 @@ export class Chart {
     const L = st.layers;
     const dpr = window.devicePixelRatio || 1;
     const geo = this.geometry(items);
+    // Profils d'une ou deux bougies : bougies amincies, profils à côté (sauf footprint affiché dans les bougies).
+    const fpShown = st.fpMode !== 'off' && this.spec.fp > 0 && !INDEXED.includes(st.style) && geo.slot >= MIN_SLOT;
+    geo.beside = !fpShown && profilesBeside(st, this.spec);
+    if (geo.beside) {
+      // Bougies (et tout ce qui s'y accroche : volume, delta, bulles) décalées à gauche de leur créneau.
+      const center = geo.x;
+      geo.x = (b, i) => center(b, i) - geo.slot * BESIDE_SHIFT;
+      geo.body = BESIDE_BODY;
+    }
     this.#autoScale(items, geo);
     this.dirty = false;
     this.geo = geo;

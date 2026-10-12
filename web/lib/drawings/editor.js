@@ -8,6 +8,7 @@ import {
 } from '@shared/drawings.js';
 import { wickStop, printStop } from '@shared/trailing.js';
 import { clockNow } from '../clock.js';
+import { BESIDE_SHIFT } from '../layers/beside.js';
 import { prevAndToday } from '../layers/levels.js';
 import { loadCalc, loadMagnet, loadSet, loadStyles, saveCalc, saveMagnet, saveSet, saveStyles, watchSets } from './storage.js';
 
@@ -315,7 +316,9 @@ export class DrawingEditor {
     if (!this.magnet) return pt;
     const tf = scale.mode === 'time' && spec.type === 'time' ? spec.param : null;
     const snapped = snapPoint(this.chart.itemAt(this.#items(), p.x), pt, p.y, (v) => scale.yOfPrice(v), { tf, levels: this.#levels() });
-    return { t: snapped.t, p: snapped.p };
+    // Bougies décalées à gauche pour laisser la place aux profils : le point suit la bougie dessinée.
+    const onBar = snapped !== pt && !snapped.label && tf && this.chart.geo?.beside;
+    return { t: onBar ? snapped.t - Math.round(tf * BESIDE_SHIFT) : snapped.t, p: snapped.p };
   }
 
   // Contexte de calcul des formes (voir shapeIn).

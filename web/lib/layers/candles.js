@@ -24,7 +24,7 @@ export function drawSeries(ctx, items, geo, scale, style) {
   const [i0, i1] = geo.range;
   if (i1 < i0) return;
   const y = (p) => scale.yOfPrice(p);
-  const body = Math.max(1, geo.slot * 0.7);
+  const body = Math.max(1, geo.slot * (geo.body ?? 0.7)); // amincies quand les profils sont à côté (volprofile.js)
   const up = (b, i) => (style === 'hollow' && i > 0 ? b.c >= items[i - 1].c : b.c >= b.o);
 
   if (['line', 'area', 'baseline', 'step'].includes(style)) return drawLine(ctx, items, geo, scale, style);

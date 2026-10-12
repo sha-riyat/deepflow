@@ -3,6 +3,7 @@
 // (épinglé au bord droit). Type volume, achats / ventes ou delta ; value area en zone et lignes ;
 // POC et value area « en développement ». POC non testés : calque indépendant (drawNakedPocs).
 import { nakedPocs, valueArea } from '@shared/profile.js';
+import { besideBox } from './beside.js';
 import { compositeSession } from '@shared/auction.js';
 import { drawNodes, prevAndToday } from './levels.js';
 import { SESSION_STYLE } from './marketsessions.js';
@@ -123,7 +124,28 @@ function sessionBand(ctx, s, x0, x1, scale) {
   if (name) pill(ctx, Math.max(x0, 0) + 4, scale.h - 32, name, { bg: C.obsidian, fg: color, size: 10 });
 }
 
-export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily = []) {
+// Profil dans la droite du créneau de la dernière bougie de sa période (bougies décalées à gauche, voir
+// beside.js) : histogramme, POC et value area sur cette largeur seulement.
+function drawBeside(ctx, s, scale, items, geo, { kind, va, nodes }) {
+  let last = -1;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].t0 >= s.t1) break;
+    if (items[i].t0 >= s.t0) last = i;
+  }
+  if (last < 0) return;
+  const { start: xs, width } = besideBox(geo.x(items[last], last), geo.slot);
+  if (xs > scale.w || xs + width < 0) return;
+  const y = (p) => scale.yOfPrice(p);
+  histogram(ctx, s, scale, xs, width, 1, { kind, va });
+  if (nodes) drawNodes(ctx, s, scale, xs, xs + width);
+  hline(ctx, xs, xs + width, y((s.poc + 0.5) * s.bucket), alpha(C.ember, 0.8));
+  if (va) {
+    hline(ctx, xs, xs + width, y((s.vah + 1) * s.bucket), alpha(C.mist, 0.45), [4, 4]);
+    hline(ctx, xs, xs + width, y(s.val * s.bucket), alpha(C.mist, 0.45), [4, 4]);
+  }
+}
+
+export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily = [], geo = null) {
   const { width: share = 0.3, va = 1, kind = 'volume', range = 'day', dev = 0, nodes = 1 } = opts;
   const y = (p) => scale.yOfPrice(p);
   if (range === 'visible' || range.startsWith('c')) {
@@ -142,6 +164,10 @@ export function drawVolumeProfiles(ctx, sessions, scale, items, opts = {}, daily
   const list = range === 'week' ? weeklySessions(sessions) : sessions;
   const lastT = items.length ? items[items.length - 1].t1 : clockNow();
   for (const s of list) {
+    if (geo?.beside) {
+      if (s.poc !== null) drawBeside(ctx, s, scale, items, geo, { kind, va, nodes });
+      continue;
+    }
     const x0 = scale.xAt(s.t0, items);
     const x1 = scale.xAt(Math.min(s.t1, lastT), items);
     if (!(x1 > 0) || x0 > scale.w) continue;

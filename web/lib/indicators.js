@@ -69,6 +69,7 @@ export const OPTIONS = {
     width: { label: 'Largeur', choices: [[0.3, '30 %'], [0.15, '15 %'], [0.5, '50 %']] },
     va: { label: 'Value area', choices: [[1, 'Zone et lignes'], [2, 'Lignes'], [0, 'Masquée']] },
     dev: { label: 'POC en développement', choices: [[0, 'Masqué'], [1, 'POC'], [2, 'POC et value area']] },
+    place: { label: 'Position', choices: [['auto', 'À côté des bougies si 1 ou 2 bougies par profil'], ['over', 'Toujours sur les bougies']] },
   },
   times: {
     show: { label: 'Afficher', choices: [['all', 'Ouverture NY et financement'], ['ny', 'Ouverture NY'], ['funding', 'Financement']] },

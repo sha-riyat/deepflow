@@ -15,6 +15,7 @@ export const LEVEL_ARTICLES = [
     traps: [
       'La forme du profil change en cours de journée : ne la lisez qu’avec assez de données.',
       'Mode « Séances Asie / Londres / NY » : un profil par séance de bureau sur 7 jours, sans chevauchement (la séance qui ouvre plus tard prend la main). Pas de profil le week-end ni hors des heures de bureau : le crypto ne s’arrête pas, mais ces heures concentrent la liquidité.',
+      'En grande unité de temps (4 h, 12 h, 1 jour), un profil ne couvre qu’une ou deux bougies : elles sont alors amincies et poussées à gauche, et le profil se dessine à leur droite (réglage « Position »). Avec le footprint affiché, ou en « Toujours sur les bougies », le profil reste dessous.',
     ],
   },
   {
