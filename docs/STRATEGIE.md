@@ -3,6 +3,10 @@
 Objectif : 1 à 3 trades par jour, dans une fenêtre de 60 à 90 min, puis graphiques fermés.
 Setup de départ : le **break-in** (étape 6). Notation : « nom exact dans l'application », ▸ = chemin pour le trouver.
 
+**Pour trader, suivre la fiche du jour** : [lundi](strategie/lundi.md), [mardi](strategie/mardi.md),
+[mercredi](strategie/mercredi.md), [jeudi](strategie/jeudi.md), [vendredi](strategie/vendredi.md). Ce document-ci
+explique le pourquoi de chaque règle.
+
 ---
 
 ## Étape 0 — Préparer l'écran (une seule fois)
