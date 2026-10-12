@@ -3,7 +3,7 @@
 import { auctionState, volumeNodes } from '@shared/auction.js';
 import { fmt } from '../fmt.js';
 import { clockNow } from '../clock.js';
-import { C, alpha, font, pill } from '../theme.js';
+import { C, alpha, pill } from '../theme.js';
 
 const DAY = 86_400_000;
 
@@ -49,10 +49,7 @@ export function drawPrevLevels(ctx, daily, scale, items, { nodes = 0 } = {}) {
   if (nodes) drawNodes(ctx, prev, scale, x0, scale.w, { labels: true });
   if (st && st.extreme !== null && st.state !== 'inside') {
     hline(ctx, x0, scale.w, y(st.extreme), alpha(C.mist, 0.5), [2, 4]);
-    ctx.font = font(10);
-    ctx.fillStyle = C.graphite;
-    ctx.textBaseline = st.side > 0 ? 'bottom' : 'top';
-    ctx.fillText(`extrême de la sortie ${fmt(st.extreme)}`, x0 + 6, y(st.extreme) + (st.side > 0 ? -2 : 2));
+    pill(ctx, x0 + 6, y(st.extreme) + (st.side > 0 ? -10 : 10), `extrême de la sortie ${fmt(st.extreme)}`, { bg: C.obsidian, fg: C.mist, size: 10 });
   }
   return st;
 }

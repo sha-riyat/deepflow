@@ -1,5 +1,6 @@
 // Calques du tracé principal, de part et d'autre des bougies : dessous, les profils, niveaux,
 // repères et marques horodatées ; dessus, divergences, VWAP, gros prints, liquidations et alertes.
+// Les étiquettes des calques du dessous passent au-dessus de tout, pour rester lisibles.
 import { drawVwap } from '../layers/vwap.js';
 import { drawNakedPocs, drawVolumeProfiles, nakedList } from '../layers/volprofile.js';
 import { drawDayOpen, drawPrevLevels } from '../layers/levels.js';
@@ -16,15 +17,28 @@ import { drawQuotes, drawAlertLines } from '../layers/marks.js';
 import { drawBubbles, drawBigPrints, drawLiquidations } from '../layers/flow.js';
 import { clockNow } from '../clock.js';
 import { bigMin } from './requests.js';
+import { drawHeldLabels, holdLabels, releaseLabels } from '../theme.js';
+
+// Étiquettes des calques du dessous, dessinées après les bougies et les calques du dessus.
+let labels = [];
 
 const DERIVED = ['linebreak', 'kagi', 'pnf'];
 export const INDEXED = [...DERIVED, 'tpo']; // vues sans échelle de temps continue
 
 export function drawBehind(chart, ctx, items, geo) {
+  const tpo = chart.settings.style === 'tpo';
+  holdLabels();
+  try {
+    drawLayersBehind(chart, ctx, items, geo, tpo);
+  } finally {
+    labels = releaseLabels();
+  }
+}
+
+function drawLayersBehind(chart, ctx, items, geo, tpo) {
   const { scale: s, settings: st, data } = chart;
   const L = st.layers;
   const O = st.opts;
-  const tpo = st.style === 'tpo';
   if (tpo) drawTpoView(ctx, items, geo, s, { ...O.tpo, naked: L.naked });
   else if (L.profile) drawVolumeProfiles(ctx, data.profiles, s, items, O.profile, data.dailySessions);
   if (L.prev && !tpo) drawPrevLevels(ctx, data.dailySessions, s, items, O.prev);
@@ -52,4 +66,6 @@ export function drawAbove(chart, ctx, items, geo) {
   if (L.big && !tpo) drawBigPrints(ctx, s, items, data.bigPrints(), { ...O.big, row: chart.meta.fpBucket, min: bigMin(chart) }, geo);
   if (L.liq && !tpo) drawLiquidations(ctx, s, items, geo, data.liqs, O.liq);
   if (L.alerts) drawAlertLines(ctx, s, chart.alerts);
+  drawHeldLabels(ctx, labels);
+  labels = [];
 }

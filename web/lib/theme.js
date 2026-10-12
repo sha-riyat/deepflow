@@ -27,10 +27,31 @@ export function setFontFamily(f) {
 }
 export const font = (size, weight = 400) => `${weight} ${size}px ${family}`;
 
+// Étiquettes des calques tracés sous les bougies (niveaux, profils) : mises en attente pendant ce
+// tracé puis dessinées au-dessus des bougies, sinon les bougies les recouvrent (voir plot.js).
+// null : dessin immédiat.
+let held = null;
+export function holdLabels() {
+  held = [];
+}
+export function releaseLabels() {
+  const list = held ?? [];
+  held = null;
+  return list;
+}
+export function drawHeldLabels(ctx, list) {
+  for (const args of list) pill(ctx, ...args);
+}
+
 // Étiquette en pilule (fond plein, texte centré verticalement).
-export function pill(ctx, x, y, text, { bg, fg = C.white, size = 11, weight = 500, align = 'left' }) {
+export function pill(ctx, x, y, text, opts) {
+  const { bg, fg = C.white, size = 11, weight = 500, align = 'left' } = opts;
   ctx.font = font(size, weight);
   const w = ctx.measureText(text).width + 14;
+  if (held) {
+    held.push([x, y, text, opts]);
+    return w;
+  }
   const h = size + 8;
   const left = align === 'right' ? x - w : x;
   ctx.fillStyle = bg;
