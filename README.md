@@ -174,7 +174,10 @@ npm run dev
   de 0,05 % ou 0,1 % du prix (ou celles du footprint) ; type volume, achats / ventes ou delta ;
   value area en zone et lignes ; POC et value area en développement (en escalier) ; HVN et LVN
   (profil lissé, extrêmes locaux suffisamment marqués) et forme du profil (D, P, b, double
-  distribution) dans la légende.
+  distribution) dans la légende. Quand un profil ne couvre qu'une ou deux bougies (jour en 12 h ou
+  1 j, séances en 4 h), les bougies sont amincies et poussées à gauche de leur place, et le profil
+  se dessine à leur droite (option « Position » : « Toujours sur les bougies » pour revenir au
+  tracé superposé ; sans effet avec le footprint).
 - **Value area de la veille** : VAH, VAL et POC de la session précédente prolongés sur la journée,
   avec l'état de l'enchère dans la légende (dans la valeur, sortie, retour, acceptation ou rejet
   après 2 clôtures de 30 min), la relation entre la value area du jour (en cours de construction) et
@@ -201,7 +204,8 @@ npm run dev
   début de la période où il sert.
 - **Sessions Asie / Londres / New York** : zone du plus haut au plus bas de chaque session, heures
   de bureau locales (Tokyo 9 h – 18 h, Londres et New York 8 h – 17 h, heures d'été comprises ; du
-  lundi au vendredi), plus haut et plus bas prolongés jusqu'à minuit UTC ; intervalle d'1 h au plus.
+  lundi au vendredi), plus haut et plus bas prolongés jusqu'à minuit UTC ; intervalle d'1 h au plus ;
+  nom de la session en étiquette au-dessus des bougies.
 - **Repères horaires** : traits verticaux à l'ouverture de New York (9 h 30 là-bas : 13 h 30 UTC
   en heure d'été américaine, 14 h 30 en hiver ; du lundi au vendredi, jours fériés non gérés) et aux
   heures de financement des perpétuels (0 h, 8 h, 16 h UTC) ; délai avant les prochains dans la
