@@ -30,6 +30,50 @@ Setup de départ : le **break-in** (étape 6). Notation : « nom exact dans l'ap
 
 ---
 
+## Selon le jour et l'heure : ce qui compte
+
+Certains niveaux viennent de naître ou reposent sur des journées creuses : ils pèsent moins. Avant l'étape 1,
+regarder quel jour on est et quelle heure il est (UTC), puis lire les étapes avec ces tableaux en tête.
+
+### Le jour de la semaine
+
+| Jour | « J-1 » est | Ce qui compte | Ce qui compte moins |
+|---|---|---|---|
+| **Lundi** | dimanche | « Haut S-1 » / « Bas S-1 » (semaine précédente) ; la value area de **vendredi** (profil à côté de la bougie de vendredi, étape 1a) ; « Ouv. M » | « Haut J-1 », « Bas J-1 », « VAH / VAL / POC J-1 » (dimanche, peu d'échanges) ; « Ouv. S » (née à 00:00 UTC, c'est l'ouverture de la bougie du jour) ; profil « Semaine » (vide) ; nPOC de samedi et dimanche |
+| **Mardi** | lundi | « J-1 » redevient fiable ; « Haut S-1 » / « Bas S-1 » ; « Ouv. S » commence à compter | La forme du profil « Semaine » (1 jour de données) |
+| **Mercredi, jeudi** | la veille | Tout : profil « Semaine » et sa forme lisibles, « Ouv. S » pleinement valable | — |
+| **Vendredi** | jeudi | Tout ; le profil « Semaine » est le plus complet ; la place du prix face à « Ouv. S » décide la couleur de la bougie de la semaine | — |
+| **Samedi, dimanche** | la veille | — | Pas d'ouverture de New York, donc **pas de fenêtre de cette stratégie** : pas de trade (s'entraîner en « Replay ») ; l'ORB New York affiché est celui de vendredi ; peu d'échanges |
+
+### Le moment du mois
+
+| Moment | Ce qui compte | Ce qui compte moins |
+|---|---|---|
+| **1er au 3 du mois** | « Haut M-1 » / « Bas M-1 » (mois précédent) | « Ouv. M » (vient de naître, même remarque que « Ouv. S » le lundi) |
+| **Reste du mois** | « Ouv. M » : prix au-dessus = acheteurs du mois gagnants, en dessous = vendeurs gagnants | — |
+| **Derniers jours du mois** | « Ouv. M » décide la couleur de la bougie du mois : le prix est souvent disputé autour | — |
+
+Un lundi qui est aussi le 1er du mois : « Ouv. S » et « Ouv. M » sont le même prix, sans valeur de repère ce jour-là.
+
+### L'heure de l'analyse (UTC)
+
+| Tu analyses | Fiable | Pas encore fiable |
+|---|---|---|
+| **00:00 à l'ouverture de Londres** (vers 7 h – 8 h) | Étape 1 (jours terminés) ; niveaux d'hier (étape 2) | Profil du jour (presque vide) ; légende de « Value area de la veille » (peu de clôtures de 30 min) ; l'ORB affiché est **celui d'hier** (le lundi : de vendredi) |
+| **Londres jusqu'à l'ouverture de New York** | Étapes 1 et 2 ; l'état de l'étape 4 commence à compter | L'ORB New York affiché est encore celui d'hier : ses étiquettes partent de la veille |
+| **15 premières minutes de New York** | — | ORB « en formation » : **rien** |
+| **Ta fenêtre de 60 à 90 min** | Tout | — |
+| **Après ta fenêtre** | Relire le journal (étape 11) | **Pas de trade** |
+
+**Changements d'heure** : l'ouverture de New York passe de 13 h 30 UTC (heure d'été américaine) à 14 h 30 UTC
+(hiver). Les États-Unis et l'Europe ne changent pas d'heure le même week-end : ces semaines-là (mars, fin octobre),
+vérifier que « Mes heures de trading » couvre bien l'ouverture (trait « NY » des « Repères horaires »).
+
+**Jours fériés américains** : le trait « NY » s'affiche quand même, mais Wall Street est fermée : moins de volume à
+l'ouverture, ORB peu fiable. Vérifier le calendrier.
+
+---
+
 ## Étape 1 — Le fond · graphique **1J** · 5 min
 
 **But** : savoir si le marché monte, baisse ou tourne en rond, et repérer les niveaux qui comptent. Cette étape
@@ -86,7 +130,8 @@ attire souvent le prix. Lundi et mardi, la semaine a trop peu de données : igno
 | Au-dessus du prix | Cible possible pour un achat, frein pour la hausse |
 | Sous le prix | Cible possible pour une vente, frein pour la baisse |
 
-Un nPOC n'est **pas** une entrée : c'est une cible ou un endroit où le prix peut réagir.
+Un nPOC n'est **pas** une entrée : c'est une cible ou un endroit où le prix peut réagir. Les nPOC de samedi et
+dimanche, journées creuses, comptent moins que ceux de la semaine (la date est dans l'étiquette).
 
 ### 1e. « Niveaux clés »
 
@@ -104,6 +149,21 @@ tirets), « Haut J-1 » / « Bas J-1 » (veille, gris), « Haut S-1 » / « Bas 
 |---|---|
 | Passe au-delà puis revient en deçà | Balayage : les stops placés derrière ont été pris, piège possible dans l'autre sens |
 | Reste au-delà (au moins 2 clôtures de 30 min) | Cassure acceptée : le mouvement continue |
+
+Les 2 clôtures de 30 min ne se voient pas sur la bougie 1J : passer en **30m** (ou 5m) pour les compter.
+
+Deux niveaux à moins de 0,2 % l'un de l'autre (souvent « Ouv. S » et « Ouv. M ») forment **une seule zone**.
+
+**Le lundi** : « Ouv. S » est l'ouverture de la bougie du jour (elle vient de naître : peu de poids) et « J-1 » est
+dimanche (peu d'échanges : niveaux faibles). Lire plutôt « Haut S-1 » / « Bas S-1 » ; s'ils ne sont pas à l'écran,
+ils sont plus loin : dézoomer l'échelle des prix. Voir « Selon le jour et l'heure ».
+
+**Exemple (un lundi)** : « Ouv. S » 83 723, « Ouv. M » 83 577, « Haut J-1 » 84 180, « Bas J-1 » 82 751, prix 82 438.
+- Prix sous « Ouv. S » et « Ouv. M » : biais baissier. Les deux ouvertures forment la zone 83 577 – 83 723.
+- La mèche a dépassé « Haut J-1 » puis le prix est retombé : balayage du haut.
+- Prix sous « Bas J-1 » : à confirmer en 30m. 2 clôtures dessous = cassure acceptée ; retour au-dessus = balayage du
+  bas, remontée possible vers la zone des ouvertures.
+- Ligne à écrire : « Biais baissier. Niveaux : Bas J-1 82 751, zone 83 577 – 83 723, Haut J-1 84 180 (balayé). »
 
 ### Conclusion de l'étape 1
 
@@ -131,6 +191,9 @@ Remettre ensuite « Période » = « Jour UTC ».
 | Sous « VAL J-1 » | Le marché cherche plus bas | Un retour sur la VAL J-1 (le bord devient résistance) |
 
 Le « POC J-1 » est le prix le plus échangé hier : le prix y ralentit souvent, c'est une cible naturelle depuis un bord.
+
+**Le lundi**, « VAH / POC / VAL J-1 » sont ceux de dimanche (peu d'échanges) : leur préférer la value area de
+vendredi, lue sur le graphique 1J (étape 1a), et « Haut S-1 » / « Bas S-1 ».
 
 ### 2b. « VWAP » · « Période » = « Jour UTC »
 
@@ -196,6 +259,7 @@ trading » : « … · dans vos heures » ou « … · hors de vos heures » (gr
 | La légende dit | Ça veut dire | Tu fais |
 |---|---|---|
 | « en formation jusqu'à 13:45 UTC » (étiquettes « (en cours) ») | Le range n'est pas fini | **Rien** : pas de trade |
+| « … · ouvert à 13:30 UTC » **avant** l'heure d'ouverture du jour | C'est le range d'**hier** (le lundi et le week-end : de vendredi) | L'ignorer jusqu'à l'ouverture |
 | « 61 000 – 61 400 · ouvert à 13:30 UTC » | Le range est fini | Tu peux lire la suite |
 
 | Après le range, le prix | Ça veut dire |
@@ -433,6 +497,7 @@ Remplir aussi « Bilan de fin de semaine : ce qui s'est vraiment passé » dans 
 ## Pas de trade si
 
 - Hors de ta fenêtre (graphique grisé par « Mes heures de trading »).
+- Le week-end (pas d'ouverture de New York, peu d'échanges).
 - Avant la fin du range d'ouverture, ou sur la première poussée.
 - Prix loin de tout niveau de l'étape 5.
 - Pas de confirmation par le flux (étape 7).
