@@ -46,11 +46,17 @@ Fiche à suivre dans l'ordre, du haut vers le bas. Le pourquoi de chaque règle 
 
 Puis le prix face à ses VAH / VAL :
 
+Rester en **1J** (pas besoin du 5m ici). **Le prix** = l'étiquette en couleur sur l'axe de droite. **VAH / VAL** :
+étiquettes « VAH » et « VAL » du profil à plage fixe de la semaine dernière (prolongées jusqu'au bord droit).
+
 | Le prix est | Ça veut dire |
 |---|---|
 | Au-dessus de la VAH | Les acheteurs ont la main |
 | Dans la value area | Rotation : jouer les bords |
 | Sous la VAL | Les vendeurs ont la main |
+
+Prix à moins de 0,2 % de la VAH ou de la VAL : le compter « dans la value area ». La sortie se confirme à l'étape 5
+(2 clôtures de 30 min).
 
 **b. « Profil de session » · « Période » = « Jour UTC »** : comparer les cadres VAH / VAL de **mercredi, jeudi,
 vendredi** (ignorer samedi et dimanche).

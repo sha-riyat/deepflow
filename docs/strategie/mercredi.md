@@ -34,6 +34,20 @@ Fiche à suivre dans l'ordre, du haut vers le bas. Le pourquoi de chaque règle 
 | « forme b (liquidation de longs) » | La baisse s'essouffle | Des achats en priorité ; des ventes seulement si le prix tient sous la VAL |
 | « forme double distribution (tendance) » | Deux zones séparées par un creux | Le sens de la dernière zone ; on n'entre pas dans le creux |
 
+Puis le prix face à la VAH / VAL de la semaine :
+
+Rester en **1J** (pas besoin du 5m ici). **Le prix** = l'étiquette en couleur sur l'axe de droite. **VAH / VAL** :
+légende « Semaine · POC … · VA 60 950–61 300 · … » : le premier nombre est la VAL (bas), le second la VAH (haut).
+
+| Le prix est | Ça veut dire |
+|---|---|
+| Au-dessus de la VAH | Les acheteurs ont la main |
+| Dans la value area | Rotation : jouer les bords |
+| Sous la VAL | Les vendeurs ont la main |
+
+Prix à moins de 0,2 % de la VAH ou de la VAL : le compter « dans la value area ». La sortie se confirme à l'étape 5
+(2 clôtures de 30 min).
+
 **b. Cette semaine face à la semaine dernière** : la value area de la semaine (légende « VA … ») face au profil de
 la semaine dernière.
 

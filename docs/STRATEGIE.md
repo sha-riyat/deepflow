@@ -115,11 +115,15 @@ haut, VAL en bas), trait orange = POC.
 | Dans la VA du composite | Rotation : les bords comptent plus que le sens |
 | Sous la VAL du composite | Les vendeurs ont la main |
 
+Tout se lit en **1J**, sans descendre en 5m. **Le prix** = l'étiquette en couleur sur l'axe de droite. Dans la
+légende, « VA 60 950–61 300 » se lit : VAL = 60 950 (bas), VAH = 61 300 (haut). Prix à moins de 0,2 % d'un bord : le
+compter « dans la VA » ; la sortie se confirme à l'étape 4 (2 clôtures de 30 min).
+
 ### 1c. « Période » = « Semaine »
 
 **Où lire** : légende : « Semaine · POC … · VA …–… · forme … ».
 
-**Lire** : la place du prix par rapport à la VA de la semaine (même tableau que 1b) et le POC de la semaine, qui
+**Lire** : la place du prix par rapport à la VA de la semaine (même tableau et même lecture que 1b, en 1J) et le POC de la semaine, qui
 attire souvent le prix. Lundi et mardi, la semaine a trop peu de données : ignorer sa forme.
 
 ### 1d. « POC non testés »
