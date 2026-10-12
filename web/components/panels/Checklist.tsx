@@ -30,7 +30,7 @@ export function Checklist({ onHelp }: { onHelp: (id: string) => void }) {
             <div key={c.id} className="check-row">
               <label>
                 <input type="checkbox" checked={checked.includes(c.id)} onChange={() => toggle(c.id)} />
-                <span>{c.core && <b title="Essentielle : à cocher avant d’entrer">★ </b>}{c.label}</span>
+                <span>{c.core && <b title="Essentielle : à cocher avant d’entrer">★ </b>}{c.label}<small className="check-where">{c.where}</small></span>
               </label>
               {c.help && <button type="button" className="tb-btn" title="Ouvrir la fiche liée" onClick={() => onHelp(c.help as string)}>?</button>}
             </div>

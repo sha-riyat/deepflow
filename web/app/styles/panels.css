@@ -156,3 +156,4 @@ label.check { display: flex; gap: 8px; align-items: center; color: var(--text-2)
 .check-row { display: flex; align-items: flex-start; gap: 6px; padding: 2px 0; }
 .check-row label { display: flex; flex: 1; gap: 6px; align-items: flex-start; font-size: 12px; line-height: 1.4; color: var(--text-2); cursor: pointer; }
 .check-row input { margin-top: 2px; }
+.check-where { display: block; margin-top: 1px; color: var(--text-3); font-size: 11px; line-height: 1.35; }

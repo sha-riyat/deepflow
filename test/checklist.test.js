@@ -10,10 +10,10 @@ const core = CHECKLIST.filter((s) => s.core).map((s) => s.id);
 test('check-list : identifiants uniques, fiches d’aide existantes, phases dans l’ordre de la routine', () => {
   assert.equal(new Set(ids).size, ids.length);
   for (const s of CHECKLIST) {
-    assert.ok(s.label && s.phase, s.id);
+    assert.ok(s.label && s.phase && s.where, s.id); // chaque case dit où trouver l'outil
     if (s.help) assert.ok(article(s.help), `${s.id} → fiche ${s.help}`);
   }
-  assert.deepEqual(PHASES, ['Contexte', 'État du marché', 'Lieu', 'Confirmation', 'Plan', 'Risque']);
+  assert.deepEqual(PHASES, ['Avant la séance', 'Ouverture', 'État du marché', 'Lieu', 'Confirmation', 'Plan et risque']);
   assert.ok(core.length >= 4 && core.length < ids.length);
 });
 
