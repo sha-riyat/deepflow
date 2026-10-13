@@ -285,7 +285,7 @@ Tout est mémorisé dans le navigateur (`localStorage`) : rien n'est envoyé ail
   - **Check-list avant trade** (onglet du panneau Apprendre) : la routine d'analyse en 18 cases à
     cocher à la main (avant la séance, ouverture, état du marché, lieu, confirmation, plan et
     risque), chaque case disant où trouver l'outil (noms exacts de l'application) et renvoyant à sa
-    fiche ; la stratégie complète est dans `docs/STRATEGIE.md`, et une fiche par jour de la semaine (ce qui compte ce jour-là, à suivre dans l'ordre) dans `docs/strategie/` ; les cases essentielles (★) doivent toutes être cochées avant d'entrer,
+    fiche ; la stratégie est dans `docs/strategie/` : une installation à faire une fois et une fiche par jour de la semaine, à suivre dans l'ordre, outil par outil ; les cases essentielles (★) doivent toutes être cochées avant d'entrer,
     et la part cochée propose une note A / B / C reprise dans le journal. Aucune case n'est cochée
     automatiquement.
 - **Journal de trading** (rail à droite) : noter un trade (symbole, sens, entrée, stop, cible,
