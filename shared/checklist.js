@@ -4,7 +4,7 @@
 // d'entrer ; la part de cases cochées propose une note A / B / C indicative pour le journal.
 
 // phase, libellé, où le trouver (noms exacts de l'application), fiche d'aide liée (id de web/lib/help),
-// essentielle ou non. Même ordre que docs/STRATEGIE.md.
+// essentielle ou non. Même ordre que les fiches de docs/strategie/.
 export const CHECKLIST = [
   { id: 'ctx-va', phase: 'Avant la séance', label: 'J’ai noté la forme du profil et où est la valeur d’hier (VAH, VAL, POC)', where: 'Indicateurs ▸ Profils et niveaux ▸ « Value area de la veille » et « Profil de session »', help: 'prev' },
   { id: 'ctx-levels', phase: 'Avant la séance', label: 'Je connais les niveaux proches : hauts et bas d’hier, POC non testés, ouvertures de semaine et de mois', where: 'Indicateurs ▸ Profils et niveaux ▸ « Niveaux clés » et « POC non testés »', help: 'keys' },
