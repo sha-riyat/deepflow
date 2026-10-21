@@ -5,7 +5,7 @@
   "description": "Terminal d’analyse order flow pour les cryptos Binance, en local : heatmap, footprint, Volume Profile, TPO, CVD.",
   "type": "module",
   "engines": {
-    "node": ">=22.4"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "dev": "node scripts/dev.js",
